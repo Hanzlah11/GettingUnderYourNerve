@@ -46,22 +46,32 @@ public class Player {
         // Format: (baseFileName, numberOfFrames, durationPerFrame, playMode)
         // Adjust the numbers here based on how many frames your actual animations have!
 
-        idleAnimation = loadAnimation("idle", 4, 0.15f, Animation.PlayMode.LOOP);
-        runAnimation = loadAnimation("run", 6, 0.1f, Animation.PlayMode.LOOP);
+        idleAnimation = loadAnimation("09-Idle Sword", 5, 0.15f, Animation.PlayMode.LOOP);
+        runAnimation = loadAnimation("10-Run Sword", 6, 0.15f, Animation.PlayMode.LOOP);
 
         // Jump and Fall usually look better as NORMAL (play once and stick on the last frame)
         // rather than looping continuously in mid-air.
-        jumpAnimation = loadAnimation("jump", 3, 0.1f, Animation.PlayMode.NORMAL);
-        fallAnimation = loadAnimation("fall", 3, 0.1f, Animation.PlayMode.NORMAL);
+        jumpAnimation = loadAnimation("11-Jump Sword", 3, 0.15f, Animation.PlayMode.NORMAL);
+        fallAnimation = loadAnimation("12-Fall Sword", 1, 0.15f, Animation.PlayMode.NORMAL);
     }
 
+
     // --- NEW: ANIMATION HELPER METHOD ---
-    private Animation<TextureRegion> loadAnimation(String baseName, int frameCount, float frameDuration, Animation.PlayMode mode) {
+    private Animation<TextureRegion> loadAnimation(String folderName, int frameCount, float frameDuration, Animation.PlayMode mode) {
+        // If folderName is "09-Idle Sword", parts[1] becomes "Idle Sword"
+        String[] parts = folderName.split("-");
+        String filePrefix = parts[1];
+
         TextureRegion[] frames = new TextureRegion[frameCount];
         for (int i = 0; i < frameCount; i++) {
-            // This expects files named like: run_1.png, run_2.png, idle_1.png, etc.
-            Texture tex = new Texture(baseName + "_" + (i + 1) + ".png");
+            // String.format("%02d", number) forces the number to have two digits (01, 02, 10, 11)
+            String frameNumber = String.format("%02d", i + 1);
 
+            // Build the exact, safe file path
+            String filePath = "Treasure Hunters/Captain Clown Nose/Sprites/Captain Clown Nose/Captain Clown Nose with Sword/" +
+                folderName + "/" + filePrefix + " " + frameNumber + ".png";
+
+            Texture tex = new Texture(filePath);
             rawTextures.add(tex); // Add to our master list for disposal later
             frames[i] = new TextureRegion(tex);
         }
@@ -238,5 +248,9 @@ public class Player {
         for (Texture tex : rawTextures) {
             tex.dispose();
         }
+    }
+
+    public Body getPlayerBody() {
+        return playerBody;
     }
 }
