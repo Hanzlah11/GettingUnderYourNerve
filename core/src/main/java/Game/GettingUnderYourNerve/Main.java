@@ -1,0 +1,128 @@
+package Game.GettingUnderYourNerve;
+
+import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.maps.MapLayer;
+import com.badlogic.gdx.maps.MapObject;
+import com.badlogic.gdx.maps.objects.RectangleMapObject;
+import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
+import com.badlogic.gdx.maps.tiled.TmxMapLoader;
+import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.*;
+import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.Viewport;
+
+public class Main extends ApplicationAdapter {
+    // --- 1. Box2D & Scaling Variables ---
+    private World world;
+    private Box2DDebugRenderer debugRenderer;
+    public static final float PPM = 32f; // Pixels Per Meter
+    Player player;
+    PlayableMap playableMap;
+
+    // --- 2. Graphics Variables ---
+    private SpriteBatch batch;
+
+    // --- 3. Camera & Viewport ---
+    private Viewport viewport;
+    private OrthographicCamera camera;
+
+    private final float WORLD_WIDTH = 800;
+    private final float WORLD_HEIGHT = 480;
+
+
+    @Override
+    public void create() {
+        // Setup Physics World (Gravity pulling down on Y axis)
+        world = new World(new Vector2(0, -15f), true);
+        debugRenderer = new Box2DDebugRenderer();
+        player = new Player(20);
+        playableMap = new PlayableMap();
+
+        // Setup Graphics
+        batch = new SpriteBatch();
+
+        // Setup Camera (Viewport is scaled to meters)
+        camera = new OrthographicCamera();
+        viewport = new FitViewport(WORLD_WIDTH / PPM, WORLD_HEIGHT / PPM, camera);
+
+        // 1. Generate Static Collision Walls
+        playableMap.createPhysicsFromMap(world);
+
+        // 2. Spawn Dynamic Player
+        player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
+    }
+
+
+    @Override
+    public void render() {
+        // --- 1. UPDATE PHYSICS ---
+        world.step(1 / 60f, 6, 2);
+        player.UpdatePlayer(world);
+
+        // --- 4. CAMERA FOLLOW ---
+
+        float WorldWidth = playableMap.getMapWidthInMeters();
+        float WorldHeight = playableMap.getMapHeightInMeters();
+
+        float halfViewportWidth = (WORLD_WIDTH / PPM) / 2f;
+        float halfViewportHeight = (WORLD_HEIGHT / PPM) / 2f;
+
+        float CamX = MathUtils.clamp(player.GetXpos(), halfViewportWidth, WorldWidth -  halfViewportWidth);
+        float CamY = MathUtils.clamp(player.GetYpos(),  halfViewportHeight, WorldHeight - halfViewportHeight);
+
+        camera.position.set(CamX, CamY, 0);
+        camera.update();
+
+        // --- 5. RENDERING ---
+        // Changed to a dark blue clear color. If you see this color, the game is drawing properly!
+        ScreenUtils.clear(0.1f, 0.1f, 0.2f, 1);
+
+        viewport.apply();
+
+        playableMap.UpdateMap(camera);
+        float dt = Gdx.graphics.getDeltaTime();
+
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        // 2. Ask the player for the correct animation frame right now
+        TextureRegion currentFrame = player.GetCurrentFrame(dt);
+
+        // 3. Draw that frame exactly over the physics body
+        batch.draw(currentFrame,
+            player.GetXpos() - (player.drawWidth / 2f),
+            player.GetYpos() - (player.drawHeight / 2f),
+            player.drawWidth,
+            player.drawHeight);
+
+        batch.end();
+
+        // The magical debug renderer (draws the physics boxes)
+        debugRenderer.render(world, camera.combined);
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height, true);
+    }
+
+    @Override
+    public void dispose() {
+        batch.dispose();
+        world.dispose();
+        debugRenderer.dispose();
+        player.dispose();
+        playableMap.dispose();
+    }
+}
