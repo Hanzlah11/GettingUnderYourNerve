@@ -1,6 +1,7 @@
 package Game.GettingUnderYourNerve;
 
 import com.badlogic.gdx.ApplicationAdapter;
+import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -22,7 +23,7 @@ import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
-// Mohib is fat
+
 public class Main extends ApplicationAdapter {
     // --- 1. Box2D & Scaling Variables ---
     private World world;
@@ -36,7 +37,7 @@ public class Main extends ApplicationAdapter {
 
     // --- 3. Camera & Viewport ---
     private Viewport viewport;
-    private OrthographicCamera camera;
+    private GameCam cam;
 
     private final float WORLD_WIDTH = 800;
     private final float WORLD_HEIGHT = 480;
@@ -45,7 +46,7 @@ public class Main extends ApplicationAdapter {
     @Override
     public void create() {
         // Setup Physics World (Gravity pulling down on Y axis)
-        world = new World(new Vector2(0, -15f), true);
+        world = new World(new Vector2(0, -40f), true);
         debugRenderer = new Box2DDebugRenderer();
         player = new Player(20);
         playableMap = new PlayableMap();
@@ -54,8 +55,8 @@ public class Main extends ApplicationAdapter {
         batch = new SpriteBatch();
 
         // Setup Camera (Viewport is scaled to meters)
-        camera = new OrthographicCamera();
-        viewport = new FitViewport(WORLD_WIDTH / PPM, WORLD_HEIGHT / PPM, camera);
+        cam =  new GameCam();
+        viewport = new FitViewport(WORLD_WIDTH / PPM, WORLD_HEIGHT / PPM, cam.GetCam());
 
         // 1. Generate Static Collision Walls
         playableMap.createPhysicsFromMap(world);
@@ -79,11 +80,7 @@ public class Main extends ApplicationAdapter {
         float halfViewportWidth = (WORLD_WIDTH / PPM) / 2f;
         float halfViewportHeight = (WORLD_HEIGHT / PPM) / 2f;
 
-        float CamX = MathUtils.clamp(player.GetXpos(), halfViewportWidth, WorldWidth -  halfViewportWidth);
-        float CamY = MathUtils.clamp(player.GetYpos(),  halfViewportHeight, WorldHeight - halfViewportHeight);
-
-        camera.position.set(CamX, CamY, 0);
-        camera.update();
+        cam.Update(WorldWidth, WorldHeight, halfViewportWidth, halfViewportHeight, player.GetXpos(), player.GetYpos());
 
         // --- 5. RENDERING ---
         // Changed to a dark blue clear color. If you see this color, the game is drawing properly!
@@ -91,10 +88,10 @@ public class Main extends ApplicationAdapter {
 
         viewport.apply();
 
-        playableMap.UpdateMap(camera);
+        playableMap.UpdateMap(cam.GetCam());
         float dt = Gdx.graphics.getDeltaTime();
 
-        batch.setProjectionMatrix(camera.combined);
+        batch.setProjectionMatrix(cam.GetCam().combined);
         batch.begin();
 
         // 1. Get the correct frame from the player's state machine
@@ -116,7 +113,7 @@ public class Main extends ApplicationAdapter {
         batch.end();
 
         // The magical debug renderer (draws the physics boxes)
-        debugRenderer.render(world, camera.combined);
+        debugRenderer.render(world, cam.GetCam().combined);
     }
 
     @Override
