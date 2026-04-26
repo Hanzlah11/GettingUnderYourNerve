@@ -140,9 +140,9 @@ public class Player {
         boolean isPushingLeft = Gdx.input.isKeyPressed(Input.Keys.LEFT);
 
         if (isPushingLeft) {
-            desiredVel = -5f;
+            desiredVel = -10f;
         } else if (isPushingRight) {
-            desiredVel = 5f;
+            desiredVel = 10f;
         }
 
         playerBody.setLinearVelocity(desiredVel, vel.y);
