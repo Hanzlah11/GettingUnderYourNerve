@@ -31,7 +31,8 @@ public class Main extends ApplicationAdapter {
     public static final float PPM = 32f; // Pixels Per Meter
     Player player;
     PlayableMap playableMap;
-
+    Texture platformTilesheet;
+    MovingPlatform platform1;
     // --- 2. Graphics Variables ---
     private SpriteBatch batch;
 
@@ -60,9 +61,13 @@ public class Main extends ApplicationAdapter {
 
         // 1. Generate Static Collision Walls
         playableMap.createPhysicsFromMap(world);
+        platformTilesheet = new Texture("Graphics/tilesets/outside.png");
+        TextureRegion platformRegion = new TextureRegion(platformTilesheet, 16, 0, 16, 16);
+        platform1 = new MovingPlatform(world, platformRegion, 4f, 16f, 2f, 1f, 4f, 2f, true);
 
         // 2. Spawn Dynamic Player
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
+
     }
 
 
@@ -81,7 +86,7 @@ public class Main extends ApplicationAdapter {
         float halfViewportHeight = (WORLD_HEIGHT / PPM) / 2f;
 
         cam.Update(WorldWidth, WorldHeight, halfViewportWidth, halfViewportHeight, player.GetXpos(), player.GetYpos());
-
+        platform1.update();
         // --- 5. RENDERING ---
         // Changed to a dark blue clear color. If you see this color, the game is drawing properly!
         ScreenUtils.clear(0.1f, 0.1f, 0.2f, 1);
@@ -109,7 +114,7 @@ public class Main extends ApplicationAdapter {
             player.GetYpos() - (spriteDrawHeight / 2f), // Center Y
             spriteDrawWidth,
             spriteDrawHeight);
-
+        platform1.render(batch);
         batch.end();
 
         // The magical debug renderer (draws the physics boxes)
@@ -128,5 +133,6 @@ public class Main extends ApplicationAdapter {
         debugRenderer.dispose();
         player.dispose();
         playableMap.dispose();
+        platformTilesheet.dispose();
     }
 }
