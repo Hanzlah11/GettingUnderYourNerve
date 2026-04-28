@@ -1,5 +1,6 @@
 package Game.GettingUnderYourNerve.Utilities;
 
+import Game.GettingUnderYourNerve.Coin;
 import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Main;
@@ -25,6 +26,16 @@ public class WorldContactListener implements ContactListener {
             case Main.PLAYER_BIT | Main.GROUND_BIT:
                 // Logic for resetting jumps could go here
                 break;
+        }
+
+        Object objA = contact.getFixtureA().getBody().getUserData();
+        Object objB = contact.getFixtureB().getBody().getUserData();
+
+        // Check if the collision is between a Player and a Coin
+        if (objA instanceof Player && objB instanceof Coin) {
+            ((Coin) objB).onCollect((Player) objA);
+        } else if (objB instanceof Player && objA instanceof Coin) {
+            ((Coin) objA).onCollect((Player) objB);
         }
     }
 
