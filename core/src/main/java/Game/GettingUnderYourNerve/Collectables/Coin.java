@@ -1,5 +1,6 @@
-package Game.GettingUnderYourNerve;
+package Game.GettingUnderYourNerve.Collectables;
 
+import Game.GettingUnderYourNerve.Player;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -8,16 +9,9 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.Array;
 
-public class Coin {
-    public Body body;
-    public boolean isCollected = false;
-    public boolean isDestroyed = false; // Crucial for safe deletion
+public class Coin extends Collectable{
 
     private int pointValue;
-    private float drawWidth, drawHeight;
-    private Animation<TextureRegion> animation;
-    private float stateTime = 0f;
-    private Array<Texture> rawTextures;
 
     public Coin(World world, Rectangle rect, String type) {
         this.rawTextures = new Array<Texture>();
@@ -49,19 +43,6 @@ public class Coin {
         // Pass THIS specific coin object to the collision detector
         body.createFixture(fdef).setUserData(this);
         shape.dispose();
-    }
-
-    private void loadAnimation(String folderPath, int frameCount, float frameDuration) {
-        TextureRegion[] frames = new TextureRegion[frameCount];
-        for (int i = 0; i < frameCount; i++) {
-            String frameNumber = String.format("%02d", i + 1);
-            String filePath = folderPath + "/" + frameNumber + ".png";
-            Texture tex = new Texture(filePath);
-            rawTextures.add(tex);
-            frames[i] = new TextureRegion(tex);
-        }
-        animation = new Animation<TextureRegion>(frameDuration, frames);
-        animation.setPlayMode(Animation.PlayMode.LOOP);
     }
 
     public void update(float dt) {

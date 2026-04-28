@@ -1,5 +1,6 @@
 package Game.GettingUnderYourNerve;
 
+import Game.GettingUnderYourNerve.Collectables.Coin;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapLayer;
