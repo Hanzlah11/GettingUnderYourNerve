@@ -47,6 +47,28 @@ public class Main extends ApplicationAdapter {
     public void create() {
         // Setup Physics World (Gravity pulling down on Y axis)
         world = new World(new Vector2(0, -40f), true);
+        world.setContactListener(new ContactListener() {
+            @Override
+            public void beginContact(Contact contact) {
+                // Grab the UserData we attached to the bodies
+                Object objA = contact.getFixtureA().getUserData();
+                Object objB = contact.getFixtureB().getUserData();
+
+                // Check if the collision is between a Player and a Coin
+                if (objA instanceof Player && objB instanceof Coin) {
+                    ((Coin) objB).onCollect((Player) objA);
+                } else if (objB instanceof Player && objA instanceof Coin) {
+                    ((Coin) objA).onCollect((Player) objB);
+                }
+            }
+
+            @Override
+            public void endContact(Contact contact) {}
+            @Override
+            public void preSolve(Contact contact, Manifold oldManifold) {}
+            @Override
+            public void postSolve(Contact contact, ContactImpulse impulse) {}
+        });
         debugRenderer = new Box2DDebugRenderer();
         player = new Player(20);
         playableMap = new PlayableMap();
@@ -88,8 +110,8 @@ public class Main extends ApplicationAdapter {
 
         viewport.apply();
 
-        playableMap.UpdateMap(cam.GetCam());
         float dt = Gdx.graphics.getDeltaTime();
+        playableMap.UpdateMap(cam.GetCam(), dt, world);
 
         batch.setProjectionMatrix(cam.GetCam().combined);
         batch.begin();
@@ -109,6 +131,8 @@ public class Main extends ApplicationAdapter {
             player.GetYpos() - (spriteDrawHeight / 2f), // Center Y
             spriteDrawWidth,
             spriteDrawHeight);
+
+        playableMap.DrawElements(batch);
 
         batch.end();
 
