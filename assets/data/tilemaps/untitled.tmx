@@ -59,7 +59,7 @@
   <object id="11" name="Shell" type="Enemy" x="681.333" y="242.667" width="48" height="38"/>
  </objectgroup>
  <objectgroup id="3" name="Objects">
-  <object id="1" name="Player" type="PlayerStart" x="184" y="328" width="48" height="33"/>
+  <object id="1" name="Player" type="PlayerStart" x="176" y="336" width="32" height="32"/>
  </objectgroup>
  <objectgroup id="5" name="Platforms">
   <object id="3" name="HorizontalPlatform" x="288" y="320" width="64" height="16">

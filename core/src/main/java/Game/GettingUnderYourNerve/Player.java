@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapObject;
@@ -208,6 +209,21 @@ public class Player {
                 return State.IDLE;
             }
         }
+    }
+
+    public void Render(SpriteBatch batch,float dt) {
+        // These are for adjusting the sprite size, not the Collider size!!, I have made both dimensions double than original
+        float spriteDrawWidth = (drawWidth * 2);
+        float spriteDrawHeight = (drawHeight * 2);
+
+        // 1. Get the correct frame from the player's state machine
+        TextureRegion currentFrame = GetCurrentFrame(dt);
+
+        batch.draw(currentFrame,
+            GetXpos() - (spriteDrawWidth / 2f),  // Center X
+            GetYpos() - (spriteDrawHeight / 2f), // Center Y
+            spriteDrawWidth,
+            spriteDrawHeight);
     }
 
     public TextureRegion GetCurrentFrame(float dt) {

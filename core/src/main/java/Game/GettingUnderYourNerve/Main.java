@@ -124,28 +124,12 @@ public class Main extends ApplicationAdapter {
         viewport.apply();
 
         float dt = Gdx.graphics.getDeltaTime();
-
         playableMap.UpdateMap(cam.GetCam(), dt, world);
 
         batch.setProjectionMatrix(cam.GetCam().combined);
         batch.begin();
 
-        // 1. Get the correct frame from the player's state machine
-        TextureRegion currentFrame = player.GetCurrentFrame(dt);
-
-        // 2. Define the exact size you want the sprite to appear on screen.
-        // If your Box2D body is 1 meter wide (32/PPM), you want the sprite to be slightly larger
-        // to cover the hitbox nicely. Captain Clown Nose is usually drawn at roughly 2 meters wide to account for his sword swing.
-        float spriteDrawWidth = 64f / Player.PPM;
-        float spriteDrawHeight = 64f / Player.PPM;
-
-        // 3. Draw the frame, forcing it to scale to your defined width/height
-        batch.draw(currentFrame,
-            player.GetXpos() - (spriteDrawWidth / 2f),  // Center X
-            player.GetYpos() - (spriteDrawHeight / 2f), // Center Y
-            spriteDrawWidth,
-            spriteDrawHeight);
-
+        player.Render(batch, dt);
         playableMap.DrawElements(batch);
         enemy.render(dt, batch);
 
