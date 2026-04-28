@@ -2,6 +2,7 @@ package Game.GettingUnderYourNerve;
 
 import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Shell;
+import Game.GettingUnderYourNerve.Utilities.WorldContactListener;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
@@ -56,6 +57,7 @@ public class Main extends ApplicationAdapter {
     public void create() {
         // Setup Physics World (Gravity pulling down on Y axis)
         world = new World(new Vector2(0, -40f), true);
+        world.setContactListener(new WorldContactListener());
         debugRenderer = new Box2DDebugRenderer();
         player = new Player(20);
         playableMap = new PlayableMap();

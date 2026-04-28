@@ -15,7 +15,22 @@ public class WorldContactListener implements ContactListener {
         Fixture fixA = contact.getFixtureA();
         Fixture fixB = contact.getFixtureB();
 
-        // 1. Identify the collision type using Bitwise OR
+        // 1. Check for Coins First (Using UserData)
+        Object objA = fixA.getUserData();
+        Object objB = fixB.getUserData();
+
+        // CRITICAL DEBUG PRINT: See if the collision is even firing!
+        // System.out.println("Contact! A: " + objA + " | B: " + objB);
+
+        if (objA instanceof Player && objB instanceof Coin) {
+            ((Coin) objB).onCollect((Player) objA);
+            return; // Stop evaluating this specific contact; we handled it.
+        } else if (objB instanceof Player && objA instanceof Coin) {
+            ((Coin) objA).onCollect((Player) objB);
+            return; // Stop evaluating.
+        }
+
+        // 2. If it wasn't a coin, handle enemies/ground using Bitmasks
         int cDef = fixA.getFilterData().categoryBits | fixB.getFilterData().categoryBits;
 
         switch (cDef) {
@@ -26,16 +41,6 @@ public class WorldContactListener implements ContactListener {
             case Main.PLAYER_BIT | Main.GROUND_BIT:
                 // Logic for resetting jumps could go here
                 break;
-        }
-
-        Object objA = contact.getFixtureA().getBody().getUserData();
-        Object objB = contact.getFixtureB().getBody().getUserData();
-
-        // Check if the collision is between a Player and a Coin
-        if (objA instanceof Player && objB instanceof Coin) {
-            ((Coin) objB).onCollect((Player) objA);
-        } else if (objB instanceof Player && objA instanceof Coin) {
-            ((Coin) objA).onCollect((Player) objB);
         }
     }
 
