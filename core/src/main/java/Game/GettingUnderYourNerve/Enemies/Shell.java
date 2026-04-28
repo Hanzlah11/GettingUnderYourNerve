@@ -2,13 +2,16 @@ package Game.GettingUnderYourNerve.Enemies;
 
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Player;
+import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
+import com.badlogic.gdx.utils.Array;
 
 import static Game.GettingUnderYourNerve.Main.PPM;
 import static java.lang.Math.abs;
@@ -26,7 +29,10 @@ public class Shell extends Enemy
     private boolean shooting = false;
 
     private float attackTimer = 0f;
+    private boolean hasPlayedSound = false;
+    private int ammo = 5;
 
+    private Array<Projectile> activeProjectiles;
     public Shell(World world, float x, float y)
     {
         super(world, x, y);
@@ -34,6 +40,7 @@ public class Shell extends Enemy
         drawHeight = 38 / PPM;
 
         defineEnemy();
+        activeProjectiles = new Array<Projectile>();
         idleAnimation = loadAnimation("Seashell Idle", 1, 0.15f, Animation.PlayMode.LOOP);
         shootingAnimation = loadAnimation("Seashell Fire", 6, 0.12f, Animation.PlayMode.NORMAL);
     }
@@ -64,36 +71,70 @@ public class Shell extends Enemy
     }
 
     @Override
-    public void updateEnemy(float dt, Player player)
-    {
-        float dx = player.GetXpos() - GetXpos();
+        public void updateEnemy(float dt, Player player)
+        {
+            float dx = player.GetXpos() - GetXpos();
+            float dy = player.GetYpos() - GetYpos();
 
-        if(dx < 0f)
-            facingRight = false;
-        else
-            facingRight = true;
+            if(dx < 0f)
+                facingRight = false;
+            else
+                facingRight = true;
 
 
-        if (shooting) {
-            if (shootingAnimation.isAnimationFinished(stateTime)) {
-                shooting = false;
-                attackTimer = 0;
-            }
-        }
-        else {
-            if(abs(dx) < 10.0f)
-            {
-                attackTimer += dt;
-                if (attackTimer >= 2.0f) {
-                    shooting = true;
+            if (shooting) {
+                if(shootingAnimation.getKeyFrameIndex(stateTime) == 4 && !hasPlayedSound) {
+                    AudioManager.shellShoot.play(0.5f);
+                    hasPlayedSound = true;
+                    if(facingRight)
+                        activeProjectiles.add(new Projectile(world, GetXpos() + drawWidth / 2f, GetYpos() - (6f / PPM), facingRight));
+                    else
+                        activeProjectiles.add(new Projectile(world, GetXpos() - drawWidth / 2f, GetYpos() - (6f / PPM), facingRight));
+                    ammo--;
+                }
+                if (shootingAnimation.isAnimationFinished(stateTime)) {
+                    shooting = false;
+                    attackTimer = 0;
+                    hasPlayedSound = false;
                 }
             }
-            else
+            else {
+                if(abs(dx) < 10.0f && abs(dy) < 1.0f && ammo > 0)
+                {
+                    attackTimer += dt;
+                    if (attackTimer >= 1.5f) {
+                        shooting = true;
+                    }
+                }
+                else
+                {
+                    shooting = false;
+                    attackTimer = 0;
+                }
+            }
+
+            for(int i = 0; i < activeProjectiles.size; i++)
             {
-                shooting = false;
-                attackTimer = 0;
+                Projectile p = activeProjectiles.get(i);
+                p.updateProjectile(dt);
+
+                if (p.isDestroyed()) {
+                    activeProjectiles.removeIndex(i);
+                    i--; // Important to adjust the index after removal
+                }
             }
         }
+
+    public void render(float dt, SpriteBatch batch)
+    {
+        batch.draw(GetCurrentFrame(dt),
+            GetXpos() - (drawWidth / 2f),
+            GetYpos() - (drawHeight / 2f),
+            drawWidth,
+            drawHeight);
+
+        for(Projectile p : activeProjectiles)
+            p.render(dt, batch);
     }
 
     @Override
@@ -151,4 +192,6 @@ public class Shell extends Enemy
         anim.setPlayMode(mode);
         return anim;
     }
+
+
 }

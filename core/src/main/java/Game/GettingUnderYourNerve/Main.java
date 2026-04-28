@@ -2,6 +2,7 @@ package Game.GettingUnderYourNerve;
 
 import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Shell;
+import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.WorldContactListener;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -36,6 +37,7 @@ public class Main extends ApplicationAdapter {
     public static final short GROUND_BIT = 1;
     public static final short PLAYER_BIT = 2;
     public static final short ENEMY_BIT = 4;
+    public static final short PROJECTILE_BIT = 8;
     public static final short BIT_NONE = 0;
 
     Enemy enemy;
@@ -47,6 +49,8 @@ public class Main extends ApplicationAdapter {
         world = new World(new Vector2(0, -40f), true);
         world.setContactListener(new WorldContactListener());
         debugRenderer = new Box2DDebugRenderer();
+        AudioManager.load();
+
         player = new Player(20);
         playableMap = new PlayableMap();
 
@@ -139,5 +143,7 @@ public class Main extends ApplicationAdapter {
         debugRenderer.dispose();
         player.dispose();
         playableMap.dispose();
+        AudioManager.dispose();
+        enemy.dispose();
     }
 }
