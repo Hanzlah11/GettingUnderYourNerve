@@ -1,11 +1,10 @@
 package Game.GettingUnderYourNerve.Utilities;
 
-import Game.GettingUnderYourNerve.Coin;
+import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Player;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 
 public class WorldContactListener implements ContactListener {
