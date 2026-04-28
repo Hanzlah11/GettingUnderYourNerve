@@ -1,5 +1,7 @@
 package Game.GettingUnderYourNerve;
 
+import Game.GettingUnderYourNerve.Enemies.Enemy;
+import Game.GettingUnderYourNerve.Enemies.Shell;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
@@ -42,33 +44,18 @@ public class Main extends ApplicationAdapter {
     private final float WORLD_WIDTH = 800;
     private final float WORLD_HEIGHT = 480;
 
+    public static final short GROUND_BIT = 1;
+    public static final short PLAYER_BIT = 2;
+    public static final short ENEMY_BIT = 4;
+    public static final short BIT_NONE = 0;
+
+    Enemy enemy;
+
 
     @Override
     public void create() {
         // Setup Physics World (Gravity pulling down on Y axis)
         world = new World(new Vector2(0, -40f), true);
-        world.setContactListener(new ContactListener() {
-            @Override
-            public void beginContact(Contact contact) {
-                // Grab the UserData we attached to the bodies
-                Object objA = contact.getFixtureA().getUserData();
-                Object objB = contact.getFixtureB().getUserData();
-
-                // Check if the collision is between a Player and a Coin
-                if (objA instanceof Player && objB instanceof Coin) {
-                    ((Coin) objB).onCollect((Player) objA);
-                } else if (objB instanceof Player && objA instanceof Coin) {
-                    ((Coin) objA).onCollect((Player) objB);
-                }
-            }
-
-            @Override
-            public void endContact(Contact contact) {}
-            @Override
-            public void preSolve(Contact contact, Manifold oldManifold) {}
-            @Override
-            public void postSolve(Contact contact, ContactImpulse impulse) {}
-        });
         debugRenderer = new Box2DDebugRenderer();
         player = new Player(20);
         playableMap = new PlayableMap();
@@ -85,6 +72,28 @@ public class Main extends ApplicationAdapter {
 
         // 2. Spawn Dynamic Player
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
+        enemy = spawnOneShell(playableMap.GetMap(), world);
+
+    }
+
+
+    public Shell spawnOneShell(TiledMap map, World world) {
+        // 1. Grab the "Shell" layer
+        MapLayer layer = map.getLayers().get("Shell");
+
+        // 2. Check if the layer exists and has at least one object
+        if (layer != null && layer.getObjects().getCount() > 0) {
+            // Get only the first object (index 0)
+            MapObject obj = layer.getObjects().get(0);
+
+            float x = obj.getProperties().get("x", Float.class);
+            float y = obj.getProperties().get("y", Float.class);
+
+            // Return just this one shell
+            return new Shell(world, x, y);
+        }
+
+        return null; // No layer or no objects found
     }
 
 
@@ -93,6 +102,8 @@ public class Main extends ApplicationAdapter {
         // --- 1. UPDATE PHYSICS ---
         world.step(1 / 60f, 6, 2);
         player.UpdatePlayer(world);
+
+        enemy.updateEnemy(Gdx.graphics.getDeltaTime(), player);
 
         // --- 4. CAMERA FOLLOW ---
 
@@ -111,6 +122,7 @@ public class Main extends ApplicationAdapter {
         viewport.apply();
 
         float dt = Gdx.graphics.getDeltaTime();
+
         playableMap.UpdateMap(cam.GetCam(), dt, world);
 
         batch.setProjectionMatrix(cam.GetCam().combined);
@@ -133,6 +145,7 @@ public class Main extends ApplicationAdapter {
             spriteDrawHeight);
 
         playableMap.DrawElements(batch);
+        enemy.render(dt, batch);
 
         batch.end();
 

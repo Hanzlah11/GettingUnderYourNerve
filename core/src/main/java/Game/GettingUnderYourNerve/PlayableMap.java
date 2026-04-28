@@ -18,7 +18,7 @@ import java.util.Iterator;
 
 public class PlayableMap {
     private static final float PPM = 32f; // Pixels Per Meter
-    private TiledMap map;
+    public TiledMap map;
     private OrthogonalTiledMapRenderer mapRenderer;
 
     // --- NEW: Platform Storage ---
