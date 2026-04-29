@@ -1,5 +1,6 @@
 package Game.GettingUnderYourNerve;
 
+import Game.GettingUnderYourNerve.Enemies.Crab;
 import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
@@ -71,9 +72,9 @@ public class Main extends ApplicationAdapter {
     }
 
 
-    public Shell spawnOneShell(TiledMap map, World world) {
+    public Crab spawnOneShell(TiledMap map, World world) {
         // 1. Grab the "Shell" layer
-        MapLayer layer = map.getLayers().get("Shell");
+        MapLayer layer = map.getLayers().get("Crab");
 
         // 2. Check if the layer exists and has at least one object
         if (layer != null && layer.getObjects().getCount() > 0) {
@@ -84,7 +85,7 @@ public class Main extends ApplicationAdapter {
             float y = obj.getProperties().get("y", Float.class);
 
             // Return just this one shell
-            return new Shell(world, x, y);
+            return new Crab(world, x, y);
         }
 
         return null; // No layer or no objects found

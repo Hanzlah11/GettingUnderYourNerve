@@ -50,7 +50,7 @@ public class Projectile
         defineProjectile();
 
         idleAnimation = loadAnimation("Pearl Idle", 1, 0.15f, Animation.PlayMode.LOOP);
-        destroyingAnimation = loadAnimation("Pearl Destroyed", 3, 0.35f, Animation.PlayMode.LOOP);
+        destroyingAnimation = loadAnimation("Pearl Destroyed", 3, 0.5f, Animation.PlayMode.LOOP);
 
     }
 
@@ -95,7 +95,7 @@ public class Projectile
     {
         stateTime += dt; // Add this line at the top!
 
-        if (!setToDestoy && stateTime >= 2f) {
+        if (!setToDestoy && stateTime >= 10f) {
             setToDestroy();
         }
 

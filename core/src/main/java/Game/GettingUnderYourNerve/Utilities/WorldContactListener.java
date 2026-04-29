@@ -1,11 +1,13 @@
 package Game.GettingUnderYourNerve.Utilities;
 
 import Game.GettingUnderYourNerve.Collectables.Coin;
+import Game.GettingUnderYourNerve.Enemies.Crab;
 import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Projectile;
 import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Player;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 
 public class WorldContactListener implements ContactListener {
@@ -57,20 +59,30 @@ public class WorldContactListener implements ContactListener {
     }
 
     private void handlePlayerEnemyCollision(Fixture a, Fixture b) {
-        // Use helper methods to identify who is the player and who is the enemy
-        Player player = (Player) (a.getUserData() instanceof Player ? a.getUserData() : b.getUserData());
-        Enemy enemy = (Enemy) (a.getUserData() instanceof Enemy ? a.getUserData() : b.getUserData());
+        // 1. Identify participants
+        Object userDataA = a.getUserData();
+        Object userDataB = b.getUserData();
 
-        // 2. Determine "Top" Collision
-        // We check if the Player's Y position is significantly higher than the Enemy's
-        float threshold = enemy.drawHeight / 2.5f;
+        Player player = (Player) (userDataA instanceof Player ? userDataA : userDataB);
+        Enemy enemy = (Enemy) (userDataA instanceof Enemy ? userDataA : userDataB);
+
+        if (player == null || enemy == null) return;
+
+        // 2. Determine Collision Type (Top vs Side)
+        float threshold = enemy.drawHeight / 2.0f;
+
         if (player.GetYpos() > enemy.GetYpos() + threshold) {
+            // TOP COLLISION: Player is jumping on the enemy
             if (enemy instanceof Shell) {
                 ((Shell) enemy).currentState = Shell.State.SHOOTING; // Trigger the trap!
             }
-        } else {
-            // Player hit the side - Damage logic
-            System.out.println("Collions!");
+            // You can add Crab "death" or "stun" logic here later if needed
+        }
+        else {
+            // SIDE COLLISION
+            if (enemy instanceof Crab) {
+                ((Crab) enemy).attack();
+            }
         }
     }
 
@@ -80,12 +92,20 @@ public class WorldContactListener implements ContactListener {
         Fixture fixB = contact.getFixtureB();
         int cDef = fixA.getFilterData().categoryBits | fixB.getFilterData().categoryBits;
 
-        // 3. The "Phase Through" Trick
+        // Handle Player and Enemy continuous contact
         if (cDef == (Main.PLAYER_BIT | Main.ENEMY_BIT)) {
-            Enemy enemy = (Enemy) (fixA.getUserData() instanceof Enemy ? fixA.getUserData() : fixB.getUserData());
+
+            // 1. Continuous Attack Logic
+            // By calling this in preSolve, the Crab checks its timer every frame
+            // you are touching it, snapping as soon as the cooldown is over.
+            handlePlayerEnemyCollision(fixA, fixB);
+
+            // 2. The "Phase Through" Shell logic
+            Object userDataA = fixA.getUserData();
+            Object userDataB = fixB.getUserData();
+            Enemy enemy = (Enemy) (userDataA instanceof Enemy ? userDataA : userDataB);
 
             // If the Shell is already open/shooting, disable the collision
-            // This makes the player fall INTO the mouth
             if (enemy instanceof Shell && ((Shell) enemy).currentState == Shell.State.SHOOTING) {
                 contact.setEnabled(false);
             }
