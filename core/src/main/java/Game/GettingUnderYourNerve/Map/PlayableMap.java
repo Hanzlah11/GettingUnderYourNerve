@@ -1,7 +1,11 @@
-package Game.GettingUnderYourNerve;
+package Game.GettingUnderYourNerve.Map;
 
 import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Collectables.Potion;
+import Game.GettingUnderYourNerve.GameCam;
+import Game.GettingUnderYourNerve.HorizontalPlatform;
+import Game.GettingUnderYourNerve.VerticalPlatform;
+import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapLayer;
@@ -15,6 +19,7 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.viewport.Viewport;
 
 import java.util.Iterator;
 
@@ -23,28 +28,37 @@ public class PlayableMap {
     public TiledMap map;
     private OrthogonalTiledMapRenderer mapRenderer;
 
-    // --- NEW: Platform Storage ---
+    // --- THE VAULT ---
+    private GameAssetManager assets;
+
+    // Platform Storage
     private Array<HorizontalPlatform> horizontalPlatforms;
     private Array<VerticalPlatform> verticalPlatforms;
 
-    // Coins
+    // Coins & Potions
     private Array<Coin> coins;
     private Array<Potion> potions;
 
-    public PlayableMap() {
+    // BackGround
+    BackGround backGround;
+
+    public PlayableMap(GameAssetManager assets) {
+        this.assets = assets; // Store the vault!
+
         map = new TmxMapLoader().load("data/tilemaps/untitled.tmx");
         mapRenderer = new OrthogonalTiledMapRenderer(map, 1f / PPM);
 
-        // --- NEW: Initialize the arrays ---
         horizontalPlatforms = new Array<HorizontalPlatform>();
         verticalPlatforms = new Array<VerticalPlatform>();
 
         coins = new Array<Coin>();
         potions = new Array<Potion>();
+
+        backGround = new BackGround();
     }
 
     public void createPotionsFromMap(World world) {
-        MapLayer layer = map.getLayers().get("Collectables"); // Match your Tiled layer name!
+        MapLayer layer = map.getLayers().get("Collectables");
         if (layer == null) return;
 
         for (MapObject object : layer.getObjects()) {
@@ -52,18 +66,17 @@ public class PlayableMap {
                 Rectangle rect = ((RectangleMapObject) object).getRectangle();
                 MapProperties props = object.getProperties();
 
-                // Get the type property, default to gold if you forgot to set it
                 String type = props.containsKey("type") ? props.get("type", String.class) : "null";
                 if (type.equals("Potion")) {
                     String name = object.getName();
-                    potions.add(new Potion(world, rect, name));
+                    potions.add(new Potion(world, rect, name, assets));
                 }
             }
         }
     }
 
     public void createCoinsFromMap(World world) {
-        MapLayer layer = map.getLayers().get("Collectables"); // Match your Tiled layer name!
+        MapLayer layer = map.getLayers().get("Collectables");
         if (layer == null) return;
 
         for (MapObject object : layer.getObjects()) {
@@ -71,11 +84,10 @@ public class PlayableMap {
                 Rectangle rect = ((RectangleMapObject) object).getRectangle();
                 MapProperties props = object.getProperties();
 
-                // Get the type property, default to gold if you forgot to set it
                 String type = props.containsKey("type") ? props.get("type", String.class) : "null";
                 if (type.equals("Coin")) {
                     String name = object.getName();
-                    coins.add(new Coin(world, rect, name));
+                    coins.add(new Coin(world, rect, name, assets));
                 }
             }
         }
@@ -87,12 +99,11 @@ public class PlayableMap {
             Coin coin = iter.next();
             coin.update(dt);
 
-            // Safely destroy Box2D body and remove from rendering list
             if (coin.isCollected && !coin.isDestroyed) {
                 world.destroyBody(coin.body);
                 coin.isDestroyed = true;
-                coin.dispose(); // Free up memory
-                iter.remove();  // Take it out of the array
+                // Memory is safe! AssetManager handles disposal now.
+                iter.remove();
             }
         }
     }
@@ -103,12 +114,11 @@ public class PlayableMap {
             Potion potion = iter.next();
             potion.update(dt);
 
-            // Safely destroy Box2D body and remove from rendering list
             if (potion.isCollected && !potion.isDestroyed) {
                 world.destroyBody(potion.body);
                 potion.isDestroyed = true;
-                potion.dispose(); // Free up memory
-                iter.remove();  // Take it out of the array
+                // Memory is safe! AssetManager handles disposal now.
+                iter.remove();
             }
         }
     }
@@ -125,7 +135,6 @@ public class PlayableMap {
         }
     }
 
-    // --- NEW: Platform Spawner ---
     public void createPlatformsFromMap(World world) {
         MapLayer platformLayer = map.getLayers().get("Platforms");
         if (platformLayer == null) return;
@@ -139,37 +148,26 @@ public class PlayableMap {
                 float speed = props.containsKey("Speed") ? props.get("Speed", Float.class) : 1f;
 
                 if (name.equals("HorizontalPlatform")) {
-                    // 1. Anchor to the libGDX corrected position
                     float startX = rect.x;
-
-                    // 2. Read the Tiled properties
                     float tiledStartX = props.containsKey("startX") ? props.get("startX", Float.class) : rect.x;
                     float tiledEndX = props.containsKey("endX") ? props.get("endX", Float.class) : rect.x;
-
-                    // 3. X axes match in both systems, so just add the difference
                     float endX = startX + (tiledEndX - tiledStartX);
 
-                    horizontalPlatforms.add(new HorizontalPlatform(world, rect, startX, endX, speed));
+                    horizontalPlatforms.add(new HorizontalPlatform(world, rect, startX, endX, speed, assets));
                 }
                 else if (name.equals("VerticalPlatform")) {
-                    // 1. Anchor to the libGDX corrected position
                     float startY = rect.y;
-
-                    // 2. Read the Tiled properties
                     float tiledStartY = props.containsKey("startY") ? props.get("startY", Float.class) : rect.y;
                     float tiledEndY = props.containsKey("endY") ? props.get("endY", Float.class) : rect.y;
-
-                    // 3. THE FLIP: Tiled Y goes down, LibGDX goes up. We reverse the math here!
                     float moveDistance = tiledStartY - tiledEndY;
                     float endY = startY + moveDistance;
 
-                    verticalPlatforms.add(new VerticalPlatform(world, rect, startY, endY, speed));
+                    verticalPlatforms.add(new VerticalPlatform(world, rect, startY, endY, speed, assets));
                 }
             }
         }
     }
 
-    // --- NEW: Platform Updater ---
     public void updatePlatforms(float dt) {
         for (HorizontalPlatform hp : horizontalPlatforms) {
             hp.update(dt);
@@ -233,6 +231,15 @@ public class PlayableMap {
         drawPotions(batch);
     }
 
+    public void DrawBackGround(SpriteBatch batch, GameCam camera, Viewport viewport, float dt) {
+        float camX = camera.GetCam().position.x;
+        float camY = camera.GetCam().position.y;
+
+        float viewWidth = viewport.getWorldWidth();
+        float viewHeight = viewport.getWorldHeight();
+        backGround.RenderBg(camX, camY, viewWidth, viewHeight, dt, batch);
+    }
+
     public TiledMap GetMap() {
         return map;
     }
@@ -240,17 +247,19 @@ public class PlayableMap {
     public void dispose() {
         map.dispose();
         mapRenderer.dispose();
+        backGround.dispose();
+        // Do NOT dispose assets here, Main.java will handle assets.dispose()
     }
 
     public float getMapWidthInMeters() {
         int mapWidth = map.getProperties().get("width", Integer.class);
         int tileWidth = map.getProperties().get("tilewidth", Integer.class);
-        return (mapWidth * tileWidth) / PPM; // Fixed to use local PPM instead of Main.PPM to prevent errors
+        return (mapWidth * tileWidth) / PPM;
     }
 
     public float getMapHeightInMeters() {
         int mapHeight = map.getProperties().get("height", Integer.class);
         int tileHeight = map.getProperties().get("tileheight", Integer.class);
-        return (mapHeight * tileHeight) / PPM; // Fixed to use local PPM instead of Main.PPM
+        return (mapHeight * tileHeight) / PPM;
     }
 }

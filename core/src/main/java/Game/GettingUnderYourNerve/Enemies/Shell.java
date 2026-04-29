@@ -3,7 +3,7 @@ package Game.GettingUnderYourNerve.Enemies;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Player;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
-import com.badlogic.gdx.graphics.Texture;
+import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -33,16 +33,23 @@ public class Shell extends Enemy
     private int ammo = 5;
 
     private Array<Projectile> activeProjectiles;
-    public Shell(World world, float x, float y)
+
+    // We hold onto the vault here so we can spawn projectiles mid-game
+    private GameAssetManager assets;
+
+    public Shell(World world, float x, float y, GameAssetManager assets)
     {
         super(world, x, y);
+        this.assets = assets;
+
         drawWidth = 48 / PPM;
         drawHeight = 38 / PPM;
 
         defineEnemy();
         activeProjectiles = new Array<Projectile>();
-        idleAnimation = loadAnimation("Seashell Idle", 1, 0.15f, Animation.PlayMode.LOOP);
-        shootingAnimation = loadAnimation("Seashell Fire", 6, 0.12f, Animation.PlayMode.NORMAL);
+
+        idleAnimation = assets.getAnimation(GameAssetManager.SHELL_IDLE_PREFIX, 1, 0.15f, Animation.PlayMode.LOOP, "%d");
+        shootingAnimation = assets.getAnimation(GameAssetManager.SHELL_FIRE_PREFIX, 6, 0.12f, Animation.PlayMode.NORMAL, "%d");
     }
 
     @Override
@@ -71,59 +78,60 @@ public class Shell extends Enemy
     }
 
     @Override
-        public void updateEnemy(float dt, Player player)
-        {
-            float dx = player.GetXpos() - GetXpos();
-            float dy = player.GetYpos() - GetYpos();
+    public void updateEnemy(float dt, Player player)
+    {
+        float dx = player.GetXpos() - GetXpos();
+        float dy = player.GetYpos() - GetYpos();
 
-            if(dx < 0f)
-                facingRight = false;
-            else
-                facingRight = true;
+        if(dx < 0f)
+            facingRight = false;
+        else
+            facingRight = true;
 
+        if (shooting) {
+            if(shootingAnimation.getKeyFrameIndex(stateTime) == 4 && !hasPlayedSound) {
+                AudioManager.shellShoot.play(0.5f);
+                hasPlayedSound = true;
 
-            if (shooting) {
-                if(shootingAnimation.getKeyFrameIndex(stateTime) == 4 && !hasPlayedSound) {
-                    AudioManager.shellShoot.play(0.5f);
-                    hasPlayedSound = true;
-                    if(facingRight)
-                        activeProjectiles.add(new Projectile(world, GetXpos() + drawWidth / 2f, GetYpos() - (6f / PPM), facingRight));
-                    else
-                        activeProjectiles.add(new Projectile(world, GetXpos() - drawWidth / 2f, GetYpos() - (6f / PPM), facingRight));
-                    ammo--;
-                }
-                if (shootingAnimation.isAnimationFinished(stateTime)) {
-                    shooting = false;
-                    attackTimer = 0;
-                    hasPlayedSound = false;
-                }
-            }
-            else {
-                if(abs(dx) < 10.0f && abs(dy) < 1.0f && ammo > 0)
-                {
-                    attackTimer += dt;
-                    if (attackTimer >= 1.5f) {
-                        shooting = true;
-                    }
-                }
+                // Pass the assets vault into the new Projectile!
+                if(facingRight)
+                    activeProjectiles.add(new Projectile(world, GetXpos() + drawWidth / 2f, GetYpos() - (6f / PPM), facingRight, assets));
                 else
-                {
-                    shooting = false;
-                    attackTimer = 0;
-                }
+                    activeProjectiles.add(new Projectile(world, GetXpos() - drawWidth / 2f, GetYpos() - (6f / PPM), facingRight, assets));
+                ammo--;
             }
-
-            for(int i = 0; i < activeProjectiles.size; i++)
-            {
-                Projectile p = activeProjectiles.get(i);
-                p.updateProjectile(dt);
-
-                if (p.isDestroyed()) {
-                    activeProjectiles.removeIndex(i);
-                    i--; // Important to adjust the index after removal
-                }
+            if (shootingAnimation.isAnimationFinished(stateTime)) {
+                shooting = false;
+                attackTimer = 0;
+                hasPlayedSound = false;
             }
         }
+        else {
+            if(abs(dx) < 10.0f && abs(dy) < 1.0f && ammo > 0)
+            {
+                attackTimer += dt;
+                if (attackTimer >= 1.5f) {
+                    shooting = true;
+                }
+            }
+            else
+            {
+                shooting = false;
+                attackTimer = 0;
+            }
+        }
+
+        for(int i = 0; i < activeProjectiles.size; i++)
+        {
+            Projectile p = activeProjectiles.get(i);
+            p.updateProjectile(dt);
+
+            if (p.isDestroyed()) {
+                activeProjectiles.removeIndex(i);
+                i--;
+            }
+        }
+    }
 
     public void render(float dt, SpriteBatch batch)
     {
@@ -170,28 +178,4 @@ public class Shell extends Enemy
         else
             return State.IDLE;
     }
-
-    @Override
-    protected Animation<TextureRegion> loadAnimation(String folderName, int frameCount, float frameDuration, Animation.PlayMode mode)
-    {
-        TextureRegion[] frames = new TextureRegion[frameCount];
-        for (int i = 0; i < frameCount; i++) {
-            // String.format("%02d", number) forces the number to have two digits (01, 02, 10, 11)
-            String frameNumber = String.format("%01d", i + 1);
-
-            // Build the exact, safe file path
-            String filePath = "Treasure Hunters/Shooter Traps/Sprites/Seashell/" +
-                folderName + "/" + frameNumber + ".png";
-
-            Texture tex = new Texture(filePath);
-            textures.add(tex); // Add to our master list for disposal later
-            frames[i] = new TextureRegion(tex);
-        }
-
-        Animation<TextureRegion> anim = new Animation<TextureRegion>(frameDuration, frames);
-        anim.setPlayMode(mode);
-        return anim;
-    }
-
-
 }

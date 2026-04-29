@@ -1,34 +1,32 @@
 package Game.GettingUnderYourNerve.Collectables;
 
+import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Player;
-import com.badlogic.gdx.graphics.Texture;
+import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.physics.box2d.BodyDef;
-import com.badlogic.gdx.physics.box2d.FixtureDef;
-import com.badlogic.gdx.physics.box2d.PolygonShape;
-import com.badlogic.gdx.physics.box2d.World;
-import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.physics.box2d.*;
 
-public class Potion extends Collectable{
+public class Potion extends Collectable {
+
     private int HpValue;
 
-    public Potion(World world, Rectangle rect, String type) {
-        this.rawTextures = new Array<Texture>();
+    public Potion(World world, Rectangle rect, String type, GameAssetManager assets) {
         this.drawWidth = rect.width / Player.PPM;
         this.drawHeight = rect.height / Player.PPM;
 
-        // 1. Assign values based on Tiled properties
+        // 1. Assign values and fetch animations from the vault using format specifier "%02d"
         if (type.equals("Red")) {
             HpValue = 50;
-            loadAnimation("Treasure Hunters/Pirate Treasure/Sprites/Red Potion/", 4, 0.1f); // Adjust paths!
+            animation = assets.getAnimation(GameAssetManager.POTION_RED_PREFIX, 4, 0.1f, Animation.PlayMode.LOOP, "%02d");
         } else if (type.equals("Blue")) {
             HpValue = 25;
-            loadAnimation("Treasure Hunters/Pirate Treasure/Sprites/Blue Potion", 4, 0.1f);
+            animation = assets.getAnimation(GameAssetManager.POTION_BLUE_PREFIX, 4, 0.1f, Animation.PlayMode.LOOP, "%02d");
         } else if (type.equals("Green")) {
             HpValue = 10;
-            loadAnimation("Treasure Hunters/Pirate Treasure/Sprites/Green Bottle", 4, 0.1f);
+            animation = assets.getAnimation(GameAssetManager.POTION_GREEN_PREFIX, 4, 0.1f, Animation.PlayMode.LOOP, "%02d");
         }
 
         // 2. Create the Sensor Body
@@ -42,9 +40,13 @@ public class Potion extends Collectable{
 
         FixtureDef fdef = new FixtureDef();
         fdef.shape = shape;
-        fdef.isSensor = true; // CRITICAL: Makes it a ghost hitbox
+        fdef.isSensor = true;
 
-        // Pass THIS specific coin object to the collision detector
+        // 3. Setup Collision Filters
+        fdef.filter.categoryBits = Main.POTION_BIT;
+        fdef.filter.maskBits = Main.PLAYER_BIT;
+
+        // Pass THIS specific potion object to the collision detector
         body.createFixture(fdef).setUserData(this);
         shape.dispose();
     }
@@ -63,15 +65,10 @@ public class Potion extends Collectable{
         }
     }
 
-    // Called by the Contact Listener
     public void onCollect(Player player) {
         if (!isCollected) {
             isCollected = true;
             player.addHp(HpValue);
         }
-    }
-
-    public void dispose() {
-        for (Texture tex : rawTextures) tex.dispose();
     }
 }
