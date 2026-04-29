@@ -7,16 +7,26 @@ public class AudioManager
 {
     public static Sound shellShoot;
     public static Sound projectileBreak;
-
+    public static Sound crabChaseShout;
+    public static Sound crabAttack;
+    public static Sound crabPatrol;
     public static void load()
     {
         shellShoot = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Enemy/shellShoot.wav"));
         projectileBreak = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Enemy/projectileBreak.wav"));
+        crabChaseShout = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Enemy/crabChasingShout.wav"));
+        crabAttack = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Enemy/crabAttack.wav"));
+        crabPatrol = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Enemy/crabPatrol.wav"));
     }
 
     public static void dispose()
     {
+
         shellShoot.dispose();
+        projectileBreak.dispose();
+        crabChaseShout.dispose();
+        crabAttack.dispose();
+        crabPatrol.dispose();
     }
 
 }

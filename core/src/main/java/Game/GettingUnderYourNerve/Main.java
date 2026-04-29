@@ -1,5 +1,6 @@
 package Game.GettingUnderYourNerve;
 
+import Game.GettingUnderYourNerve.Enemies.Crab;
 import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Map.PlayableMap;
@@ -19,123 +20,148 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class Main extends ApplicationAdapter {
-    // --- 1. Box2D & Scaling Variables ---
+
+    // --- Box2D & Scaling ---
     private World world;
     private Box2DDebugRenderer debugRenderer;
-    public static final float PPM = 32f; // Pixels Per Meter
-    Player player;
-    PlayableMap playableMap;
+    public static final float PPM = 32f;
 
+    private Player player;
+    private PlayableMap playableMap;
+    private Enemy enemy;
+
+    // --- Assets ---
     public GameAssetManager assets;
 
-    // --- 2. Graphics Variables ---
+    // --- Graphics ---
     private SpriteBatch batch;
 
-    // --- 3. Camera & Viewport ---
+    // --- Camera & Viewport ---
     private Viewport viewport;
     private GameCam cam;
 
     private final float WORLD_WIDTH = 800;
     private final float WORLD_HEIGHT = 480;
 
-    // --- COLLISION BITS ---
+    // --- Collision Bits ---
     public static final short BIT_NONE = 0;
     public static final short GROUND_BIT = 1;
     public static final short PLAYER_BIT = 2;
     public static final short ENEMY_BIT = 4;
     public static final short PROJECTILE_BIT = 8;
     public static final short WATER_BIT = 16;
-    public static final short COIN_BIT = 32;   // ADDED
-    public static final short POTION_BIT = 64; // ADDED
-
-    Enemy enemy;
+    public static final short COIN_BIT = 32;
+    public static final short POTION_BIT = 64;
 
     @Override
     public void create() {
+
+        // Physics World
         world = new World(new Vector2(0, -40f), true);
         world.setContactListener(new WorldContactListener());
         debugRenderer = new Box2DDebugRenderer();
+
+        // Audio
         AudioManager.load();
 
+        // Assets
         assets = new GameAssetManager();
         assets.loadAllAssets();
         assets.manager.finishLoading();
 
-        // FIX: Pass assets into the Player constructor
+        // Create Player + Map
         player = new Player(20, assets);
         playableMap = new PlayableMap(assets);
 
+        // Graphics
         batch = new SpriteBatch();
 
-        cam =  new GameCam();
+        // Camera
+        cam = new GameCam();
         viewport = new FitViewport(WORLD_WIDTH / PPM, WORLD_HEIGHT / PPM, cam.GetCam());
 
+        // Map Physics
         playableMap.createPhysicsFromMap(world);
 
+        // Spawn Player
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
 
-        // FIX: Pass assets into the enemy spawner
-        enemy = spawnOneShell(playableMap.GetMap(), world, assets);
+        // Spawn Enemy (Crab from Crab layer)
+        enemy = spawnOneCrab(playableMap.GetMap(), world, assets);
     }
 
-    // FIX: Updated method signature to accept assets
-    public Shell spawnOneShell(TiledMap map, World world, GameAssetManager assets) {
-        MapLayer layer = map.getLayers().get("Shell");
+    // Spawn Crab
+    public Crab spawnOneCrab(TiledMap map, World world, GameAssetManager assets) {
+
+        MapLayer layer = map.getLayers().get("Crab");
 
         if (layer != null && layer.getObjects().getCount() > 0) {
+
             MapObject obj = layer.getObjects().get(0);
+
             float x = obj.getProperties().get("x", Float.class);
             float y = obj.getProperties().get("y", Float.class);
 
-            // Pass assets to the Shell
-            return new Shell(world, x, y, assets);
+            return new Crab(world, x, y, assets);
         }
 
         return null;
     }
 
-    // ... [render, resize, dispose remain EXACTLY the same] ...
-
-
     @Override
     public void render() {
-        // --- 1. UPDATE PHYSICS ---
+
+        // --- Physics Update ---
         world.step(1 / 60f, 6, 2);
+
         player.UpdatePlayer(world);
 
         enemy.updateEnemy(Gdx.graphics.getDeltaTime(), player);
 
-        // --- 4. CAMERA FOLLOW ---
-
-        float WorldWidth = playableMap.getMapWidthInMeters();
-        float WorldHeight = playableMap.getMapHeightInMeters();
+        // --- Camera Follow ---
+        float worldWidth = playableMap.getMapWidthInMeters();
+        float worldHeight = playableMap.getMapHeightInMeters();
 
         float halfViewportWidth = (WORLD_WIDTH / PPM) / 2f;
         float halfViewportHeight = (WORLD_HEIGHT / PPM) / 2f;
 
-        cam.Update(WorldWidth, WorldHeight, halfViewportWidth, halfViewportHeight, player.GetXpos(), player.GetYpos());
-
+        cam.Update(
+            worldWidth,
+            worldHeight,
+            halfViewportWidth,
+            halfViewportHeight,
+            player.GetXpos(),
+            player.GetYpos()
+        );
 
         float dt = Gdx.graphics.getDeltaTime();
+
+        // --- Clear Screen ---
         ScreenUtils.clear(0.1f, 0.1f, 0.2f, 1);
+
         viewport.apply();
 
+        // --- Draw Background ---
         batch.setProjectionMatrix(cam.GetCam().combined);
         batch.begin();
         playableMap.DrawBackGround(batch, cam, viewport, dt);
         batch.end();
 
+        // --- Update Map ---
         playableMap.UpdateMap(cam.GetCam(), dt, world);
 
+        // --- Draw Foreground ---
         batch.begin();
 
         player.Render(batch, dt);
         playableMap.DrawElements(batch);
-        enemy.render(dt, batch);
+
+        if (enemy != null)
+            enemy.render(dt, batch);
 
         batch.end();
 
-        // The magical debug renderer (draws the physics boxes)
+        // --- Debug Renderer ---
         debugRenderer.render(world, cam.GetCam().combined);
     }
 
@@ -146,11 +172,14 @@ public class Main extends ApplicationAdapter {
 
     @Override
     public void dispose() {
+
         batch.dispose();
         world.dispose();
         debugRenderer.dispose();
+
         player.dispose();
         playableMap.dispose();
+
         AudioManager.dispose();
     }
 }
