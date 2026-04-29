@@ -1,12 +1,15 @@
 package Game.GettingUnderYourNerve.Utilities;
 
 import Game.GettingUnderYourNerve.Collectables.Coin;
+import Game.GettingUnderYourNerve.Collectables.Potion;
 import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Projectile;
 import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Player;
 import com.badlogic.gdx.physics.box2d.*;
+
+import java.awt.*;
 
 public class WorldContactListener implements ContactListener {
 
@@ -27,8 +30,15 @@ public class WorldContactListener implements ContactListener {
             return; // Stop evaluating this specific contact; we handled it.
         } else if (objB instanceof Player && objA instanceof Coin) {
             ((Coin) objA).onCollect((Player) objB);
-            return; // Stop evaluating.
         }
+
+        if (objA instanceof Player && objB instanceof Potion) {
+            ((Potion) objB).onCollect((Player) objA);
+            return; // Stop evaluating this specific contact; we handled it.
+        } else if (objB instanceof Player && objA instanceof Potion) {
+            ((Potion) objA).onCollect((Player) objB);
+        }
+
 
         // 2. If it wasn't a coin, handle enemies/ground using Bitmasks
         int cDef = fixA.getFilterData().categoryBits | fixB.getFilterData().categoryBits;

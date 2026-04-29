@@ -22,9 +22,13 @@ public class Coin extends Collectable{
         if (type.equals("gold")) {
             pointValue = 100;
             loadAnimation("Treasure Hunters/Pirate Treasure/Sprites/Gold Coin/", 4, 0.1f); // Adjust paths!
-        } else {
+        } else if(type.equals("silver")) {
             pointValue = 50;
             loadAnimation("Treasure Hunters/Pirate Treasure/Sprites/Silver Coin", 4, 0.1f);
+        }
+        else {
+            pointValue = 500;
+            loadAnimation("Treasure Hunters/Pirate Treasure/Sprites/Blue Diamond", 4, 0.1f);
         }
 
         // 2. Create the Sensor Body

@@ -1,6 +1,7 @@
 package Game.GettingUnderYourNerve;
 
 import Game.GettingUnderYourNerve.Collectables.Coin;
+import Game.GettingUnderYourNerve.Collectables.Potion;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapLayer;
@@ -28,6 +29,7 @@ public class PlayableMap {
 
     // Coins
     private Array<Coin> coins;
+    private Array<Potion> potions;
 
     public PlayableMap() {
         map = new TmxMapLoader().load("data/tilemaps/untitled.tmx");
@@ -36,7 +38,28 @@ public class PlayableMap {
         // --- NEW: Initialize the arrays ---
         horizontalPlatforms = new Array<HorizontalPlatform>();
         verticalPlatforms = new Array<VerticalPlatform>();
+
         coins = new Array<Coin>();
+        potions = new Array<Potion>();
+    }
+
+    public void createPotionsFromMap(World world) {
+        MapLayer layer = map.getLayers().get("Collectables"); // Match your Tiled layer name!
+        if (layer == null) return;
+
+        for (MapObject object : layer.getObjects()) {
+            if (object instanceof RectangleMapObject) {
+                Rectangle rect = ((RectangleMapObject) object).getRectangle();
+                MapProperties props = object.getProperties();
+
+                // Get the type property, default to gold if you forgot to set it
+                String type = props.containsKey("type") ? props.get("type", String.class) : "null";
+                if (type.equals("Potion")) {
+                    String name = object.getName();
+                    potions.add(new Potion(world, rect, name));
+                }
+            }
+        }
     }
 
     public void createCoinsFromMap(World world) {
@@ -74,9 +97,31 @@ public class PlayableMap {
         }
     }
 
+    public void updatePotions(float dt, World world) {
+        Iterator<Potion> iter = potions.iterator();
+        while (iter.hasNext()) {
+            Potion potion = iter.next();
+            potion.update(dt);
+
+            // Safely destroy Box2D body and remove from rendering list
+            if (potion.isCollected && !potion.isDestroyed) {
+                world.destroyBody(potion.body);
+                potion.isDestroyed = true;
+                potion.dispose(); // Free up memory
+                iter.remove();  // Take it out of the array
+            }
+        }
+    }
+
     public void drawCoins(SpriteBatch batch) {
         for (Coin coin : coins) {
             coin.draw(batch);
+        }
+    }
+
+    public void drawPotions(SpriteBatch batch) {
+        for (Potion potion : potions) {
+            potion.draw(batch);
         }
     }
 
@@ -170,18 +215,22 @@ public class PlayableMap {
 
         createPlatformsFromMap(world);
         createCoinsFromMap(world);
+        createPotionsFromMap(world);
     }
 
     public void UpdateMap(OrthographicCamera camera, float dt, World world) {
         mapRenderer.setView(camera);
         mapRenderer.render();
+
         updatePlatforms(dt);
         updateCoins(dt,  world);
+        updatePotions(dt,  world);
     }
 
     public void DrawElements(SpriteBatch batch) {
         drawPlatforms(batch);
         drawCoins(batch);
+        drawPotions(batch);
     }
 
     public TiledMap GetMap() {

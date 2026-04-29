@@ -19,7 +19,9 @@ public class Player {
     private Body playerBody;
     public static final float PPM = 32f; // Pixels Per Meter
     private final float JumpHeight;
+
     private int score;
+    private int Hp;
 
     // --- ANIMATION STATES ---
     public enum State { IDLE, RUNNING, JUMPING, FALLING }
@@ -47,7 +49,9 @@ public class Player {
     public Player(float jh) {
         JumpHeight = jh;
         rawTextures = new Array<Texture>();
+
         score = 0;
+        Hp = 100;
 
         idleAnimation = loadAnimation("09-Idle Sword", 5, 0.15f, Animation.PlayMode.LOOP);
         runAnimation = loadAnimation("10-Run Sword", 6, 0.15f, Animation.PlayMode.LOOP);
@@ -288,5 +292,10 @@ public class Player {
     public void addScore(int points) {
         this.score += points;
         System.out.println("Score is now: " + this.score); // Good for testing!
+    }
+
+    public void addHp(int hp){
+        this.Hp = this.Hp + hp < 100 ? this.Hp += hp: 100;
+        System.out.println("HP is now: " + this.Hp);
     }
 }
