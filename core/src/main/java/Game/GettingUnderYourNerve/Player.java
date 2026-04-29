@@ -121,6 +121,8 @@ public class Player {
         fdef.friction = 0f;
         fdef.density = 1f;
 
+        fdef.filter.categoryBits = Main.PLAYER_BIT;
+        fdef.filter.maskBits = Main.GROUND_BIT | Main.ENEMY_BIT | Main.PROJECTILE_BIT;
         // Set UserData so the collision loop can identify the player
         playerBody.createFixture(fdef).setUserData(this);
         playerBody.setFixedRotation(true);

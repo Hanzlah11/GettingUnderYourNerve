@@ -2,6 +2,7 @@ package Game.GettingUnderYourNerve.Utilities;
 
 import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Enemies.Enemy;
+import Game.GettingUnderYourNerve.Enemies.Projectile;
 import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Player;
@@ -36,11 +37,23 @@ public class WorldContactListener implements ContactListener {
             case Main.PLAYER_BIT | Main.ENEMY_BIT:
                 handlePlayerEnemyCollision(fixA, fixB);
                 break;
-
+            case Main.PLAYER_BIT | Main.PROJECTILE_BIT:
+                handlePlayerProjectileCollision(fixA, fixB);
+                break;
             case Main.PLAYER_BIT | Main.GROUND_BIT:
                 // Logic for resetting jumps could go here
                 break;
         }
+    }
+
+    private void handlePlayerProjectileCollision(Fixture a, Fixture b)
+    {
+        System.out.println("Projectile hit Player!"); // DEBUG PRINT
+        Object userDataA = a.getUserData();
+        Object userDataB = b.getUserData();
+
+        Projectile projectile = (userDataA instanceof Projectile) ? (Projectile) userDataA : (Projectile) userDataB;
+        projectile.setToDestroy();
     }
 
     private void handlePlayerEnemyCollision(Fixture a, Fixture b) {

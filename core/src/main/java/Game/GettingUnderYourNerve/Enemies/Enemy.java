@@ -36,19 +36,19 @@ public abstract class Enemy
     public abstract TextureRegion GetCurrentFrame(float dt);
     protected abstract Animation<TextureRegion> loadAnimation(String folderName, int frameCount, float frameDuration, Animation.PlayMode mode);
 
-    public void render(float dt, SpriteBatch batch)
-    {
-        batch.draw(GetCurrentFrame(dt),
-            GetXpos() - (drawWidth / 2f),
-            GetYpos() - (drawHeight / 2f),
-            drawWidth,
-            drawHeight);
-    }
+    public abstract void render(float dt, SpriteBatch batch);
+
     public float GetXpos() {
         return b2body.getPosition().x;
     }
 
     public float GetYpos() {
         return b2body.getPosition().y;
+    }
+
+    public void dispose() {
+        for (Texture tex : textures) {
+            tex.dispose();
+        }
     }
 }
