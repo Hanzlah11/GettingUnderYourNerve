@@ -1,8 +1,8 @@
 package Game.GettingUnderYourNerve;
 
+import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -13,21 +13,18 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.badlogic.gdx.utils.Array;
 
 public class Player {
     private Body playerBody;
-    public static final float PPM = 32f; // Pixels Per Meter
+    public static final float PPM = 32f;
     private final float JumpHeight;
-    private int score;
 
-    // --- ANIMATION STATES ---
+    private int score;
+    private int Hp;
+
     public enum State { IDLE, RUNNING, JUMPING, FALLING }
     public State currentState = State.IDLE;
     public State previousState = State.IDLE;
-
-    // --- ANIMATIONS & MEMORY ---
-    private Array<Texture> rawTextures;
 
     private Animation<TextureRegion> idleAnimation;
     private Animation<TextureRegion> runAnimation;
@@ -40,39 +37,19 @@ public class Player {
     public float drawWidth;
     public float drawHeight;
 
-    // --- NEW STATE VARS ---
     public boolean isGrounded = false;
     private boolean isTouchingWall = false;
 
-    public Player(float jh) {
+    public Player(float jh, GameAssetManager assets) {
         JumpHeight = jh;
-        rawTextures = new Array<Texture>();
         score = 0;
+        Hp = 100;
 
-        idleAnimation = loadAnimation("09-Idle Sword", 5, 0.15f, Animation.PlayMode.LOOP);
-        runAnimation = loadAnimation("10-Run Sword", 6, 0.15f, Animation.PlayMode.LOOP);
-        jumpAnimation = loadAnimation("11-Jump Sword", 3, 0.15f, Animation.PlayMode.NORMAL);
-        fallAnimation = loadAnimation("12-Fall Sword", 1, 0.15f, Animation.PlayMode.NORMAL);
-    }
-
-    private Animation<TextureRegion> loadAnimation(String folderName, int frameCount, float frameDuration, Animation.PlayMode mode) {
-        String[] parts = folderName.split("-");
-        String filePrefix = parts[1];
-
-        TextureRegion[] frames = new TextureRegion[frameCount];
-        for (int i = 0; i < frameCount; i++) {
-            String frameNumber = String.format("%02d", i + 1);
-            String filePath = "Treasure Hunters/Captain Clown Nose/Sprites/Captain Clown Nose/Captain Clown Nose with Sword/" +
-                folderName + "/" + filePrefix + " " + frameNumber + ".png";
-
-            Texture tex = new Texture(filePath);
-            rawTextures.add(tex);
-            frames[i] = new TextureRegion(tex);
-        }
-
-        Animation<TextureRegion> anim = new Animation<TextureRegion>(frameDuration, frames);
-        anim.setPlayMode(mode);
-        return anim;
+        // Fetch animations directly from the Asset Manager
+        idleAnimation = assets.getAnimation(GameAssetManager.PLAYER_IDLE_PREFIX, 5, 0.15f, Animation.PlayMode.LOOP, "%02d");
+        runAnimation = assets.getAnimation(GameAssetManager.PLAYER_RUN_PREFIX, 6, 0.15f, Animation.PlayMode.LOOP, "%02d");
+        jumpAnimation = assets.getAnimation(GameAssetManager.PLAYER_JUMP_PREFIX, 3, 0.15f, Animation.PlayMode.NORMAL, "%02d");
+        fallAnimation = assets.getAnimation(GameAssetManager.PLAYER_FALL_PREFIX, 1, 0.15f, Animation.PlayMode.NORMAL, "%02d");
     }
 
     public void SpawnPlayerFromTiled(TiledMap map, World world) {
@@ -122,38 +99,33 @@ public class Player {
         fdef.density = 1f;
 
         fdef.filter.categoryBits = Main.PLAYER_BIT;
-        fdef.filter.maskBits = Main.GROUND_BIT | Main.ENEMY_BIT | Main.PROJECTILE_BIT;
-        // Set UserData so the collision loop can identify the player
+        // The definitive collision mask! Includes Coins and Potions now.
+        fdef.filter.maskBits = (short) (Main.GROUND_BIT | Main.ENEMY_BIT | Main.PROJECTILE_BIT | Main.COIN_BIT | Main.POTION_BIT);
+
         playerBody.createFixture(fdef).setUserData(this);
         playerBody.setFixedRotation(true);
         shape.dispose();
     }
 
     public void UpdatePlayer(World world) {
-        // 1. Reset state flags every frame
         isGrounded = false;
         isTouchingWall = false;
 
-        // 2. Check Collisions for Ground and Walls
         for (Contact contact : world.getContactList()) {
             if (contact.isTouching()) {
                 Fixture fixA = contact.getFixtureA();
                 Fixture fixB = contact.getFixtureB();
 
                 if (fixA.getBody() == playerBody || fixB.getBody() == playerBody) {
-
-                    // Ignore collectibles/sensors
                     if (fixA.isSensor() || fixB.isSensor()) continue;
 
                     WorldManifold manifold = contact.getWorldManifold();
                     Vector2 normal = manifold.getNormal();
 
-                    // Wall Check (Horizontal normal)
                     if (Math.abs(normal.x) > 0.8f) {
                         isTouchingWall = true;
                     }
 
-                    // Ground Check (Vertical normal pointing up from the surface)
                     if (fixA.getBody() == playerBody && normal.y <= -0.8f) {
                         isGrounded = true;
                     } else if (fixB.getBody() == playerBody && normal.y >= 0.8f) {
@@ -163,7 +135,6 @@ public class Player {
             }
         }
 
-        // 3. Movement Logic
         Vector2 vel = playerBody.getLinearVelocity();
         float desiredVel = 0;
 
@@ -178,7 +149,6 @@ public class Player {
 
         playerBody.setLinearVelocity(desiredVel, vel.y);
 
-        // 4. Wall Slide Logic
         boolean isPushingWall = (desiredVel < 0 && isTouchingWall) || (desiredVel > 0 && isTouchingWall);
         boolean isFalling = vel.y < 0;
 
@@ -187,7 +157,6 @@ public class Player {
             playerBody.setLinearVelocity(vel.x, slideSpeed);
         }
 
-        // 5. Jump Logic (Now relies purely on the collision normal!)
         if (Gdx.input.isKeyJustPressed(Input.Keys.UP) && isGrounded) {
             playerBody.applyLinearImpulse(new Vector2(0, JumpHeight), playerBody.getWorldCenter(), true);
         }
@@ -197,14 +166,12 @@ public class Player {
         Vector2 vel = playerBody.getLinearVelocity();
 
         if (!isGrounded) {
-            // In the air
             if (vel.y > 0) {
                 return State.JUMPING;
             } else {
                 return State.FALLING;
             }
         } else {
-            // On the ground
             if (Math.abs(vel.x) > 0.1f) {
                 return State.RUNNING;
             } else {
@@ -213,17 +180,15 @@ public class Player {
         }
     }
 
-    public void Render(SpriteBatch batch,float dt) {
-        // These are for adjusting the sprite size, not the Collider size!!, I have made both dimensions double than original
+    public void Render(SpriteBatch batch, float dt) {
         float spriteDrawWidth = (drawWidth * 2);
         float spriteDrawHeight = (drawHeight * 2);
 
-        // 1. Get the correct frame from the player's state machine
         TextureRegion currentFrame = GetCurrentFrame(dt);
 
         batch.draw(currentFrame,
-            GetXpos() - (spriteDrawWidth / 2f),  // Center X
-            GetYpos() - (spriteDrawHeight / 2f), // Center Y
+            GetXpos() - (spriteDrawWidth / 2f),
+            GetYpos() - (spriteDrawHeight / 2f),
             spriteDrawWidth,
             spriteDrawHeight);
     }
@@ -276,9 +241,7 @@ public class Player {
     }
 
     public void dispose() {
-        for (Texture tex : rawTextures) {
-            tex.dispose();
-        }
+        // Leave empty! GameAssetManager handles this now.
     }
 
     public Body getPlayerBody() {
@@ -287,6 +250,11 @@ public class Player {
 
     public void addScore(int points) {
         this.score += points;
-        System.out.println("Score is now: " + this.score); // Good for testing!
+        System.out.println("Score is now: " + this.score);
+    }
+
+    public void addHp(int hp){
+        this.Hp = this.Hp + hp < 100 ? this.Hp += hp: 100;
+        System.out.println("HP is now: " + this.Hp);
     }
 }

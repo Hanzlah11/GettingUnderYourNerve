@@ -1,5 +1,7 @@
 package Game.GettingUnderYourNerve;
 
+import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
@@ -9,7 +11,7 @@ public class HorizontalPlatform extends Platform {
     private float maxX;
     private float currentTargetX;
 
-    public HorizontalPlatform(World world, Rectangle rect, float startX, float endX, float speed) {
+    public HorizontalPlatform(World world, Rectangle rect, float startX, float endX, float speed, GameAssetManager assets) {
         // 1. Pass the basics up to the parent Platform class
         super(rect.width, rect.height, speed);
 
@@ -37,9 +39,8 @@ public class HorizontalPlatform extends Platform {
         body.createFixture(fdef).setUserData(this);
         shape.dispose();
 
-        // 4. Load the Animation!
-        // IMPORTANT: Update these strings to match your actual folder and file names
-        loadAnimation("Treasure Hunters/Palm Tree Island/Sprites/helicopter", "helicopter", 4, 0.05f);
+        // 4. Fetch the Animation from the Vault (Using the "%02d" string format)
+        animation = assets.getAnimation(GameAssetManager.PLATFORM_HELI_PREFIX, 4, 0.05f, Animation.PlayMode.LOOP, "%02d");
     }
 
     @Override

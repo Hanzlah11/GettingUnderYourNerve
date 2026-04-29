@@ -1,5 +1,7 @@
 package Game.GettingUnderYourNerve;
 
+import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
@@ -9,7 +11,7 @@ public class VerticalPlatform extends Platform {
     private float maxY;
     private float currentTargetY;
 
-    public VerticalPlatform(World world, Rectangle rect, float startY, float endY, float speed) {
+    public VerticalPlatform(World world, Rectangle rect, float startY, float endY, float speed, GameAssetManager assets) {
         super(rect.width, rect.height, speed);
 
         float centerOffset = this.drawHeight / 2f;
@@ -34,8 +36,8 @@ public class VerticalPlatform extends Platform {
         body.createFixture(fdef).setUserData(this);
         shape.dispose();
 
-        // Load the Animation!
-        loadAnimation("Treasure Hunters/Palm Tree Island/Sprites/helicopter", "helicopter", 4, 0.05f);
+        // Fetch the Animation from the Vault (Using the "%02d" string format)
+        animation = assets.getAnimation(GameAssetManager.PLATFORM_HELI_PREFIX, 4, 0.05f, Animation.PlayMode.LOOP, "%02d");
     }
 
     @Override

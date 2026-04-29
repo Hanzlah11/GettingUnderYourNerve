@@ -1,15 +1,12 @@
 package Game.GettingUnderYourNerve.Enemies;
 
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
-import com.badlogic.gdx.graphics.Texture;
+import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import com.badlogic.gdx.utils.Array;
-
-import java.awt.print.PrinterJob;
 
 import static Game.GettingUnderYourNerve.Main.*;
 
@@ -18,7 +15,6 @@ public class Projectile
     private World world;
     private Body b2body;
 
-    private Array<Texture> textures;
     private float stateTime = 0f;
 
     public float drawWidth;
@@ -38,20 +34,17 @@ public class Projectile
     private boolean destroyed = false;
     private boolean hasPlayedCollisionEffects = false;
 
-    public Projectile(World world, float x, float y, boolean facingRight)
+    public Projectile(World world, float x, float y, boolean facingRight, GameAssetManager assets)
     {
         this.world = world;
         this.facingRight = facingRight;
         drawWidth = drawHeight = 16 / PPM;
-
-        textures = new Array<Texture>();
         spawnPosition = new Vector2(x, y);
 
         defineProjectile();
 
-        idleAnimation = loadAnimation("Pearl Idle", 1, 0.15f, Animation.PlayMode.LOOP);
-        destroyingAnimation = loadAnimation("Pearl Destroyed", 3, 0.35f, Animation.PlayMode.LOOP);
-
+        idleAnimation = assets.getAnimation(GameAssetManager.PEARL_IDLE_PREFIX, 1, 0.15f, Animation.PlayMode.LOOP, "%d");
+        destroyingAnimation = assets.getAnimation(GameAssetManager.PEARL_DESTROYED_PREFIX, 3, 0.35f, Animation.PlayMode.LOOP, "%d");
     }
 
     private void defineProjectile()
@@ -62,7 +55,6 @@ public class Projectile
         b2body = world.createBody(bdef);
 
         CircleShape shape = new CircleShape();
-
         shape.setRadius(4f / PPM);
 
         FixtureDef fdef = new FixtureDef();
@@ -93,7 +85,7 @@ public class Projectile
 
     public void updateProjectile(float dt)
     {
-        stateTime += dt; // Add this line at the top!
+        stateTime += dt;
 
         if (!setToDestoy && stateTime >= 2f) {
             setToDestroy();
@@ -110,7 +102,6 @@ public class Projectile
             {
                 world.destroyBody(b2body);
                 destroyed = true;
-                dispose();
             }
         }
     }
@@ -123,6 +114,7 @@ public class Projectile
             drawWidth,
             drawHeight);
     }
+
     public TextureRegion GetCurrentFrame(float dt) {
         currentState = getState();
         TextureRegion region;
@@ -157,39 +149,6 @@ public class Projectile
             return State.IDLE;
     }
 
-    protected Animation<TextureRegion> loadAnimation(String folderName, int frameCount, float frameDuration, Animation.PlayMode mode)
-    {
-        TextureRegion[] frames = new TextureRegion[frameCount];
-        for (int i = 0; i < frameCount; i++) {
-            // String.format("%02d", number) forces the number to have two digits (01, 02, 10, 11)
-            String frameNumber = String.format("%01d", i + 1);
-
-            // Build the exact, safe file path
-            String filePath = "Treasure Hunters/Shooter Traps/Sprites/Seashell/" +
-                folderName + "/" + frameNumber + ".png";
-
-            Texture tex = new Texture(filePath);
-            textures.add(tex); // Add to our master list for disposal later
-            frames[i] = new TextureRegion(tex);
-        }
-
-        Animation<TextureRegion> anim = new Animation<TextureRegion>(frameDuration, frames);
-        anim.setPlayMode(mode);
-        return anim;
-    }
-
-    public float GetXpos() {
-        return b2body.getPosition().x;
-    }
-
-    public float GetYpos() {
-        return b2body.getPosition().y;
-    }
-
-    public void dispose() {
-        for (Texture tex : textures) {
-            tex.dispose();
-        }
-    }
-
+    public float GetXpos() { return b2body.getPosition().x; }
+    public float GetYpos() { return b2body.getPosition().y; }
 }

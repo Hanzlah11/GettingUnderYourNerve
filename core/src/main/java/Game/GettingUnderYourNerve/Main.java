@@ -2,7 +2,9 @@ package Game.GettingUnderYourNerve;
 
 import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Shell;
+import Game.GettingUnderYourNerve.Map.PlayableMap;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
+import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import Game.GettingUnderYourNerve.Utilities.WorldContactListener;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -24,6 +26,8 @@ public class Main extends ApplicationAdapter {
     Player player;
     PlayableMap playableMap;
 
+    public GameAssetManager assets;
+
     // --- 2. Graphics Variables ---
     private SpriteBatch batch;
 
@@ -34,61 +38,63 @@ public class Main extends ApplicationAdapter {
     private final float WORLD_WIDTH = 800;
     private final float WORLD_HEIGHT = 480;
 
+    // --- COLLISION BITS ---
+    public static final short BIT_NONE = 0;
     public static final short GROUND_BIT = 1;
     public static final short PLAYER_BIT = 2;
     public static final short ENEMY_BIT = 4;
     public static final short PROJECTILE_BIT = 8;
-    public static final short BIT_NONE = 0;
+    public static final short WATER_BIT = 16;
+    public static final short COIN_BIT = 32;   // ADDED
+    public static final short POTION_BIT = 64; // ADDED
 
     Enemy enemy;
 
-
     @Override
     public void create() {
-        // Setup Physics World (Gravity pulling down on Y axis)
         world = new World(new Vector2(0, -40f), true);
         world.setContactListener(new WorldContactListener());
         debugRenderer = new Box2DDebugRenderer();
         AudioManager.load();
 
-        player = new Player(20);
-        playableMap = new PlayableMap();
+        assets = new GameAssetManager();
+        assets.loadAllAssets();
+        assets.manager.finishLoading();
 
-        // Setup Graphics
+        // FIX: Pass assets into the Player constructor
+        player = new Player(20, assets);
+        playableMap = new PlayableMap(assets);
+
         batch = new SpriteBatch();
 
-        // Setup Camera (Viewport is scaled to meters)
         cam =  new GameCam();
         viewport = new FitViewport(WORLD_WIDTH / PPM, WORLD_HEIGHT / PPM, cam.GetCam());
 
-        // 1. Generate Static Collision Walls
         playableMap.createPhysicsFromMap(world);
 
-        // 2. Spawn Dynamic Player
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
-        enemy = spawnOneShell(playableMap.GetMap(), world);
 
+        // FIX: Pass assets into the enemy spawner
+        enemy = spawnOneShell(playableMap.GetMap(), world, assets);
     }
 
-
-    public Shell spawnOneShell(TiledMap map, World world) {
-        // 1. Grab the "Shell" layer
+    // FIX: Updated method signature to accept assets
+    public Shell spawnOneShell(TiledMap map, World world, GameAssetManager assets) {
         MapLayer layer = map.getLayers().get("Shell");
 
-        // 2. Check if the layer exists and has at least one object
         if (layer != null && layer.getObjects().getCount() > 0) {
-            // Get only the first object (index 0)
             MapObject obj = layer.getObjects().get(0);
-
             float x = obj.getProperties().get("x", Float.class);
             float y = obj.getProperties().get("y", Float.class);
 
-            // Return just this one shell
-            return new Shell(world, x, y);
+            // Pass assets to the Shell
+            return new Shell(world, x, y, assets);
         }
 
-        return null; // No layer or no objects found
+        return null;
     }
+
+    // ... [render, resize, dispose remain EXACTLY the same] ...
 
 
     @Override
@@ -109,16 +115,18 @@ public class Main extends ApplicationAdapter {
 
         cam.Update(WorldWidth, WorldHeight, halfViewportWidth, halfViewportHeight, player.GetXpos(), player.GetYpos());
 
-        // --- 5. RENDERING ---
-        // Changed to a dark blue clear color. If you see this color, the game is drawing properly!
-        ScreenUtils.clear(0.1f, 0.1f, 0.2f, 1);
-
-        viewport.apply();
 
         float dt = Gdx.graphics.getDeltaTime();
-        playableMap.UpdateMap(cam.GetCam(), dt, world);
+        ScreenUtils.clear(0.1f, 0.1f, 0.2f, 1);
+        viewport.apply();
 
         batch.setProjectionMatrix(cam.GetCam().combined);
+        batch.begin();
+        playableMap.DrawBackGround(batch, cam, viewport, dt);
+        batch.end();
+
+        playableMap.UpdateMap(cam.GetCam(), dt, world);
+
         batch.begin();
 
         player.Render(batch, dt);
@@ -144,6 +152,5 @@ public class Main extends ApplicationAdapter {
         player.dispose();
         playableMap.dispose();
         AudioManager.dispose();
-        enemy.dispose();
     }
 }

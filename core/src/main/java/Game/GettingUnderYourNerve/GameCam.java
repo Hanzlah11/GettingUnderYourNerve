@@ -24,4 +24,12 @@ public class GameCam {
         camera.position.set(position.x, position.y, 0);
         camera.update();
     }
+
+    public float getCamX(){
+        return camera.position.x;
+    }
+
+    public float getCamY(){
+        return camera.position.y;
+    }
 }
