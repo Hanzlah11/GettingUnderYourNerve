@@ -19,7 +19,10 @@ public class Player {
     private Body playerBody;
     public static final float PPM = 32f; // Pixels Per Meter
     private final float JumpHeight;
+
+    // --- PLAYER STATS ---
     private int score;
+    public int health; // NEW: Added Health
 
     // --- ANIMATION STATES ---
     public enum State { IDLE, RUNNING, JUMPING, FALLING }
@@ -40,7 +43,7 @@ public class Player {
     public float drawWidth;
     public float drawHeight;
 
-    // --- NEW STATE VARS ---
+    // --- STATE VARS ---
     public boolean isGrounded = false;
     private boolean isTouchingWall = false;
 
@@ -48,6 +51,7 @@ public class Player {
         JumpHeight = jh;
         rawTextures = new Array<Texture>();
         score = 0;
+        health = 100; // Initialize health
 
         idleAnimation = loadAnimation("09-Idle Sword", 5, 0.15f, Animation.PlayMode.LOOP);
         runAnimation = loadAnimation("10-Run Sword", 6, 0.15f, Animation.PlayMode.LOOP);
@@ -214,16 +218,14 @@ public class Player {
     }
 
     public void Render(SpriteBatch batch,float dt) {
-        // These are for adjusting the sprite size, not the Collider size!!, I have made both dimensions double than original
         float spriteDrawWidth = (drawWidth * 2);
         float spriteDrawHeight = (drawHeight * 2);
 
-        // 1. Get the correct frame from the player's state machine
         TextureRegion currentFrame = GetCurrentFrame(dt);
 
         batch.draw(currentFrame,
-            GetXpos() - (spriteDrawWidth / 2f),  // Center X
-            GetYpos() - (spriteDrawHeight / 2f), // Center Y
+            GetXpos() - (spriteDrawWidth / 2f),
+            GetYpos() - (spriteDrawHeight / 2f),
             spriteDrawWidth,
             spriteDrawHeight);
     }
@@ -267,6 +269,22 @@ public class Player {
         return region;
     }
 
+    // --- NEW / EXPOSED METHODS FOR SAVING AND LOADING ---
+    public int getScore() { return score; }
+    public void setScore(int score) { this.score = score; }
+
+    public void setPosition(float x, float y) {
+        // Safely updates position while nullifying leftover velocity
+        playerBody.setTransform(x, y, playerBody.getAngle());
+        playerBody.setLinearVelocity(0, 0);
+    }
+
+    public void applyJump() {
+        // Forces a jump without needing ground contact (Used for restoring save state)
+        playerBody.setLinearVelocity(playerBody.getLinearVelocity().x, 0);
+        playerBody.applyLinearImpulse(new Vector2(0, JumpHeight), playerBody.getWorldCenter(), true);
+    }
+
     public float GetXpos() {
         return playerBody.getPosition().x;
     }
@@ -287,6 +305,6 @@ public class Player {
 
     public void addScore(int points) {
         this.score += points;
-        System.out.println("Score is now: " + this.score); // Good for testing!
+        System.out.println("Score is now: " + this.score);
     }
 }

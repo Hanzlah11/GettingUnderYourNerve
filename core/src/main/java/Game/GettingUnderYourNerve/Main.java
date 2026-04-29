@@ -6,6 +6,7 @@ import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.WorldContactListener;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapObject;
@@ -42,6 +43,8 @@ public class Main extends ApplicationAdapter {
 
     Enemy enemy;
 
+    // --- NEW: File Handler instance ---
+    FileHandler fileHandler;
 
     @Override
     public void create() {
@@ -53,6 +56,8 @@ public class Main extends ApplicationAdapter {
 
         player = new Player(20);
         playableMap = new PlayableMap();
+
+        fileHandler = new FileHandler(); // Initialize FileHandler
 
         // Setup Graphics
         batch = new SpriteBatch();
@@ -67,32 +72,35 @@ public class Main extends ApplicationAdapter {
         // 2. Spawn Dynamic Player
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
         enemy = spawnOneShell(playableMap.GetMap(), world);
-
     }
 
-
     public Shell spawnOneShell(TiledMap map, World world) {
-        // 1. Grab the "Shell" layer
         MapLayer layer = map.getLayers().get("Shell");
 
-        // 2. Check if the layer exists and has at least one object
         if (layer != null && layer.getObjects().getCount() > 0) {
-            // Get only the first object (index 0)
             MapObject obj = layer.getObjects().get(0);
 
             float x = obj.getProperties().get("x", Float.class);
             float y = obj.getProperties().get("y", Float.class);
 
-            // Return just this one shell
             return new Shell(world, x, y);
         }
 
-        return null; // No layer or no objects found
+        return null;
     }
-
 
     @Override
     public void render() {
+        // --- 0. CHECK SAVING / LOADING INPUTS ---
+        boolean isCtrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
+
+        if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.S)) {
+            fileHandler.savePlayerState(player);
+        }
+        if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.L)) { // Changed to L
+            fileHandler.loadPlayerState(player);
+        }
+
         // --- 1. UPDATE PHYSICS ---
         world.step(1 / 60f, 6, 2);
         player.UpdatePlayer(world);
@@ -100,7 +108,6 @@ public class Main extends ApplicationAdapter {
         enemy.updateEnemy(Gdx.graphics.getDeltaTime(), player);
 
         // --- 4. CAMERA FOLLOW ---
-
         float WorldWidth = playableMap.getMapWidthInMeters();
         float WorldHeight = playableMap.getMapHeightInMeters();
 
@@ -110,7 +117,6 @@ public class Main extends ApplicationAdapter {
         cam.Update(WorldWidth, WorldHeight, halfViewportWidth, halfViewportHeight, player.GetXpos(), player.GetYpos());
 
         // --- 5. RENDERING ---
-        // Changed to a dark blue clear color. If you see this color, the game is drawing properly!
         ScreenUtils.clear(0.1f, 0.1f, 0.2f, 1);
 
         viewport.apply();
@@ -127,7 +133,6 @@ public class Main extends ApplicationAdapter {
 
         batch.end();
 
-        // The magical debug renderer (draws the physics boxes)
         debugRenderer.render(world, cam.GetCam().combined);
     }
 
