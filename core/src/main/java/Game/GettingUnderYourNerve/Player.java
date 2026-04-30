@@ -25,6 +25,10 @@ public class Player {
     private int score;
     private int Hp;
 
+    public float spawnX;
+    public float spawnY;
+    public boolean isDead = false;
+
     // ---------------- STATES ----------------
     public enum State {
         IDLE,
@@ -59,6 +63,7 @@ public class Player {
 
         score = 0;
         Hp = 100;
+        isGrounded = false;
 
         // Use Asset Manager Animations
         idleAnimation = assets.getAnimation(
@@ -126,6 +131,9 @@ public class Player {
             }
         }
 
+        spawnX = startX + (drawWidth / 2f);
+        spawnY = startY + (drawHeight / 2f);
+
         BodyDef bdef = new BodyDef();
         bdef.type = BodyDef.BodyType.DynamicBody;
 
@@ -163,12 +171,7 @@ public class Player {
         fdef.filter.categoryBits = Main.PLAYER_BIT;
 
         // MERGED CHANGE:
-        fdef.filter.maskBits = (short)
-            (Main.GROUND_BIT
-                | Main.ENEMY_BIT
-                | Main.PROJECTILE_BIT
-                | Main.COIN_BIT
-                | Main.POTION_BIT);
+        fdef.filter.maskBits = (short) (Main.GROUND_BIT | Main.ENEMY_BIT | Main.PROJECTILE_BIT | Main.COIN_BIT | Main.POTION_BIT | Main.WATER_BIT);
 
         playerBody.createFixture(fdef).setUserData(this);
 
@@ -181,6 +184,11 @@ public class Player {
     // UPDATE PLAYER
     // ---------------------------------------------------
     public void UpdatePlayer(World world) {
+
+        if (isDead) {
+            Respawn();
+            return;
+        }
 
         isGrounded = false;
         isTouchingWall = false;
@@ -262,14 +270,8 @@ public class Player {
         }
 
         // JUMP
-        if (Gdx.input.isKeyJustPressed(Input.Keys.UP)
-            && isGrounded) {
-
-            playerBody.applyLinearImpulse(
-                new Vector2(0, JumpHeight),
-                playerBody.getWorldCenter(),
-                true
-            );
+        if (Gdx.input.isKeyJustPressed(Input.Keys.UP) && isGrounded) {
+        ApplyJump();
         }
     }
 
@@ -299,6 +301,8 @@ public class Player {
     // RENDER
     // ---------------------------------------------------
     public void Render(SpriteBatch batch, float dt) {
+
+        if (isDead) return;
 
         float spriteDrawWidth = drawWidth * 2;
         float spriteDrawHeight = drawHeight * 2;
@@ -400,13 +404,58 @@ public class Player {
 
     public void addHp(int hp) {
 
-        Hp = (Hp + hp < 100)
-            ? Hp + hp
-            : 100;
+        Hp = Math.min(Hp + hp, 100);
 
         System.out.println(
             "HP is now: " + Hp
         );
+
+        if(this.Hp <= 0 && !isDead) {
+            System.out.println("CAPTAIN CLOWN NOSE HAS DIED!");
+            isDead = true;
+        }
+    }
+
+    public int getScore(){
+        return score;
+    }
+
+    public int getHealth(){
+        return Hp;
+    }
+
+    public void OverridePos(float x, float y){
+        playerBody.setTransform(x, y, playerBody.getAngle());
+        playerBody.setLinearVelocity(0, 0);
+    }
+
+    public void OverrideScore(int score){
+        this.score = score;
+    }
+
+    public void OverrideHealth(int health){
+        this.Hp = health;
+    }
+
+    public void ApplyJump(){
+        playerBody.applyLinearImpulse(
+            new Vector2(0, JumpHeight),
+            playerBody.getWorldCenter(),
+            true
+        );
+    }
+
+    public void Respawn() {
+        this.Hp = 100;
+        this.isDead = false;
+
+        // Physically teleport the Box2D body back to the spawn coordinates
+        playerBody.setTransform(spawnX, spawnY, 0);
+
+        // Kill all momentum so you don't fly off instantly
+        playerBody.setLinearVelocity(0, 0);
+
+        System.out.println("RESPAWNED!");
     }
 
     // ---------------------------------------------------

@@ -61,9 +61,17 @@ public class GameAssetManager {
     public static final String CRAB_ATTACK_PREFIX =
         "Treasure Hunters/The Crusty Crew/Sprites/Crabby/07-Attack/Attack ";
 
+    //---WATER---
+    public static final String WATER_DEEP =
+        "Treasure Hunters/Palm Tree Island/Sprites/Background/Additional Water.png";
+    public static final String WATER_SURFACE =
+        "Treasure Hunters/Palm Tree Island/Sprites/Background/top/";
+
+
     public void loadAllAssets() {
 
         manager.load(SKY_BASE, Texture.class);
+        manager.load(WATER_DEEP, Texture.class);
 
         // PLAYER
         loadFrames(PLAYER_IDLE_PREFIX, 5, "%02d");
@@ -93,6 +101,9 @@ public class GameAssetManager {
         loadFrames(CRAB_IDLE_PREFIX, 9, "%02d");
         loadFrames(CRAB_RUN_PREFIX, 6, "%02d");
         loadFrames(CRAB_ATTACK_PREFIX, 4, "%02d");
+
+        //Water
+        loadFrames(WATER_SURFACE, 3, "%d");
     }
 
     private void loadFrames(String prefix, int frameCount, String format) {

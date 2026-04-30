@@ -4,6 +4,7 @@ import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Collectables.Potion;
 import Game.GettingUnderYourNerve.GameCam;
 import Game.GettingUnderYourNerve.HorizontalPlatform;
+import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.VerticalPlatform;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -42,6 +43,9 @@ public class PlayableMap {
     // BackGround
     BackGround backGround;
 
+    //Water
+    private Array<Water> waterPools;
+
     public PlayableMap(GameAssetManager assets) {
         this.assets = assets; // Store the vault!
 
@@ -53,8 +57,42 @@ public class PlayableMap {
 
         coins = new Array<Coin>();
         potions = new Array<Potion>();
+        waterPools = new Array<Water>();
 
         backGround = new BackGround();
+    }
+
+    public void createWaterFromMap(World world) {
+        MapLayer layer = map.getLayers().get("Water");
+        if (layer == null) return;
+
+        for (MapObject object : layer.getObjects()) {
+            if (object instanceof RectangleMapObject) {
+                Rectangle rect = ((RectangleMapObject) object).getRectangle();
+
+                // 1. Create the Visual Water
+                waterPools.add(new Water(rect, assets));
+
+                // 2. Create the Box2D Sensor Trap
+                BodyDef bdef = new BodyDef();
+                bdef.type = BodyDef.BodyType.StaticBody;
+                bdef.position.set((rect.x + rect.width / 2f) / PPM, (rect.y + rect.height / 2f) / PPM);
+                Body body = world.createBody(bdef);
+
+                PolygonShape shape = new PolygonShape();
+                shape.setAsBox((rect.width / 2f) / PPM, (rect.height / 2f) / PPM);
+
+                FixtureDef fdef = new FixtureDef();
+                fdef.shape = shape;
+                fdef.isSensor = true; // Ghost Hitbox!
+                fdef.filter.categoryBits = Main.WATER_BIT;
+                fdef.filter.maskBits = Main.PLAYER_BIT;
+
+                // Tag it so the Contact Listener recognizes it
+                body.createFixture(fdef).setUserData("water_sensor");
+                shape.dispose();
+            }
+        }
     }
 
     public void createPotionsFromMap(World world) {
@@ -214,6 +252,7 @@ public class PlayableMap {
         createPlatformsFromMap(world);
         createCoinsFromMap(world);
         createPotionsFromMap(world);
+        createWaterFromMap(world);
     }
 
     public void UpdateMap(OrthographicCamera camera, float dt, World world) {
@@ -223,12 +262,25 @@ public class PlayableMap {
         updatePlatforms(dt);
         updateCoins(dt,  world);
         updatePotions(dt,  world);
+        updatewaters(dt);
+    }
+
+    public void updatewaters(float dt){
+        for (Water w : waterPools) {
+            w.update(dt);
+        }
+    }
+
+    public void drawWater(SpriteBatch batch) {
+        for (Water w : waterPools)
+            w.render(batch);
     }
 
     public void DrawElements(SpriteBatch batch) {
         drawPlatforms(batch);
         drawCoins(batch);
         drawPotions(batch);
+        drawWater(batch);
     }
 
     public void DrawBackGround(SpriteBatch batch, GameCam camera, Viewport viewport, float dt) {

@@ -5,10 +5,12 @@ import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Map.PlayableMap;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
+import Game.GettingUnderYourNerve.Utilities.FileHandler;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import Game.GettingUnderYourNerve.Utilities.WorldContactListener;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapObject;
@@ -20,6 +22,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class Main extends ApplicationAdapter {
+    FileHandler fileHandler;
 
     // --- Box2D & Scaling ---
     private World world;
@@ -39,6 +42,8 @@ public class Main extends ApplicationAdapter {
     // --- Camera & Viewport ---
     private Viewport viewport;
     private GameCam cam;
+
+    private boolean DebugOption = true;
 
     private final float WORLD_WIDTH = 800;
     private final float WORLD_HEIGHT = 480;
@@ -63,6 +68,8 @@ public class Main extends ApplicationAdapter {
 
         // Audio
         AudioManager.load();
+
+        fileHandler = new FileHandler(); // Initialize FileHandler
 
         // Assets
         assets = new GameAssetManager();
@@ -111,8 +118,11 @@ public class Main extends ApplicationAdapter {
     @Override
     public void render() {
 
+        fileHandler.GetFilInput(player);
+
         // --- Physics Update ---
         world.step(1 / 60f, 6, 2);
+        float dt = Gdx.graphics.getDeltaTime();
 
         player.UpdatePlayer(world);
 
@@ -125,6 +135,12 @@ public class Main extends ApplicationAdapter {
         float halfViewportWidth = (WORLD_WIDTH / PPM) / 2f;
         float halfViewportHeight = (WORLD_HEIGHT / PPM) / 2f;
 
+        if (player.isDead) {
+            cam.SetDeathTarget(worldWidth, worldHeight,
+                halfViewportWidth, halfViewportHeight,
+                player.spawnX, player.spawnY);
+        }
+
         cam.Update(
             worldWidth,
             worldHeight,
@@ -134,7 +150,6 @@ public class Main extends ApplicationAdapter {
             player.GetYpos()
         );
 
-        float dt = Gdx.graphics.getDeltaTime();
 
         // --- Clear Screen ---
         ScreenUtils.clear(0.1f, 0.1f, 0.2f, 1);
@@ -161,8 +176,15 @@ public class Main extends ApplicationAdapter {
 
         batch.end();
 
+        boolean isCtrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT) ||  Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT);
+        if (isCtrlPressed &&  Gdx.input.isKeyJustPressed(Input.Keys.D)){
+            DebugOption = !DebugOption;
+        }
+
         // --- Debug Renderer ---
+        if(DebugOption){
         debugRenderer.render(world, cam.GetCam().combined);
+        }
     }
 
     @Override

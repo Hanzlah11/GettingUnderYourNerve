@@ -46,6 +46,21 @@ public class WorldContactListener implements ContactListener {
         }
 
         // -------------------------------------------------
+        // WATER COLLISION
+        // -------------------------------------------------
+
+        // 2. NEW: Check for Deadly Water Traps!
+        if (objA instanceof Player && "water_sensor".equals(objB)) {
+            System.out.println("SPLASH!");
+            ((Player) objA).addHp(-100); // Instant death!
+            return;
+        } else if (objB instanceof Player && "water_sensor".equals(objA)) {
+            System.out.println("SPLASH!");
+            ((Player) objB).addHp(-100); // Instant death!
+            return;
+        }
+
+        // -------------------------------------------------
         // BITMASK COLLISIONS
         // -------------------------------------------------
         int cDef =
