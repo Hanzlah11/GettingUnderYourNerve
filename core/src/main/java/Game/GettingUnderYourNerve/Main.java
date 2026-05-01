@@ -124,7 +124,7 @@ public class Main extends ApplicationAdapter {
         world.step(1 / 60f, 6, 2);
         float dt = Gdx.graphics.getDeltaTime();
 
-        player.UpdatePlayer(world);
+        player.UpdatePlayer(dt, world);
 
         enemy.updateEnemy(Gdx.graphics.getDeltaTime(), player);
 

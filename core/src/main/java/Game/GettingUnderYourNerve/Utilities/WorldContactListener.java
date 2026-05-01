@@ -2,7 +2,6 @@ package Game.GettingUnderYourNerve.Utilities;
 
 import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Collectables.Potion;
-import Game.GettingUnderYourNerve.Enemies.Crab;
 import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Projectile;
 import Game.GettingUnderYourNerve.Enemies.Shell;
@@ -14,167 +13,107 @@ public class WorldContactListener implements ContactListener {
 
     @Override
     public void beginContact(Contact contact) {
-
         Fixture fixA = contact.getFixtureA();
         Fixture fixB = contact.getFixtureB();
 
         Object objA = fixA.getUserData();
         Object objB = fixB.getUserData();
 
-        // -------------------------------------------------
-        // PLAYER + COIN
-        // -------------------------------------------------
+        // 1. Check for Collectables
         if (objA instanceof Player && objB instanceof Coin) {
             ((Coin) objB).onCollect((Player) objA);
             return;
-        }
-        else if (objB instanceof Player && objA instanceof Coin) {
+        } else if (objB instanceof Player && objA instanceof Coin) {
             ((Coin) objA).onCollect((Player) objB);
             return;
         }
 
-        // -------------------------------------------------
-        // PLAYER + POTION
-        // -------------------------------------------------
         if (objA instanceof Player && objB instanceof Potion) {
             ((Potion) objB).onCollect((Player) objA);
             return;
-        }
-        else if (objB instanceof Player && objA instanceof Potion) {
+        } else if (objB instanceof Player && objA instanceof Potion) {
             ((Potion) objA).onCollect((Player) objB);
             return;
         }
 
-        // -------------------------------------------------
-        // WATER COLLISION
-        // -------------------------------------------------
-
-        // 2. NEW: Check for Deadly Water Traps!
+        // 2. Check for Deadly Water Traps
         if (objA instanceof Player && "water_sensor".equals(objB)) {
-            System.out.println("SPLASH!");
-            ((Player) objA).addHp(-100); // Instant death!
+            ((Player) objA).addHp(-100);
             return;
         } else if (objB instanceof Player && "water_sensor".equals(objA)) {
-            System.out.println("SPLASH!");
-            ((Player) objB).addHp(-100); // Instant death!
+            ((Player) objB).addHp(-100);
             return;
         }
 
-        // -------------------------------------------------
-        // BITMASK COLLISIONS
-        // -------------------------------------------------
-        int cDef =
-            fixA.getFilterData().categoryBits |
-                fixB.getFilterData().categoryBits;
+        // 3. Handle Bitmask Collisions (Enemies & Projectiles)
+        int cDef = fixA.getFilterData().categoryBits | fixB.getFilterData().categoryBits;
 
         switch (cDef) {
-
             case Main.PLAYER_BIT | Main.ENEMY_BIT:
                 handlePlayerEnemyCollision(fixA, fixB);
                 break;
-
             case Main.PLAYER_BIT | Main.PROJECTILE_BIT:
                 handlePlayerProjectileCollision(fixA, fixB);
                 break;
-
             case Main.PLAYER_BIT | Main.GROUND_BIT:
-                // Jump reset logic if needed later
                 break;
         }
     }
 
     private void handlePlayerProjectileCollision(Fixture a, Fixture b) {
+        Object userDataA = a.getUserData();
+        Object userDataB = b.getUserData();
 
-        Object objA = a.getUserData();
-        Object objB = b.getUserData();
+        Projectile projectile;
+        Player player;
 
-        Projectile projectile =
-            (objA instanceof Projectile)
-                ? (Projectile) objA
-                : (Projectile) objB;
-
-        if (projectile != null) {
-            projectile.setToDestroy();
+        // Figure out who is who
+        if (userDataA instanceof Projectile) {
+            projectile = (Projectile) userDataA;
+            player = (Player) userDataB;
+        } else {
+            projectile = (Projectile) userDataB;
+            player = (Player) userDataA;
         }
+
+        // --- NEW: DESTROY PEARL AND DAMAGE PLAYER ---
+        projectile.setToDestroy();
+        // 10 damage, pass the pearl's X position to calculate knockback direction
+        player.hit(10, projectile.GetXpos());
     }
 
     private void handlePlayerEnemyCollision(Fixture a, Fixture b) {
+        Player player = (Player) (a.getUserData() instanceof Player ? a.getUserData() : b.getUserData());
+        Enemy enemy = (Enemy) (a.getUserData() instanceof Enemy ? a.getUserData() : b.getUserData());
 
-        Object objA = a.getUserData();
-        Object objB = b.getUserData();
+        float threshold = enemy.drawHeight / 2.5f;
 
-        Player player =
-            (Player) (objA instanceof Player ? objA : objB);
-
-        Enemy enemy =
-            (Enemy) (objA instanceof Enemy ? objA : objB);
-
-        if (player == null || enemy == null)
-            return;
-
-        // -----------------------------------------
-        // TOP COLLISION CHECK
-        // -----------------------------------------
-        float threshold = enemy.drawHeight / 2.0f;
-
+        // Did the player land on top of the enemy?
         if (player.GetYpos() > enemy.GetYpos() + threshold) {
-
-            // Player landed on enemy
-
             if (enemy instanceof Shell) {
-                ((Shell) enemy).currentState =
-                    Shell.State.SHOOTING;
+                ((Shell) enemy).currentState = Shell.State.SHOOTING; // Trigger the trap!
             }
-
-            // Add crab stomp logic later if needed
-        }
-        else {
-
-            // Side collision
-
-            if (enemy instanceof Crab) {
-                ((Crab) enemy).attack();
-            }
+        } else {
+            // --- NEW: PLAYER BUMPED THE SIDE OF THE ENEMY ---
+            // 20 damage for touching the shell itself
+            player.hit(20, enemy.GetXpos());
         }
     }
 
     @Override
     public void preSolve(Contact contact, Manifold oldManifold) {
-
         Fixture fixA = contact.getFixtureA();
         Fixture fixB = contact.getFixtureB();
-
-        int cDef =
-            fixA.getFilterData().categoryBits |
-                fixB.getFilterData().categoryBits;
+        int cDef = fixA.getFilterData().categoryBits | fixB.getFilterData().categoryBits;
 
         if (cDef == (Main.PLAYER_BIT | Main.ENEMY_BIT)) {
-
-            // Continuous collision logic
-            handlePlayerEnemyCollision(fixA, fixB);
-
-            Object objA = fixA.getUserData();
-            Object objB = fixB.getUserData();
-
-            Enemy enemy =
-                (Enemy) (objA instanceof Enemy ? objA : objB);
-
-            // Shell becomes pass-through while open
-            if (enemy instanceof Shell &&
-                ((Shell) enemy).currentState ==
-                    Shell.State.SHOOTING) {
-
-                contact.setEnabled(false);
+            Enemy enemy = (Enemy) (fixA.getUserData() instanceof Enemy ? fixA.getUserData() : fixB.getUserData());
+            if (enemy instanceof Shell && ((Shell) enemy).currentState == Shell.State.SHOOTING) {
+                contact.setEnabled(false); // Let the player fall into the open shell
             }
         }
     }
 
-    @Override
-    public void endContact(Contact contact) {
-    }
-
-    @Override
-    public void postSolve(Contact contact,
-                          ContactImpulse impulse) {
-    }
+    @Override public void endContact(Contact contact) {}
+    @Override public void postSolve(Contact contact, ContactImpulse impulse) {}
 }
