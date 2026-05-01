@@ -324,4 +324,22 @@ public class Crab extends Enemy {
         );
     }
 
+    @Override
+    public void dispose() {
+        // 1. Stop looping audio immediately
+        // If you don't stop this, the crab's patrol sound will play forever
+        // even after the crab is deleted from the world.
+        AudioManager.crabPatrol.stop(patrolSoundId);
+
+        // 2. Clear local animation references
+        // While the AssetManager holds the textures, clearing these helps
+        // the Garbage Collector reclaim this specific Crab instance.
+        idleAnim = null;
+        runAnim = null;
+        attackAnim = null;
+
+        // 3. AssetManager safety
+        // We do NOT dispose of 'assets' here because Main owns the vault.
+    }
+
 }

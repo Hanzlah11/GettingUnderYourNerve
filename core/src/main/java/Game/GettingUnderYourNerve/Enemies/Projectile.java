@@ -151,4 +151,16 @@ public class Projectile
 
     public float GetXpos() { return b2body.getPosition().x; }
     public float GetYpos() { return b2body.getPosition().y; }
+
+    public void dispose() {
+        // 1. Safety check: If the projectile is still in the world, destroy it
+        if (!destroyed && b2body != null) {
+            world.destroyBody(b2body);
+            destroyed = true;
+        }
+
+        // 2. Clear animation references
+        idleAnimation = null;
+        destroyingAnimation = null;
+    }
 }

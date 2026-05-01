@@ -202,4 +202,21 @@ public class Shell extends Enemy
         if (shooting) return State.SHOOTING; // Priority 2[cite: 2]
         return State.IDLE;
     }
+
+    @Override
+    public void dispose() {
+        // 1. Dispose of all flying projectiles managed by this shell
+        for (Projectile p : activeProjectiles) {
+            p.dispose();
+        }
+        activeProjectiles.clear();
+
+        // 2. Clear animation references
+        idleAnimation = null;
+        shootingAnimation = null;
+        bitingAnimation = null;
+
+        // 3. Stop any associated audio if necessary
+        // (shellShoot is a one-shot play() usually, so no stop needed)
+    }
 }

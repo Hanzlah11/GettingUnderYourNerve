@@ -337,10 +337,34 @@ public class PlayableMap {
     }
 
     public void dispose() {
+        // 1. Dispose of the Map and its specific Renderer
         map.dispose();
         mapRenderer.dispose();
+
+        // 2. Dispose of the Background system
         backGround.dispose();
-        // Do NOT dispose assets here, Main.java will handle assets.dispose()
+
+        // 3. Dispose of all Enemies
+        // We must manually loop through and call their dispose methods
+        for (Enemy e : enemies) {
+            e.dispose();
+        }
+        enemies.clear(); // Empty the reference list
+
+        // 4. Clear Collectables and Water
+        // These lists don't have separate .dispose() methods usually,
+        // but clearing them helps the Garbage Collector.
+        coins.clear();
+        potions.clear();
+        waterPools.clear();
+
+        // 5. Clear Platform arrays
+        horizontalPlatforms.clear();
+        verticalPlatforms.clear();
+
+        // IMPORTANT: As noted in your code, we do NOT call assets.dispose()
+        // here. Main.java owns the GameAssetManager and will kill it at
+        // the very end.
     }
 
     public float getMapWidthInMeters() {
