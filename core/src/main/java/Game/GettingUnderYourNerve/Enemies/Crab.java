@@ -73,8 +73,8 @@ public class Crab extends Enemy {
 
     @Override
     protected void defineEnemy() {
-
         BodyDef bdef = new BodyDef();
+        // Keep spawn position but ensure the body is dynamic
         bdef.position.set(spawnPosition.x / PPM, spawnPosition.y / PPM);
         bdef.type = BodyDef.BodyType.DynamicBody;
 
@@ -82,10 +82,14 @@ public class Crab extends Enemy {
 
         PolygonShape shape = new PolygonShape();
 
-        float w = drawWidth / 2f;
-        float h = drawHeight / 2f;
+        // REDUCED HITBOX SIZE:
+        // Original was drawWidth/2 (36px). Now it's ~22px wide (half-width of 11px).
+        // Original was drawHeight/2 (16px). Now it's ~20px high (half-height of 10px).
+        float w = (drawWidth / 3.2f);
+        float h = (drawHeight / 3.2f);
         float bevel = 2 / PPM;
 
+        // Build the beveled octagon so it slides over tile gaps
         Vector2[] vertices = new Vector2[8];
         vertices[0] = new Vector2(-w + bevel, -h);
         vertices[1] = new Vector2(w - bevel, -h);
@@ -100,57 +104,107 @@ public class Crab extends Enemy {
 
         FixtureDef fdef = new FixtureDef();
         fdef.shape = shape;
+
+        // Collision filtering for Ground and Player[cite: 11]
         fdef.filter.categoryBits = Main.ENEMY_BIT;
         fdef.filter.maskBits = Main.GROUND_BIT | Main.PLAYER_BIT;
-        fdef.friction = 0f;
-        fdef.density = 1000f;
+
+        fdef.friction = 0f;    // Keeps movement snappy[cite: 11]
+        fdef.density = 1000f;  // Heavy mass[cite: 11]
 
         b2body.createFixture(fdef).setUserData(this);
-        b2body.setFixedRotation(true);
+        b2body.setFixedRotation(true); // Prevent the crab from rolling[cite: 11]
 
         shape.dispose();
     }
 
+    /**
+     * Checks if there is a gap in the floor between the Crab and the Player.
+     */
+    private boolean isFloorContinuous(Player player) {
+        float startX = b2body.getPosition().x;
+        float endX = player.getPlayerBody().getPosition().x;
+
+        // Check a point halfway between them
+        float midX = (startX + endX) / 2f;
+
+        // Check a point 3/4 of the way toward the player
+        float farX = startX + (endX - startX) * 0.75f;
+
+        // If either the midpoint or the far point is over a hole, don't chase
+        return !isHoleAt(midX) && !isHoleAt(farX);
+    }
+
+    /**
+     * Optimized hole check that looks specifically for GROUND_BIT
+     */
+    private boolean isHoleAt(float x) {
+        final boolean[] groundFound = {false};
+
+        // Start ray slightly above the crab's feet level
+        float rayStartY = b2body.getPosition().y - (drawHeight / 4f);
+        // End ray well below the floor level
+        float rayEndY = b2body.getPosition().y - (drawHeight);
+
+        world.rayCast((fixture, point, normal, fraction) -> {
+            if (fixture.getFilterData().categoryBits == Main.GROUND_BIT) {
+                groundFound[0] = true;
+                return 0; // Stop ray, ground exists
+            }
+            return -1; // Ignore everything else
+        }, new Vector2(x, rayStartY), new Vector2(x, rayEndY));
+
+        return !groundFound[0];
+    }
+
     @Override
     public void updateEnemy(float dt, Player player) {
-
         float dx = player.GetXpos() - GetXpos();
         float dy = player.GetYpos() - GetYpos();
         float distance = abs(dx);
 
-        if (shoutCooldown > 0)
-            shoutCooldown -= dt;
+        if (shoutCooldown > 0) shoutCooldown -= dt;
 
+        // 1. State Logic: Detect Player + Check for Gaps
         if (currentState != State.ATTACK) {
-
-            if (distance <= 6f && abs(dy) < 1.5f)
+            // Only Chase if: Close enough AND on same height AND ground is continuous
+            if (distance <= 6f && abs(dy) < 1.5f && isFloorContinuous(player)) {
                 changeState(State.CHASE);
-            else
+            } else {
                 changeState(State.PATROL);
+            }
         }
 
-        switch (currentState) {
+        // 2. Directional Logic
+        if (currentState == State.CHASE) {
+            facingRight = dx > 0;
+        } else if (currentState == State.PATROL) {
+            patrolTimer += dt;
+            if (patrolTimer >= 5f) {
+                facingRight = !facingRight;
+                patrolTimer = 0f;
+            }
+        }
 
+        // 3. Safety Edge Detection (Prevents falling during patrol or chase)
+        if (currentState != State.ATTACK && isEdgeAhead()) {
+            facingRight = !facingRight;
+            patrolTimer = 0f;
+            if (currentState == State.CHASE) {
+                changeState(State.PATROL);
+            }
+        }
+
+        // 4. Movement Execution
+        switch (currentState) {
             case ATTACK:
                 b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
-
-                if (attackAnim.isAnimationFinished(stateTime))
-                    changeState(State.PATROL);
+                if (attackAnim.isAnimationFinished(stateTime)) changeState(State.PATROL);
                 break;
-
             case CHASE:
-                facingRight = dx > 0;
                 move(CHASE_SPEED);
                 break;
-
             case PATROL:
-                patrolTimer += dt;
-
-                if (patrolTimer >= 5f) {
-                    facingRight = !facingRight;
-                    patrolTimer = 0f;
-                }
-
                 move(WALK_SPEED);
                 break;
         }
@@ -167,6 +221,32 @@ public class Crab extends Enemy {
             facingRight ? speed : -speed,
             b2body.getLinearVelocity().y
         );
+    }
+
+    // Inside Crab.java
+    private boolean isEdgeAhead() {
+        // Don't check for edges if we are currently jumping or falling
+        if (Math.abs(b2body.getLinearVelocity().y) > 0.01f) return false;
+
+        final boolean[] groundBelow = {false};
+
+        // Determine where to look: slightly in front of the Crab's side
+        float lookOffset = facingRight ? (drawWidth / 2.1f) : -(drawWidth / 2.1f);
+        float checkX = b2body.getPosition().x + lookOffset;
+
+        // Start at center Y, end just below the feet
+        Vector2 rayStart = new Vector2(checkX, b2body.getPosition().y);
+        Vector2 rayEnd = new Vector2(checkX, b2body.getPosition().y - (drawHeight / 2f + 4 / PPM));
+
+        world.rayCast((fixture, point, normal, fraction) -> {
+            if (fixture.getFilterData().categoryBits == Main.GROUND_BIT) {
+                groundBelow[0] = true;
+                return 0; // Found ground, stop the ray
+            }
+            return -1; // Ignore other fixtures (like player or sensors)
+        }, rayStart, rayEnd);
+
+        return !groundBelow[0]; // If no ground was found, there is an edge
     }
 
     public void changeState(State newState) {
@@ -237,7 +317,7 @@ public class Crab extends Enemy {
         batch.draw(
             GetCurrentFrame(dt),
             GetXpos() - drawWidth / 2f,
-            GetYpos() - drawHeight / 2f - 5f / PPM,
+            GetYpos() - drawHeight / 2f - 2f / PPM,
             drawWidth,
             drawHeight
         );
