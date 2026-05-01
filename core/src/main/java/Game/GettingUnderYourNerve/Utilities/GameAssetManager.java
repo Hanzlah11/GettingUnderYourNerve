@@ -23,6 +23,8 @@ public class GameAssetManager {
         "Treasure Hunters/Captain Clown Nose/Sprites/Captain Clown Nose/Captain Clown Nose with Sword/11-Jump Sword/Jump Sword ";
     public static final String PLAYER_FALL_PREFIX =
         "Treasure Hunters/Captain Clown Nose/Sprites/Captain Clown Nose/Captain Clown Nose with Sword/12-Fall Sword/Fall Sword ";
+    public static final String PLAYER_HIT_PREFIX =
+        "Treasure Hunters/Captain Clown Nose/Sprites/Captain Clown Nose/Captain Clown Nose with Sword/14-Hit Sword/Hit Sword ";
 
     // --- COLLECTABLES ---
     public static final String COIN_GOLD_PREFIX =
@@ -78,6 +80,7 @@ public class GameAssetManager {
         loadFrames(PLAYER_RUN_PREFIX, 6, "%02d");
         loadFrames(PLAYER_JUMP_PREFIX, 3, "%02d");
         loadFrames(PLAYER_FALL_PREFIX, 1, "%02d");
+        loadFrames(PLAYER_HIT_PREFIX, 4, "%02d");
 
         // COLLECTABLES
         loadFrames(COIN_GOLD_PREFIX, 4, "%02d");
