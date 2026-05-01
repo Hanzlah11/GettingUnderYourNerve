@@ -31,7 +31,6 @@ public class Main extends ApplicationAdapter {
 
     private Player player;
     private PlayableMap playableMap;
-    private Enemy enemy;
 
     // --- Assets ---
     public GameAssetManager assets;
@@ -92,27 +91,6 @@ public class Main extends ApplicationAdapter {
 
         // Spawn Player
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
-
-        // Spawn Enemy (Crab from Crab layer)
-        enemy = spawnOneCrab(playableMap.GetMap(), world, assets);
-    }
-
-    // Spawn Crab
-    public Shell spawnOneCrab(TiledMap map, World world, GameAssetManager assets) {
-
-        MapLayer layer = map.getLayers().get("Shell");
-
-        if (layer != null && layer.getObjects().getCount() > 0) {
-
-            MapObject obj = layer.getObjects().get(0);
-
-            float x = obj.getProperties().get("x", Float.class);
-            float y = obj.getProperties().get("y", Float.class);
-
-            return new Shell(world, x, y, assets);
-        }
-
-        return null;
     }
 
     @Override
@@ -125,8 +103,6 @@ public class Main extends ApplicationAdapter {
         float dt = Gdx.graphics.getDeltaTime();
 
         player.UpdatePlayer(dt, world);
-
-        enemy.updateEnemy(Gdx.graphics.getDeltaTime(), player);
 
         // --- Camera Follow ---
         float worldWidth = playableMap.getMapWidthInMeters();
@@ -163,16 +139,14 @@ public class Main extends ApplicationAdapter {
         batch.end();
 
         // --- Update Map ---
-        playableMap.UpdateMap(cam.GetCam(), dt, world);
+        playableMap.UpdateMap(cam.GetCam(), dt, world, player);
 
         // --- Draw Foreground ---
         batch.begin();
 
         player.Render(batch, dt);
-        playableMap.DrawElements(batch);
+        playableMap.DrawElements(batch, dt);
 
-        if (enemy != null)
-            enemy.render(dt, batch);
 
         batch.end();
 

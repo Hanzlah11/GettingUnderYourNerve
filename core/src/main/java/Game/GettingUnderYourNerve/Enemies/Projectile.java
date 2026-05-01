@@ -87,7 +87,7 @@ public class Projectile
     {
         stateTime += dt;
 
-        if (!setToDestoy && stateTime >= 2f) {
+        if (!setToDestoy && stateTime >= 5f) {
             setToDestroy();
         }
 

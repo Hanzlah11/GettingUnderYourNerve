@@ -121,41 +121,6 @@ public class Crab extends Enemy {
     /**
      * Checks if there is a gap in the floor between the Crab and the Player.
      */
-    private boolean isFloorContinuous(Player player) {
-        float startX = b2body.getPosition().x;
-        float endX = player.getPlayerBody().getPosition().x;
-
-        // Check a point halfway between them
-        float midX = (startX + endX) / 2f;
-
-        // Check a point 3/4 of the way toward the player
-        float farX = startX + (endX - startX) * 0.75f;
-
-        // If either the midpoint or the far point is over a hole, don't chase
-        return !isHoleAt(midX) && !isHoleAt(farX);
-    }
-
-    /**
-     * Optimized hole check that looks specifically for GROUND_BIT
-     */
-    private boolean isHoleAt(float x) {
-        final boolean[] groundFound = {false};
-
-        // Start ray slightly above the crab's feet level
-        float rayStartY = b2body.getPosition().y - (drawHeight / 4f);
-        // End ray well below the floor level
-        float rayEndY = b2body.getPosition().y - (drawHeight);
-
-        world.rayCast((fixture, point, normal, fraction) -> {
-            if (fixture.getFilterData().categoryBits == Main.GROUND_BIT) {
-                groundFound[0] = true;
-                return 0; // Stop ray, ground exists
-            }
-            return -1; // Ignore everything else
-        }, new Vector2(x, rayStartY), new Vector2(x, rayEndY));
-
-        return !groundFound[0];
-    }
 
     @Override
     public void updateEnemy(float dt, Player player) {
@@ -247,6 +212,42 @@ public class Crab extends Enemy {
         }, rayStart, rayEnd);
 
         return !groundBelow[0]; // If no ground was found, there is an edge
+    }
+
+    private boolean isFloorContinuous(Player player) {
+        float startX = b2body.getPosition().x;
+        float endX = player.getPlayerBody().getPosition().x;
+
+        // Check a point halfway between them
+        float midX = (startX + endX) / 2f;
+
+        // Check a point 3/4 of the way toward the player
+        float farX = startX + (endX - startX) * 0.75f;
+
+        // If either the midpoint or the far point is over a hole, don't chase
+        return !isHoleAt(midX) && !isHoleAt(farX);
+    }
+
+    /**
+     * Optimized hole check that looks specifically for GROUND_BIT
+     */
+    private boolean isHoleAt(float x) {
+        final boolean[] groundFound = {false};
+
+        // Start ray slightly above the crab's feet level
+        float rayStartY = b2body.getPosition().y - (drawHeight / 4f);
+        // End ray well below the floor level
+        float rayEndY = b2body.getPosition().y - (drawHeight);
+
+        world.rayCast((fixture, point, normal, fraction) -> {
+            if (fixture.getFilterData().categoryBits == Main.GROUND_BIT) {
+                groundFound[0] = true;
+                return 0; // Stop ray, ground exists
+            }
+            return -1; // Ignore everything else
+        }, new Vector2(x, rayStartY), new Vector2(x, rayEndY));
+
+        return !groundFound[0];
     }
 
     public void changeState(State newState) {

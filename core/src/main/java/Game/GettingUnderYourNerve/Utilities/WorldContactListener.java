@@ -57,8 +57,26 @@ public class WorldContactListener implements ContactListener {
             case Main.PLAYER_BIT | Main.PROJECTILE_BIT:
                 handlePlayerProjectileCollision(fixA, fixB);
                 break;
+            case Main.PROJECTILE_BIT | Main.GROUND_BIT:
+                handleProjectileGroundCollision(fixA, fixB);
+                break;
             case Main.PLAYER_BIT | Main.GROUND_BIT:
                 break;
+        }
+    }
+
+    // Add this new private method to the class
+    private void handleProjectileGroundCollision(Fixture a, Fixture b) {
+        Object userDataA = a.getUserData();
+        Object userDataB = b.getUserData();
+
+        // Identify which object is the projectile[cite: 16]
+        Projectile projectile = (userDataA instanceof Projectile)
+            ? (Projectile) userDataA
+            : (Projectile) userDataB;
+
+        if (projectile != null) {
+            projectile.setToDestroy(); // Clean up the projectile on impact[cite: 16]
         }
     }
 
