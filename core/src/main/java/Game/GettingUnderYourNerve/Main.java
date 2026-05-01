@@ -98,9 +98,9 @@ public class Main extends ApplicationAdapter {
     }
 
     // Spawn Crab
-    public Crab spawnOneCrab(TiledMap map, World world, GameAssetManager assets) {
+    public Shell spawnOneCrab(TiledMap map, World world, GameAssetManager assets) {
 
-        MapLayer layer = map.getLayers().get("Crab");
+        MapLayer layer = map.getLayers().get("Shell");
 
         if (layer != null && layer.getObjects().getCount() > 0) {
 
@@ -109,7 +109,7 @@ public class Main extends ApplicationAdapter {
             float x = obj.getProperties().get("x", Float.class);
             float y = obj.getProperties().get("y", Float.class);
 
-            return new Crab(world, x, y, assets);
+            return new Shell(world, x, y, assets);
         }
 
         return null;

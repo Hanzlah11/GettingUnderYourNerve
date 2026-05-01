@@ -18,19 +18,20 @@ import static java.lang.Math.abs;
 
 public class Shell extends Enemy
 {
-    public enum State {IDLE, SHOOTING};
+    public enum State { IDLE, SHOOTING, BITING };
     public State currentState = State.IDLE;
     public State previousState = State.SHOOTING;
 
     private Animation<TextureRegion> idleAnimation;
     private Animation<TextureRegion> shootingAnimation;
+    private Animation<TextureRegion> bitingAnimation;
 
     private boolean facingRight = false;
     private boolean shooting = false;
 
     private float attackTimer = 0f;
     private boolean hasPlayedSound = false;
-    private int ammo = 5;
+    private int ammo;
 
     private Array<Projectile> activeProjectiles;
 
@@ -45,11 +46,13 @@ public class Shell extends Enemy
         drawWidth = 48 / PPM;
         drawHeight = 38 / PPM;
 
+        ammo = com.badlogic.gdx.math.MathUtils.random(3, 8);
         defineEnemy();
         activeProjectiles = new Array<Projectile>();
 
         idleAnimation = assets.getAnimation(GameAssetManager.SHELL_IDLE_PREFIX, 1, 0.15f, Animation.PlayMode.LOOP, "%d");
         shootingAnimation = assets.getAnimation(GameAssetManager.SHELL_FIRE_PREFIX, 6, 0.12f, Animation.PlayMode.NORMAL, "%d");
+        bitingAnimation = assets.getAnimation(GameAssetManager.SHELL_BITE_PREFIX, 6, 0.05f, Animation.PlayMode.NORMAL, "%d");
     }
 
     @Override
@@ -88,7 +91,13 @@ public class Shell extends Enemy
         else
             facingRight = true;
 
-        if (shooting) {
+        if (currentState == State.BITING) {
+            if (bitingAnimation.isAnimationFinished(stateTime)) {
+                currentState = State.IDLE;
+            }
+            return; // Don't do other logic while biting[cite: 5]
+        }
+        else if (shooting) {
             if(shootingAnimation.getKeyFrameIndex(stateTime) == 4 && !hasPlayedSound) {
                 AudioManager.shellShoot.play(0.5f);
                 hasPlayedSound = true;
@@ -151,10 +160,12 @@ public class Shell extends Enemy
         TextureRegion region;
 
         switch (currentState) {
+            case BITING:
+                region = bitingAnimation.getKeyFrame(stateTime); // Use bite texture[cite: 5]
+                break;
             case SHOOTING:
                 region = shootingAnimation.getKeyFrame(stateTime);
                 break;
-            case IDLE:
             default:
                 region = idleAnimation.getKeyFrame(stateTime);
                 break;
@@ -172,10 +183,23 @@ public class Shell extends Enemy
         return region;
     }
 
+    public void bite() {
+        if (currentState != State.BITING) {
+            currentState = State.BITING;
+            stateTime = 0; // Start animation from frame 0[cite: 5]
+            shooting = false; // Stop shooting if we start biting[cite: 2]
+            AudioManager.shellShoot.play(0.8f);
+        }
+    }
+
+    // Helper to check if the player should phase through
+    public boolean isBiting() {
+        return currentState == State.BITING;
+    }
+
     private State getState() {
-        if(shooting)
-            return State.SHOOTING;
-        else
-            return State.IDLE;
+        if (currentState == State.BITING) return State.BITING; // Priority 1[cite: 5]
+        if (shooting) return State.SHOOTING; // Priority 2[cite: 2]
+        return State.IDLE;
     }
 }

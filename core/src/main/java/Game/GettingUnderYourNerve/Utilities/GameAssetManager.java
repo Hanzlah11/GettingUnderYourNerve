@@ -50,6 +50,8 @@ public class GameAssetManager {
         "Treasure Hunters/Shooter Traps/Sprites/Seashell/Seashell Idle/";
     public static final String SHELL_FIRE_PREFIX =
         "Treasure Hunters/Shooter Traps/Sprites/Seashell/Seashell Fire/";
+    public static final String SHELL_BITE_PREFIX =
+        "Treasure Hunters/Shooter Traps/Sprites/Seashell/Seashell Bite/";
     public static final String PEARL_IDLE_PREFIX =
         "Treasure Hunters/Shooter Traps/Sprites/Seashell/Pearl Idle/";
     public static final String PEARL_DESTROYED_PREFIX =
@@ -97,6 +99,7 @@ public class GameAssetManager {
         // SHELL
         loadFrames(SHELL_IDLE_PREFIX, 1, "%d");
         loadFrames(SHELL_FIRE_PREFIX, 6, "%d");
+        loadFrames(SHELL_BITE_PREFIX, 6, "%d");
         loadFrames(PEARL_IDLE_PREFIX, 1, "%d");
         loadFrames(PEARL_DESTROYED_PREFIX, 3, "%d");
 

@@ -2,11 +2,13 @@ package Game.GettingUnderYourNerve.Utilities;
 
 import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Collectables.Potion;
+import Game.GettingUnderYourNerve.Enemies.Crab;
 import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Projectile;
 import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Player;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 
 public class WorldContactListener implements ContactListener {
@@ -83,20 +85,46 @@ public class WorldContactListener implements ContactListener {
     }
 
     private void handlePlayerEnemyCollision(Fixture a, Fixture b) {
-        Player player = (Player) (a.getUserData() instanceof Player ? a.getUserData() : b.getUserData());
-        Enemy enemy = (Enemy) (a.getUserData() instanceof Enemy ? a.getUserData() : b.getUserData());
+        Object objA = a.getUserData();
+        Object objB = b.getUserData();
 
-        float threshold = enemy.drawHeight / 2.5f;
+        Player player = (Player) (objA instanceof Player ? objA : objB);
+        Enemy enemy = (Enemy) (objA instanceof Enemy ? objA : objB);
 
-        // Did the player land on top of the enemy?
-        if (player.GetYpos() > enemy.GetYpos() + threshold) {
+        if (player == null || enemy == null) return;
+
+        float threshold = enemy.drawHeight / 2.0f;
+
+        // NEW: Check if the player is above AND falling downward
+        boolean isFalling = player.getPlayerBody().getLinearVelocity().y < -0.1f;
+
+        // --- TOP COLLISION (THE PUNISHMENT) ---
+        if (player.GetYpos() > enemy.GetYpos() + threshold && isFalling) {
             if (enemy instanceof Shell) {
-                ((Shell) enemy).currentState = Shell.State.SHOOTING; // Trigger the trap!
+                ((Shell) enemy).bite();
+                player.hit(40, enemy.GetXpos());
+                System.out.println("CRUNCH! The Shell ate the player.");
             }
-        } else {
-            // --- NEW: PLAYER BUMPED THE SIDE OF THE ENEMY ---
-            // 20 damage for touching the shell itself
-            player.hit(20, enemy.GetXpos());
+
+            if (enemy instanceof Crab) {
+                player.getPlayerBody().setLinearVelocity(player.getPlayerBody().getLinearVelocity().x, 0);
+                player.getPlayerBody().applyLinearImpulse(
+                    new Vector2(0, 15.0f),
+                    player.getPlayerBody().getWorldCenter(),
+                    true
+                );
+                ((Crab) enemy).attack();
+                player.hit(10, enemy.GetXpos());
+            }
+        }
+        // --- SIDE COLLISION ---
+        else {
+            // If the player is just walking into the side or jumping upward against it
+            if (enemy instanceof Crab) {
+                ((Crab) enemy).attack();
+                player.hit(20, enemy.GetXpos());
+            }
+            // You could also add a side-attack logic for the Shell here if desired
         }
     }
 
@@ -104,12 +132,26 @@ public class WorldContactListener implements ContactListener {
     public void preSolve(Contact contact, Manifold oldManifold) {
         Fixture fixA = contact.getFixtureA();
         Fixture fixB = contact.getFixtureB();
+
         int cDef = fixA.getFilterData().categoryBits | fixB.getFilterData().categoryBits;
 
         if (cDef == (Main.PLAYER_BIT | Main.ENEMY_BIT)) {
+            handlePlayerEnemyCollision(fixA, fixB);
+
+            Player player = (Player) (fixA.getUserData() instanceof Player ? fixA.getUserData() : fixB.getUserData());
             Enemy enemy = (Enemy) (fixA.getUserData() instanceof Enemy ? fixA.getUserData() : fixB.getUserData());
-            if (enemy instanceof Shell && ((Shell) enemy).currentState == Shell.State.SHOOTING) {
-                contact.setEnabled(false); // Let the player fall into the open shell
+
+            if (enemy instanceof Shell) {
+                Shell shell = (Shell) enemy;
+
+                // Adjust threshold to Height/4. This means the player's center
+                // must sink halfway into the shell before phasing.
+                float sinkThreshold = enemy.drawHeight / 4.0f;
+                boolean isAbove = player.GetYpos() > enemy.GetYpos() + sinkThreshold;
+
+                if (isAbove && (shell.isBiting() || shell.currentState == Shell.State.SHOOTING)) {
+                    contact.setEnabled(false);
+                }
             }
         }
     }
