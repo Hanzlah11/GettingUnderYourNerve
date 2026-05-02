@@ -35,12 +35,14 @@ public class Player {
         IDLE,
         RUNNING,
         JUMPING,
-        FALLING
+        FALLING,
+        ATTACKING
     }
 
     // --- KNOCKBACK & STUN VARIABLES ---
     public boolean isHit = false;
     private float hitTimer = 0f;
+    private float attackTimer;
 
     public State currentState = State.IDLE;
     public State previousState = State.IDLE;
@@ -50,7 +52,8 @@ public class Player {
     private Animation<TextureRegion> runAnimation;
     private Animation<TextureRegion> jumpAnimation;
     private Animation<TextureRegion> fallAnimation;
-    private Animation<TextureRegion> hitAnimation; // NEW: The damage animation!
+    private Animation<TextureRegion> hitAnimation;
+    private Animation<TextureRegion> attackAnimation;
 
     private float stateTime = 0f;
     private boolean facingRight = true;
@@ -63,9 +66,16 @@ public class Player {
     public boolean isGrounded = false;
     private boolean isTouchingWall = false;
 
+    //----------------- ATTACK --------------------
+    public int swordUses = 10;
+    public float attackCooldown = 0f;
+    public boolean isAttacking = false;
+    private Fixture swordFixture;
+
     public Player(float jh, GameAssetManager assets) {
 
         JumpHeight = jh;
+        attackTimer = 10f;
 
         score = 0;
         Hp = 100;
@@ -75,9 +85,8 @@ public class Player {
         runAnimation = assets.getAnimation(GameAssetManager.PLAYER_RUN_PREFIX, 6, 0.15f, Animation.PlayMode.LOOP, "%02d");
         jumpAnimation = assets.getAnimation(GameAssetManager.PLAYER_JUMP_PREFIX, 3, 0.15f, Animation.PlayMode.NORMAL, "%02d");
         fallAnimation = assets.getAnimation(GameAssetManager.PLAYER_FALL_PREFIX, 1, 0.15f, Animation.PlayMode.NORMAL, "%02d");
-
-        // NEW: Load the Hit Animation! (Adjust the frame count and format string to match your files!)
         hitAnimation = assets.getAnimation(GameAssetManager.PLAYER_HIT_PREFIX, 4, 0.1f, Animation.PlayMode.LOOP, "%02d");
+        attackAnimation = assets.getAnimation(GameAssetManager.PLAYER_ATTACK_PREFIX, 3, 0.1f, Animation.PlayMode.NORMAL, "%02d");
     }
 
     // ---------------------------------------------------
@@ -135,11 +144,25 @@ public class Player {
         fdef.density = 1f;
 
         fdef.filter.categoryBits = Main.PLAYER_BIT;
-        fdef.filter.maskBits = (short) (Main.GROUND_BIT | Main.ENEMY_BIT | Main.PROJECTILE_BIT | Main.COIN_BIT | Main.POTION_BIT | Main.WATER_BIT);
+        fdef.filter.maskBits = (short) (Main.GROUND_BIT | Main.ENEMY_BIT | Main.PROJECTILE_BIT | Main.COIN_BIT | Main.POTION_BIT | Main.WATER_BIT | Main.TRAP_BIT);
 
         playerBody.createFixture(fdef).setUserData(this);
         playerBody.setFixedRotation(true);
         shape.dispose();
+
+        // --- NEW: THE SWORD ATTACHMENT ---
+        PolygonShape swordShape = new PolygonShape();
+        swordShape.setAsBox(20 / Main.PPM, 20 / Main.PPM, new Vector2(25 / Main.PPM, 0), 0);
+
+        FixtureDef sdef = new FixtureDef();
+        sdef.shape = swordShape;
+        sdef.isSensor = true;
+        sdef.filter.categoryBits = Main.SWORD_BIT;
+        sdef.filter.maskBits = 0; // Starts disabled!
+
+        swordFixture = playerBody.createFixture(sdef);
+        swordFixture.setUserData(this);
+        swordShape.dispose();
     }
 
     // ---------------------------------------------------
@@ -160,6 +183,44 @@ public class Player {
             } else {
                 return; // Return early! Player cannot move left/right while stunned.
             }
+        }
+
+        // --- SWORD COOLDOWN ---
+        if (attackCooldown > 0) {
+            attackCooldown -= dt;
+        }
+
+        // --- SWORD ATTACK INPUT ---
+        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && swordUses > 0 && attackCooldown <= 0 && !isAttacking) {
+            isAttacking = true;
+            swordUses--;
+            attackCooldown = attackTimer;
+            stateTime = 0;
+
+            // Turn on the sword hitbox
+            Filter filter = swordFixture.getFilterData();
+            filter.maskBits = Main.ENEMY_BIT;
+            swordFixture.setFilterData(filter);
+
+            System.out.println("Swung sword! Uses left: " + swordUses);
+        }
+
+        // --- SWORD ATTACK FINISH ---
+        if (isAttacking && attackAnimation.isAnimationFinished(stateTime)) {
+            isAttacking = false;
+
+            // Turn off the sword hitbox
+            Filter filter = swordFixture.getFilterData();
+            filter.maskBits = 0;
+            swordFixture.setFilterData(filter);
+        }
+
+        // --- DYNAMIC SWORD HITBOX PLACEMENT ---
+        PolygonShape shape = (PolygonShape) swordFixture.getShape();
+        if (facingRight) {
+            shape.setAsBox(20 / Main.PPM, 20 / Main.PPM, new Vector2(25 / Main.PPM, 0), 0);
+        } else {
+            shape.setAsBox(20 / Main.PPM, 20 / Main.PPM, new Vector2(-25 / Main.PPM, 0), 0);
         }
 
         isGrounded = false;
@@ -190,8 +251,9 @@ public class Player {
         boolean moveRight = Gdx.input.isKeyPressed(Input.Keys.RIGHT);
         boolean moveLeft = Gdx.input.isKeyPressed(Input.Keys.LEFT);
 
-        if (moveLeft) desiredVel = -10f;
-        else if (moveRight) desiredVel = 10f;
+        // Lock movement if currently swinging sword
+        if (moveLeft && !isAttacking) desiredVel = -10f;
+        else if (moveRight && !isAttacking) desiredVel = 10f;
 
         playerBody.setLinearVelocity(desiredVel, vel.y);
 
@@ -202,7 +264,8 @@ public class Player {
             playerBody.setLinearVelocity(vel.x, Math.max(vel.y, -2f));
         }
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.UP) && isGrounded) {
+        // Lock jump if currently swinging sword
+        if (Gdx.input.isKeyJustPressed(Input.Keys.UP) && isGrounded && !isAttacking) {
             ApplyJump();
         }
     }
@@ -211,6 +274,8 @@ public class Player {
     // STATE MACHINE
     // ---------------------------------------------------
     private State getState() {
+        if (isAttacking) return State.ATTACKING;
+
         Vector2 vel = playerBody.getLinearVelocity();
 
         if (!isGrounded) {
@@ -242,19 +307,17 @@ public class Player {
             spriteDrawWidth,
             spriteDrawHeight
         );
-
     }
 
     public TextureRegion GetCurrentFrame(float dt) {
         TextureRegion region;
 
-        // --- NEW: OVERRIDE NORMAL ANIMATION IF HIT ---
         if (isHit) {
             region = hitAnimation.getKeyFrame(hitTimer);
         } else {
-            // Normal State Machine
             currentState = getState();
             switch (currentState) {
+                case ATTACKING: region = attackAnimation.getKeyFrame(stateTime); break;
                 case JUMPING: region = jumpAnimation.getKeyFrame(stateTime); break;
                 case FALLING: region = fallAnimation.getKeyFrame(stateTime); break;
                 case RUNNING: region = runAnimation.getKeyFrame(stateTime); break;
@@ -262,10 +325,7 @@ public class Player {
             }
         }
 
-        // --- NEW: FIX MOONWALKING ---
-        // We ONLY update which way we are facing if we are NOT being knocked back.
-        // This ensures the player stares at the enemy while sliding backward!
-        if (!isHit) {
+        if (!isHit && !isAttacking) {
             float velX = playerBody.getLinearVelocity().x;
             if (velX < -0.1f) facingRight = false;
             else if (velX > 0.1f) facingRight = true;
@@ -277,7 +337,6 @@ public class Player {
             region.flip(true, false);
         }
 
-        // Only progress normal animation time if we are not hit
         if (!isHit) {
             stateTime = currentState == previousState ? stateTime + dt : 0;
             previousState = currentState;
@@ -339,6 +398,8 @@ public class Player {
         this.Hp = 100;
         this.isDead = false;
         this.isHit = false;
+        this.swordUses = 10;
+        this.attackCooldown = 0f;
 
         playerBody.setTransform(spawnX, spawnY, 0);
         playerBody.setLinearVelocity(0, 0);

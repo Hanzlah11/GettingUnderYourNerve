@@ -25,6 +25,8 @@ public class GameAssetManager {
         "Treasure Hunters/Captain Clown Nose/Sprites/Captain Clown Nose/Captain Clown Nose with Sword/12-Fall Sword/Fall Sword ";
     public static final String PLAYER_HIT_PREFIX =
         "Treasure Hunters/Captain Clown Nose/Sprites/Captain Clown Nose/Captain Clown Nose with Sword/14-Hit Sword/Hit Sword ";
+    public static final String PLAYER_ATTACK_PREFIX =
+        "Treasure Hunters/Captain Clown Nose/Sprites/Captain Clown Nose/Captain Clown Nose with Sword/17-Attack 3/Attack 3 ";
 
     // --- COLLECTABLES ---
     public static final String COIN_GOLD_PREFIX =
@@ -71,6 +73,14 @@ public class GameAssetManager {
     public static final String WATER_SURFACE =
         "Treasure Hunters/Palm Tree Island/Sprites/Background/top/";
 
+    //---TRAPS---
+    public static final String SPIKE_ANIM_PREFIX =
+        "Treasure Hunters/Palm Tree Island/Sprites/Objects/Spikes/";
+    public static final String SPIKED_BALL =
+        "Treasure Hunters/Palm Tree Island/Sprites/Objects/Spiked Ball/Spiked Ball.png";
+    public static final String CHAIN_LINK =
+        "Treasure Hunters/Palm Tree Island/Sprites/Objects/Spiked Ball/spiked_chain.png";
+
 
     public void loadAllAssets() {
 
@@ -83,6 +93,7 @@ public class GameAssetManager {
         loadFrames(PLAYER_JUMP_PREFIX, 3, "%02d");
         loadFrames(PLAYER_FALL_PREFIX, 1, "%02d");
         loadFrames(PLAYER_HIT_PREFIX, 4, "%02d");
+        loadFrames(PLAYER_ATTACK_PREFIX, 3,  "%02d");
 
         // COLLECTABLES
         loadFrames(COIN_GOLD_PREFIX, 4, "%02d");
@@ -110,6 +121,11 @@ public class GameAssetManager {
 
         //Water
         loadFrames(WATER_SURFACE, 3, "%d");
+
+        //Traps
+        loadFrames(SPIKE_ANIM_PREFIX, 4, "%d");
+        manager.load(SPIKED_BALL, Texture.class);
+        manager.load(CHAIN_LINK, Texture.class);
     }
 
     private void loadFrames(String prefix, int frameCount, String format) {

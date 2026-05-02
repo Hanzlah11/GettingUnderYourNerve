@@ -56,6 +56,8 @@ public class Main extends ApplicationAdapter {
     public static final short WATER_BIT = 16;
     public static final short COIN_BIT = 32;
     public static final short POTION_BIT = 64;
+    public static final short TRAP_BIT = 128;
+    public static final short SWORD_BIT = 256;
 
     @Override
     public void create() {

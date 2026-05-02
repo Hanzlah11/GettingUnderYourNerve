@@ -8,6 +8,7 @@ import Game.GettingUnderYourNerve.Enemies.Projectile;
 import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Player;
+import Game.GettingUnderYourNerve.Trap.Trap;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 
@@ -61,6 +62,33 @@ public class WorldContactListener implements ContactListener {
                 handleProjectileGroundCollision(fixA, fixB);
                 break;
             case Main.PLAYER_BIT | Main.GROUND_BIT:
+                break;
+            case Main.PLAYER_BIT | Main.TRAP_BIT:
+                Fixture playerFix = fixA.getFilterData().categoryBits == Main.PLAYER_BIT ? fixA : fixB;
+                Fixture trapFix = fixA.getFilterData().categoryBits == Main.TRAP_BIT ? fixA : fixB;
+
+                Player p = (Player) playerFix.getUserData();
+                Trap t = (Trap) trapFix.getUserData();
+
+                // 1. The player takes damage and gets knocked back
+                p.hit(t.getDamage(), t.body.getPosition().x);
+
+                // 2. The trap decides how IT wants to react!
+                t.onHit(p);
+                break;
+            case Main.SWORD_BIT | Main.ENEMY_BIT:
+                Fixture swordFix = fixA.getFilterData().categoryBits == Main.SWORD_BIT ? fixA : fixB;
+                Fixture enemyFix = fixA.getFilterData().categoryBits == Main.ENEMY_BIT ? fixA : fixB;
+
+                Player attackingPlayer = (Player) swordFix.getUserData();
+                Enemy targetEnemy = (Enemy) enemyFix.getUserData();
+
+                // Using GetXpos() for the player, and GetXpos() for the enemy!
+                float pushDirection = attackingPlayer.GetXpos() < targetEnemy.GetXpos() ? 5f : -5f;
+
+                if (!targetEnemy.isDead) {
+                    targetEnemy.takeDamage(1, pushDirection);
+                }
                 break;
         }
     }
