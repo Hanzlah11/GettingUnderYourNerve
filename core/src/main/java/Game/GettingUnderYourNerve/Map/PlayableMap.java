@@ -6,6 +6,9 @@ import Game.GettingUnderYourNerve.Collectables.Potion;
 import Game.GettingUnderYourNerve.Enemies.Crab;
 import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Shell;
+import Game.GettingUnderYourNerve.Trap.Spike;
+import Game.GettingUnderYourNerve.Trap.SpikedBall;
+import Game.GettingUnderYourNerve.Trap.Trap;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -47,6 +50,9 @@ public class PlayableMap {
     private Array<Water> waterPools;
     private Array<Enemy> enemies;
 
+    //Traps
+    public Array<Trap> mapTraps;
+
     public PlayableMap(GameAssetManager assets) {
         this.assets = assets; // Store the vault!
 
@@ -62,6 +68,8 @@ public class PlayableMap {
         enemies = new Array<Enemy>();
 
         backGround = new BackGround();
+
+        mapTraps = new Array<>();
     }
 
     public void createEnemiesFromMap(World world) {
@@ -86,6 +94,27 @@ public class PlayableMap {
                     } else if ("Crab".equals(name)) {
                         enemies.add(new Crab(world, x, y, assets));
                     }
+                }
+            }
+        }
+    }
+
+    public void createTrapsFromMap(World world){
+        MapLayer trapLayer = map.getLayers().get("Traps");
+
+        if (trapLayer != null) {
+            for (MapObject object : trapLayer.getObjects()) {
+                if (object instanceof RectangleMapObject) {
+                    Rectangle rect = ((RectangleMapObject) object).getRectangle();
+
+                    // Look for the name you typed in Tiled!
+                    if (object.getName() != null && object.getName().equals("spike")) {
+                        Spike spike = new Spike(world, object, assets);
+                        mapTraps.add(spike);
+                    } else if (object.getName().equals("spikedball")) {
+                        mapTraps.add(new SpikedBall(world, object, assets)); // Automatically reads your custom properties!
+                    }
+                    // Later you can add: else if (object.getName().equals("sawblade")) ...
                 }
             }
         }
@@ -174,6 +203,8 @@ public class PlayableMap {
             }
         }
     }
+
+
 
     public void updatePotions(float dt, World world) {
         Iterator<Potion> iter = potions.iterator();
@@ -283,6 +314,29 @@ public class PlayableMap {
         createPotionsFromMap(world);
         createWaterFromMap(world);
         createEnemiesFromMap(world);
+        createTrapsFromMap(world);
+    }
+
+
+    public void updateEnemies(float dt, Player player, World world) {
+        Iterator<Enemy> enemyIter = enemies.iterator();
+        while (enemyIter.hasNext()) {
+            Enemy enemy = enemyIter.next();
+
+            // 1. Update the enemy logic
+            enemy.updateEnemy(dt, player);
+
+            // 2. Safely remove them if they died this frame
+            if (enemy.setToDestroy && !enemy.destroyed) {
+
+                world.destroyBody(enemy.b2body); // Remove from Box2D Physics
+                enemy.destroyed = true;          // Flag as fully handled
+
+                // Optional: enemy.dispose(); if you need to clear anything else!
+
+                enemyIter.remove();              // Safely wipe from the Java Array!
+            }
+        }
     }
 
     public void UpdateMap(OrthographicCamera camera, float dt, World world, Player player) {
@@ -293,11 +347,8 @@ public class PlayableMap {
         updateCoins(dt, world);
         updatePotions(dt, world);
         updatewaters(dt);
-
-        // Update all enemies
-        for (Enemy e : enemies) {
-            e.updateEnemy(dt, player);
-        }
+        updateEnemies(dt, player, world);
+        updateTraps(dt);
     }
 
     public void updatewaters(float dt){
@@ -306,9 +357,27 @@ public class PlayableMap {
         }
     }
 
+    public void updateTraps(float dt){
+        for(Trap t: mapTraps){
+            t.update(dt);
+        }
+    }
+
+    public void drawTraps(SpriteBatch batch, float dt) {
+        for (Trap t : mapTraps) {
+            t.render(batch, dt);
+        }
+    }
+
     public void drawWater(SpriteBatch batch) {
         for (Water w : waterPools)
             w.render(batch);
+    }
+
+    public void drawEnemies(SpriteBatch batch, float dt) {
+        for (Enemy e : enemies) {
+            e.render(dt, batch);
+        }
     }
 
     public void DrawElements(SpriteBatch batch, float dt) {
@@ -316,11 +385,8 @@ public class PlayableMap {
         drawCoins(batch);
         drawPotions(batch);
         drawWater(batch);
-
-        // Draw all enemies
-        for (Enemy e : enemies) {
-            e.render(dt, batch);
-        }
+        drawEnemies(batch, dt);
+        drawTraps(batch, dt);
     }
 
     public void DrawBackGround(SpriteBatch batch, GameCam camera, Viewport viewport, float dt) {

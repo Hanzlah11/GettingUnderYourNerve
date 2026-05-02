@@ -53,6 +53,9 @@ public class Shell extends Enemy
         idleAnimation = assets.getAnimation(GameAssetManager.SHELL_IDLE_PREFIX, 1, 0.15f, Animation.PlayMode.LOOP, "%d");
         shootingAnimation = assets.getAnimation(GameAssetManager.SHELL_FIRE_PREFIX, 6, 0.12f, Animation.PlayMode.NORMAL, "%d");
         bitingAnimation = assets.getAnimation(GameAssetManager.SHELL_BITE_PREFIX, 6, 0.05f, Animation.PlayMode.NORMAL, "%d");
+
+        this.maxHealth = 3;
+        this.currentHealth = 3;
     }
 
     @Override
@@ -70,7 +73,7 @@ public class Shell extends Enemy
         fdef.shape = shape;
 
         fdef.filter.categoryBits = Main.ENEMY_BIT;
-        fdef.filter.maskBits = Main.GROUND_BIT | Main.PLAYER_BIT;
+        fdef.filter.maskBits = Main.GROUND_BIT | Main.PLAYER_BIT | Main.SWORD_BIT;
 
         fdef.friction = 1.0f;
         fdef.density = 10000f;
@@ -83,6 +86,17 @@ public class Shell extends Enemy
     @Override
     public void updateEnemy(float dt, Player player)
     {
+        // --- 1. HANDLE DEATH ---
+        if (isDead) {
+            return; // Stop the AI from thinking if it's dead!
+        }
+
+        // --- 2. HANDLE STUN (Let the physics engine push them!) ---
+        if (hitTimer > 0) {
+            // We let the physics knockback happen, and skip the AI logic this frame
+            return;
+        }
+
         float dx = player.GetXpos() - GetXpos();
         float dy = player.GetYpos() - GetYpos();
 
@@ -144,11 +158,15 @@ public class Shell extends Enemy
 
     public void render(float dt, SpriteBatch batch)
     {
-        batch.draw(GetCurrentFrame(dt),
-            GetXpos() - (drawWidth / 2f),
-            GetYpos() - (drawHeight / 2f),
+        applyDamageTint(batch, dt);
+        batch.draw(
+            GetCurrentFrame(dt),
+            GetXpos() - drawWidth / 2f,
+            GetYpos() - drawHeight / 2f - 2f / PPM,
             drawWidth,
-            drawHeight);
+            drawHeight
+        );
+        resetTint(batch);
 
         for(Projectile p : activeProjectiles)
             p.render(dt, batch);

@@ -45,6 +45,9 @@ public class Crab extends Enemy {
         drawWidth = 72 / PPM;
         drawHeight = 32 / PPM;
 
+        this.maxHealth = 2;
+        this.currentHealth = 2;
+
         defineEnemy();
 
         idleAnim = assets.getAnimation(
@@ -107,7 +110,7 @@ public class Crab extends Enemy {
 
         // Collision filtering for Ground and Player[cite: 11]
         fdef.filter.categoryBits = Main.ENEMY_BIT;
-        fdef.filter.maskBits = Main.GROUND_BIT | Main.PLAYER_BIT;
+        fdef.filter.maskBits = Main.GROUND_BIT | Main.PLAYER_BIT | Main.SWORD_BIT;
 
         fdef.friction = 0f;    // Keeps movement snappy[cite: 11]
         fdef.density = 1000f;  // Heavy mass[cite: 11]
@@ -124,6 +127,16 @@ public class Crab extends Enemy {
 
     @Override
     public void updateEnemy(float dt, Player player) {
+        // --- 1. HANDLE DEATH ---
+        if (isDead) {
+            return; // Stop the AI from thinking if it's dead!
+        }
+
+        // --- 2. HANDLE STUN (Let the physics engine push them!) ---
+        if (hitTimer > 0) {
+            // We let the physics knockback happen, and skip the AI logic this frame
+            return;
+        }
         float dx = player.GetXpos() - GetXpos();
         float dy = player.GetYpos() - GetYpos();
         float distance = abs(dx);
@@ -314,7 +327,7 @@ public class Crab extends Enemy {
 
     @Override
     public void render(float dt, SpriteBatch batch) {
-
+        applyDamageTint(batch, dt);
         batch.draw(
             GetCurrentFrame(dt),
             GetXpos() - drawWidth / 2f,
@@ -322,6 +335,7 @@ public class Crab extends Enemy {
             drawWidth,
             drawHeight
         );
+        resetTint(batch);
     }
 
     @Override
