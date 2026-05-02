@@ -81,6 +81,44 @@ public class GameAssetManager {
     public static final String CHAIN_LINK =
         "Treasure Hunters/Palm Tree Island/Sprites/Objects/Spiked Ball/spiked_chain.png";
 
+    //---UI---
+    public static final String BOARD_TL =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Board/1.png";
+    public static final String BOARD_TC =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Board/2.png";
+    public static final String BOARD_TR =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Board/3.png";
+    public static final String BOARD_CL =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Board/4.png";
+    public static final String BOARD_CC =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Board/5.png";
+    public static final String BOARD_CR =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Board/6.png";
+    public static final String BOARD_BL =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Board/7.png";
+    public static final String BOARD_BC =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Board/8.png";
+    public static final String BOARD_BR =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Board/9.png";
+    public static final String BUTTON_L =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Button/2.png";
+    public static final String BUTTON_C =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Button/3.png";
+    public static final String BUTTON_R =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Button/4.png";
+    public static final String BANNER_TL =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Big Banner/1.png";
+    public static final String BANNER_TR =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Big Banner/2.png";
+    public static final String BANNER_CL =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Big Banner/3.png";
+    public static final String BANNER_CR =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Big Banner/4.png";
+    public static final String BANNER_BL =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Big Banner/5.png";
+    public static final String BANNER_BR =
+        "Treasure Hunters/Wood and Paper UI/Sprites/Big Banner/6.png";
+
 
     public void loadAllAssets() {
 
@@ -126,6 +164,26 @@ public class GameAssetManager {
         loadFrames(SPIKE_ANIM_PREFIX, 4, "%d");
         manager.load(SPIKED_BALL, Texture.class);
         manager.load(CHAIN_LINK, Texture.class);
+
+        //UI
+        manager.load(BOARD_TL,  Texture.class);
+        manager.load(BOARD_TC,  Texture.class);
+        manager.load(BOARD_TR,  Texture.class);
+        manager.load(BOARD_CL,  Texture.class);
+        manager.load(BOARD_CC,  Texture.class);
+        manager.load(BOARD_CR,  Texture.class);
+        manager.load(BOARD_BL,  Texture.class);
+        manager.load(BOARD_BC,  Texture.class);
+        manager.load(BOARD_BR,  Texture.class);
+        manager.load(BUTTON_L,  Texture.class);
+        manager.load(BUTTON_C,  Texture.class);
+        manager.load(BUTTON_R,  Texture.class);
+        manager.load(BANNER_TL,  Texture.class);
+        manager.load(BANNER_TR,  Texture.class);
+        manager.load(BANNER_CL,  Texture.class);
+        manager.load(BANNER_CR,  Texture.class);
+        manager.load(BANNER_BL,  Texture.class);
+        manager.load(BANNER_BR,  Texture.class);
     }
 
     private void loadFrames(String prefix, int frameCount, String format) {

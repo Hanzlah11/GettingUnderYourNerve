@@ -4,6 +4,7 @@ import Game.GettingUnderYourNerve.Enemies.Crab;
 import Game.GettingUnderYourNerve.Enemies.Enemy;
 import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Map.PlayableMap;
+import Game.GettingUnderYourNerve.UI.PauseMenu;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.FileHandler;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
@@ -59,6 +60,9 @@ public class Main extends ApplicationAdapter {
     public static final short TRAP_BIT = 128;
     public static final short SWORD_BIT = 256;
 
+    //--- Pause Menu
+    private PauseMenu pauseMenu;
+
     @Override
     public void create() {
 
@@ -76,6 +80,12 @@ public class Main extends ApplicationAdapter {
         assets = new GameAssetManager();
         assets.loadAllAssets();
         assets.manager.finishLoading();
+
+
+        //-- Pause Menu
+        pauseMenu = new PauseMenu();
+        pauseMenu.loadAssets(assets);
+        pauseMenu.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         // Create Player + Map
         player = new Player(20, assets);
@@ -98,74 +108,74 @@ public class Main extends ApplicationAdapter {
     @Override
     public void render() {
 
-        fileHandler.GetFilInput(player);
+        pauseMenu.handleInput();
 
-        // --- Physics Update ---
-        world.step(1 / 60f, 6, 2);
         float dt = Gdx.graphics.getDeltaTime();
 
-        player.UpdatePlayer(dt, world);
+        if (!pauseMenu.isPaused()) {
+            fileHandler.GetFilInput(player);
+            world.step(1 / 60f, 6, 2);
+            player.UpdatePlayer(dt, world);
 
-        // --- Camera Follow ---
-        float worldWidth = playableMap.getMapWidthInMeters();
-        float worldHeight = playableMap.getMapHeightInMeters();
+            float worldWidth = playableMap.getMapWidthInMeters();
+            float worldHeight = playableMap.getMapHeightInMeters();
 
-        float halfViewportWidth = (WORLD_WIDTH / PPM) / 2f;
-        float halfViewportHeight = (WORLD_HEIGHT / PPM) / 2f;
+            float halfViewportWidth  = (WORLD_WIDTH  / PPM) / 2f;
+            float halfViewportHeight = (WORLD_HEIGHT / PPM) / 2f;
 
-        if (player.isDead) {
-            cam.SetDeathTarget(worldWidth, worldHeight,
+            if (player.isDead) {
+                cam.SetDeathTarget(worldWidth, worldHeight,
+                    halfViewportWidth, halfViewportHeight,
+                    player.spawnX, player.spawnY);
+            }
+
+            cam.Update(
+                worldWidth, worldHeight,
                 halfViewportWidth, halfViewportHeight,
-                player.spawnX, player.spawnY);
+                player.GetXpos(), player.GetYpos()
+            );
+
+            playableMap.UpdateMap(cam.GetCam(), dt, world, player);
         }
 
-        cam.Update(
-            worldWidth,
-            worldHeight,
-            halfViewportWidth,
-            halfViewportHeight,
-            player.GetXpos(),
-            player.GetYpos()
-        );
-
-
-        // --- Clear Screen ---
+        // --- Always render ---
         ScreenUtils.clear(0.1f, 0.1f, 0.2f, 1);
-
         viewport.apply();
 
-        // --- Draw Background ---
         batch.setProjectionMatrix(cam.GetCam().combined);
         batch.begin();
         playableMap.DrawBackGround(batch, cam, viewport, dt);
         batch.end();
 
-        // --- Update Map ---
-        playableMap.UpdateMap(cam.GetCam(), dt, world, player);
+        // Tilemap always renders regardless of pause
+        playableMap.RenderTileMap(cam.GetCam());
 
-        // --- Draw Foreground ---
+        batch.setProjectionMatrix(cam.GetCam().combined);
         batch.begin();
-
         player.Render(batch, dt);
         playableMap.DrawElements(batch, dt);
-
-
         batch.end();
 
-        boolean isCtrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT) ||  Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT);
-        if (isCtrlPressed &&  Gdx.input.isKeyJustPressed(Input.Keys.D)){
+        boolean isCtrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT) ||
+            Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT);
+        if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.D)) {
             DebugOption = !DebugOption;
         }
 
-        // --- Debug Renderer ---
-        if(DebugOption){
-        debugRenderer.render(world, cam.GetCam().combined);
+        if (DebugOption) {
+            debugRenderer.render(world, cam.GetCam().combined);
+        }
+
+        // --- Pause menu on top ---
+        if (pauseMenu.isPaused()) {
+            pauseMenu.render(batch, player.getHealth(), player.getScore());
         }
     }
 
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
+        pauseMenu.resize(width, height);
     }
 
     @Override
@@ -179,5 +189,7 @@ public class Main extends ApplicationAdapter {
         playableMap.dispose();
 
         AudioManager.dispose();
+
+        pauseMenu.dispose();
     }
 }

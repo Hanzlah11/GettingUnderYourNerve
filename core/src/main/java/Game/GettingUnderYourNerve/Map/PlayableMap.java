@@ -120,6 +120,11 @@ public class PlayableMap {
         }
     }
 
+    public void RenderTileMap(OrthographicCamera camera) {
+        mapRenderer.setView(camera);
+        mapRenderer.render();
+    }
+
     public void createWaterFromMap(World world) {
         MapLayer layer = map.getLayers().get("Water");
         if (layer == null) return;
@@ -340,8 +345,6 @@ public class PlayableMap {
     }
 
     public void UpdateMap(OrthographicCamera camera, float dt, World world, Player player) {
-        mapRenderer.setView(camera);
-        mapRenderer.render();
 
         updatePlatforms(dt);
         updateCoins(dt, world);

@@ -67,3 +67,4 @@ subprojects {
 }
 
 eclipse.project.name = 'Getting Under Your Nerve' + '-parent'
+
