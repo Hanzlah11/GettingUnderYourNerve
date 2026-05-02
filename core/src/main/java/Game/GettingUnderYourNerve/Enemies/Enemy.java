@@ -37,4 +37,6 @@ public abstract class Enemy
     public float GetYpos() {
         return b2body.getPosition().y;
     }
+
+    public abstract void dispose();
 }

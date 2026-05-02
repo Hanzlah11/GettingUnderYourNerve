@@ -1,11 +1,11 @@
 package Game.GettingUnderYourNerve.Map;
 
+import Game.GettingUnderYourNerve.*;
 import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Collectables.Potion;
-import Game.GettingUnderYourNerve.GameCam;
-import Game.GettingUnderYourNerve.HorizontalPlatform;
-import Game.GettingUnderYourNerve.Main;
-import Game.GettingUnderYourNerve.VerticalPlatform;
+import Game.GettingUnderYourNerve.Enemies.Crab;
+import Game.GettingUnderYourNerve.Enemies.Enemy;
+import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -45,6 +45,7 @@ public class PlayableMap {
 
     //Water
     private Array<Water> waterPools;
+    private Array<Enemy> enemies;
 
     public PlayableMap(GameAssetManager assets) {
         this.assets = assets; // Store the vault!
@@ -58,8 +59,36 @@ public class PlayableMap {
         coins = new Array<Coin>();
         potions = new Array<Potion>();
         waterPools = new Array<Water>();
+        enemies = new Array<Enemy>();
 
         backGround = new BackGround();
+    }
+
+    public void createEnemiesFromMap(World world) {
+        // Loop through EVERY layer in the map[cite: 14]
+        for (MapLayer layer : map.getLayers()) {
+
+            // Skip Tile Layers; only look inside Object Layers[cite: 14]
+            if (layer instanceof TiledMapTileLayer) continue;
+
+            // Iterate through all objects in THIS specific layer[cite: 14]
+            for (MapObject object : layer.getObjects()) {
+
+                // Ensure the object has coordinates[cite: 14]
+                if (object.getProperties().containsKey("x")) {
+                    float x = object.getProperties().get("x", Float.class);
+                    float y = object.getProperties().get("y", Float.class);
+                    String name = object.getName();
+
+                    // Spawn based on the Name field in Tiled[cite: 14]
+                    if ("Shell".equals(name)) {
+                        enemies.add(new Shell(world, x, y, assets));
+                    } else if ("Crab".equals(name)) {
+                        enemies.add(new Crab(world, x, y, assets));
+                    }
+                }
+            }
+        }
     }
 
     public void createWaterFromMap(World world) {
@@ -253,16 +282,22 @@ public class PlayableMap {
         createCoinsFromMap(world);
         createPotionsFromMap(world);
         createWaterFromMap(world);
+        createEnemiesFromMap(world);
     }
 
-    public void UpdateMap(OrthographicCamera camera, float dt, World world) {
+    public void UpdateMap(OrthographicCamera camera, float dt, World world, Player player) {
         mapRenderer.setView(camera);
         mapRenderer.render();
 
         updatePlatforms(dt);
-        updateCoins(dt,  world);
-        updatePotions(dt,  world);
+        updateCoins(dt, world);
+        updatePotions(dt, world);
         updatewaters(dt);
+
+        // Update all enemies
+        for (Enemy e : enemies) {
+            e.updateEnemy(dt, player);
+        }
     }
 
     public void updatewaters(float dt){
@@ -276,11 +311,16 @@ public class PlayableMap {
             w.render(batch);
     }
 
-    public void DrawElements(SpriteBatch batch) {
+    public void DrawElements(SpriteBatch batch, float dt) {
         drawPlatforms(batch);
         drawCoins(batch);
         drawPotions(batch);
         drawWater(batch);
+
+        // Draw all enemies
+        for (Enemy e : enemies) {
+            e.render(dt, batch);
+        }
     }
 
     public void DrawBackGround(SpriteBatch batch, GameCam camera, Viewport viewport, float dt) {
@@ -297,10 +337,34 @@ public class PlayableMap {
     }
 
     public void dispose() {
+        // 1. Dispose of the Map and its specific Renderer
         map.dispose();
         mapRenderer.dispose();
+
+        // 2. Dispose of the Background system
         backGround.dispose();
-        // Do NOT dispose assets here, Main.java will handle assets.dispose()
+
+        // 3. Dispose of all Enemies
+        // We must manually loop through and call their dispose methods
+        for (Enemy e : enemies) {
+            e.dispose();
+        }
+        enemies.clear(); // Empty the reference list
+
+        // 4. Clear Collectables and Water
+        // These lists don't have separate .dispose() methods usually,
+        // but clearing them helps the Garbage Collector.
+        coins.clear();
+        potions.clear();
+        waterPools.clear();
+
+        // 5. Clear Platform arrays
+        horizontalPlatforms.clear();
+        verticalPlatforms.clear();
+
+        // IMPORTANT: As noted in your code, we do NOT call assets.dispose()
+        // here. Main.java owns the GameAssetManager and will kill it at
+        // the very end.
     }
 
     public float getMapWidthInMeters() {
