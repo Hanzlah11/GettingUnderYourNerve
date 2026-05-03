@@ -1,5 +1,7 @@
 package Game.GettingUnderYourNerve.Utilities;
 
+import Game.GettingUnderYourNerve.Trolls.LauncherBox;
+import Game.GettingUnderYourNerve.Trolls.RotatingBox;
 import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Collectables.Potion;
 import Game.GettingUnderYourNerve.Enemies.Crab;
@@ -18,11 +20,6 @@ public class WorldContactListener implements ContactListener {
 
     // ---------------------------------------------------------------
     // PlayableMap reference — set once from Main after map is created.
-    // Needed so trigger contacts can queue activations on the map.
-    //
-    // In Main.create(), after creating PlayableMap:
-    //   ((WorldContactListener) world.getContactListener())
-    //       .setPlayableMap(playableMap);
     // ---------------------------------------------------------------
     private PlayableMap playableMap;
 
@@ -39,7 +36,6 @@ public class WorldContactListener implements ContactListener {
         Object objB = fixB.getUserData();
 
         // ---- 1. Trigger zones ----
-        // We never destroy bodies here — just queue the ID.
         if (objA instanceof Player && objB instanceof TriggerZone) {
             TriggerZone zone = (TriggerZone) objB;
             if (!zone.fired && playableMap != null)
@@ -92,8 +88,35 @@ public class WorldContactListener implements ContactListener {
             case Main.PROJECTILE_BIT | Main.GROUND_BIT:
                 handleProjectileGroundCollision(fixA, fixB);
                 break;
-            case Main.PLAYER_BIT | Main.GROUND_BIT:
+
+            // ---- Box interactions ----
+            case Main.PLAYER_BIT | Main.GROUND_BIT: {
+                Fixture groundFix = fixA.getFilterData().categoryBits == Main.GROUND_BIT ? fixA : fixB;
+                Fixture playerFix = fixA.getFilterData().categoryBits == Main.PLAYER_BIT ? fixA : fixB;
+
+                Object groundData = groundFix.getUserData();
+                Object playerData = playerFix.getUserData();
+
+                if (playerData instanceof Player) {
+                    Player p = (Player) playerData;
+
+                    // Only react when player is landing from above,
+                    // not when walking into the side of the box
+                    if (p.getPlayerBody().getLinearVelocity().y <= 0) {
+
+                        if (groundData instanceof RotatingBox) {
+                            // Pass player X so box knows which side they landed on
+                            ((RotatingBox) groundData).onPlayerLand(p.GetXpos());
+                        }
+                        else if (groundData instanceof LauncherBox) {
+                            // Pass full player so launcher can read velocity and call launch()
+                            ((LauncherBox) groundData).onPlayerLand(p);
+                        }
+                    }
+                }
                 break;
+            }
+
             case Main.PLAYER_BIT | Main.TRAP_BIT: {
                 Fixture playerFix = fixA.getFilterData().categoryBits == Main.PLAYER_BIT ? fixA : fixB;
                 Fixture trapFix   = fixA.getFilterData().categoryBits == Main.TRAP_BIT   ? fixA : fixB;
