@@ -1,5 +1,6 @@
 package Game.GettingUnderYourNerve.Utilities;
 
+import Game.GettingUnderYourNerve.Trolls.EvilCoin;
 import Game.GettingUnderYourNerve.Trolls.LauncherBox;
 import Game.GettingUnderYourNerve.Trolls.RotatingBox;
 import Game.GettingUnderYourNerve.Collectables.Coin;
@@ -19,7 +20,7 @@ import com.badlogic.gdx.physics.box2d.*;
 public class WorldContactListener implements ContactListener {
 
     // ---------------------------------------------------------------
-    // PlayableMap reference — set once from Main after map is created.
+    // PlayableMap reference — set once from PlayScreen after map is created.
     // ---------------------------------------------------------------
     private PlayableMap playableMap;
 
@@ -66,7 +67,17 @@ public class WorldContactListener implements ContactListener {
             return;
         }
 
-        // ---- 3. Deadly water ----
+        // ---- 3. Evil Coin ----
+        if (objA instanceof Player && objB instanceof EvilCoin) {
+            ((EvilCoin) objB).onHitPlayer((Player) objA);
+            return;
+        }
+        if (objB instanceof Player && objA instanceof EvilCoin) {
+            ((EvilCoin) objA).onHitPlayer((Player) objB);
+            return;
+        }
+
+        // ---- 4. Deadly water ----
         if (objA instanceof Player && "water_sensor".equals(objB)) {
             ((Player) objA).addHp(-100);
             return;
@@ -75,7 +86,7 @@ public class WorldContactListener implements ContactListener {
             return;
         }
 
-        // ---- 4. Bitmask collisions ----
+        // ---- 5. Bitmask collisions ----
         int cDef = fixA.getFilterData().categoryBits | fixB.getFilterData().categoryBits;
 
         switch (cDef) {
@@ -105,11 +116,8 @@ public class WorldContactListener implements ContactListener {
                     if (p.getPlayerBody().getLinearVelocity().y <= 0) {
 
                         if (groundData instanceof RotatingBox) {
-                            // Pass player X so box knows which side they landed on
                             ((RotatingBox) groundData).onPlayerLand(p.GetXpos());
-                        }
-                        else if (groundData instanceof LauncherBox) {
-                            // Pass full player so launcher can read velocity and call launch()
+                        } else if (groundData instanceof LauncherBox) {
                             ((LauncherBox) groundData).onPlayerLand(p);
                         }
                     }
@@ -126,6 +134,7 @@ public class WorldContactListener implements ContactListener {
                 t.onHit(p);
                 break;
             }
+
             case Main.SWORD_BIT | Main.ENEMY_BIT: {
                 Fixture swordFix = fixA.getFilterData().categoryBits == Main.SWORD_BIT ? fixA : fixB;
                 Fixture enemyFix = fixA.getFilterData().categoryBits == Main.ENEMY_BIT ? fixA : fixB;

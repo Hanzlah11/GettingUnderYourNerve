@@ -1,8 +1,11 @@
 package Game.GettingUnderYourNerve;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
+
+import java.util.Random;
 
 public class GameCam {
 
@@ -12,6 +15,11 @@ public class GameCam {
     // Lerp target — camera slides toward this
     private Vector2 target;
     private static final float LERP_SPEED = 3f; // tweak for faster/slower slide
+
+    private float shakeDuration  = 0f;
+    private float shakeIntensity = 0f;
+    private float shakeTimer     = 0f;
+    private Random random        = new Random();
 
     public GameCam() {
         camera = new OrthographicCamera();
@@ -27,15 +35,21 @@ public class GameCam {
      * Normal gameplay update — target follows player, camera lerps to target.
      */
     public void Update(float ww, float wh, float hvw, float hvh, float px, float py) {
-        // Clamp the desired target to map bounds
         target.x = MathUtils.clamp(px, hvw, ww - hvw);
         target.y = MathUtils.clamp(py, hvh, wh - hvh);
 
-        // Lerp current position toward target
         position.x = MathUtils.lerp(position.x, target.x, LERP_SPEED * (1f / 60f));
         position.y = MathUtils.lerp(position.y, target.y, LERP_SPEED * (1f / 60f));
 
         camera.position.set(position.x, position.y, 0);
+
+        // Apply shake on top of the base position
+        if (shakeTimer < shakeDuration) {
+            shakeTimer += Gdx.graphics.getDeltaTime();
+            camera.position.x += (random.nextFloat() * 2 - 1) * shakeIntensity;
+            camera.position.y += (random.nextFloat() * 2 - 1) * shakeIntensity;
+        }
+
         camera.update();
     }
 
@@ -55,4 +69,11 @@ public class GameCam {
     public float getCamY() {
         return camera.position.y;
     }
+
+    public void startShake(float duration, float intensity) {
+        shakeDuration  = duration;
+        shakeIntensity = intensity;
+        shakeTimer     = 0f;
+    }
+
 }
