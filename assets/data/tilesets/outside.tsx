@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="outside" tilewidth="16" tileheight="16" tilecount="768" columns="48">
+<tileset version="1.10" tiledversion="1.12.1" name="outside" tilewidth="16" tileheight="16" tilecount="768" columns="48">
  <image source="../../Graphics/tilesets/outside.png" width="768" height="256"/>
  <tile id="0">
   <properties>
@@ -399,41 +399,49 @@
  <tile id="424">
   <properties>
    <property name="Solid" type="bool" value="true"/>
+   <property name="Troll" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="425">
   <properties>
    <property name="Solid" type="bool" value="true"/>
+   <property name="Troll" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="426">
   <properties>
    <property name="Solid" type="bool" value="true"/>
+   <property name="Troll" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="427">
   <properties>
    <property name="Solid" type="bool" value="true"/>
+   <property name="Troll" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="428">
   <properties>
    <property name="Solid" type="bool" value="true"/>
+   <property name="Troll" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="429">
   <properties>
    <property name="Solid" type="bool" value="true"/>
+   <property name="Troll" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="430">
   <properties>
    <property name="Solid" type="bool" value="true"/>
+   <property name="Troll" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="431">
   <properties>
    <property name="Solid" type="bool" value="true"/>
+   <property name="Troll" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="432">
@@ -469,11 +477,49 @@
  <tile id="472">
   <properties>
    <property name="Solid" type="bool" value="true"/>
+   <property name="Troll" type="int" value="1"/>
+  </properties>
+ </tile>
+ <tile id="473">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+   <property name="Troll" type="int" value="1"/>
+  </properties>
+ </tile>
+ <tile id="474">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+   <property name="Troll" type="int" value="1"/>
+  </properties>
+ </tile>
+ <tile id="475">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+   <property name="Troll" type="int" value="1"/>
+  </properties>
+ </tile>
+ <tile id="476">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+   <property name="Troll" type="int" value="1"/>
+  </properties>
+ </tile>
+ <tile id="477">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+   <property name="Troll" type="int" value="1"/>
+  </properties>
+ </tile>
+ <tile id="478">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+   <property name="Troll" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="479">
   <properties>
    <property name="Solid" type="bool" value="true"/>
+   <property name="Troll" type="int" value="1"/>
   </properties>
  </tile>
  <tile id="480">
@@ -623,62 +669,62 @@
  </tile>
  <tile id="576">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="577">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="578">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="579">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="580">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="581">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="582">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="583">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="584">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="585">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="586">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="587">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="588">
@@ -773,12 +819,62 @@
  </tile>
  <tile id="624">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="625">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="626">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="627">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="628">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="629">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="630">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="631">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="632">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="633">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="634">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="635">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="636">
@@ -818,12 +914,62 @@
  </tile>
  <tile id="672">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="673">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="674">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="675">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="676">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="677">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="678">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="679">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="680">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="681">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
+  </properties>
+ </tile>
+ <tile id="682">
+  <properties>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="683">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="684">
@@ -863,62 +1009,62 @@
  </tile>
  <tile id="720">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="721">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="722">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="723">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="724">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="725">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="726">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="727">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="728">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="729">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="730">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="731">
   <properties>
-   <property name="Solid" type="bool" value="true"/>
+   <property name="Solid" type="bool" value="false"/>
   </properties>
  </tile>
  <tile id="732">

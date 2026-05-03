@@ -27,6 +27,8 @@ public class GameAssetManager {
         "Treasure Hunters/Captain Clown Nose/Sprites/Captain Clown Nose/Captain Clown Nose with Sword/14-Hit Sword/Hit Sword ";
     public static final String PLAYER_ATTACK_PREFIX =
         "Treasure Hunters/Captain Clown Nose/Sprites/Captain Clown Nose/Captain Clown Nose with Sword/17-Attack 3/Attack 3 ";
+    public static final String PLAYER_WALL_SLIDE =
+        "Treasure Hunters/Captain Clown Nose/Sprites/Captain Clown Nose/Captain Clown Nose with Sword/08-Wall Slide/Wall Slide 01.png";
 
     // --- COLLECTABLES ---
     public static final String COIN_GOLD_PREFIX =
@@ -133,6 +135,7 @@ public class GameAssetManager {
         loadFrames(PLAYER_FALL_PREFIX, 1, "%02d");
         loadFrames(PLAYER_HIT_PREFIX, 4, "%02d");
         loadFrames(PLAYER_ATTACK_PREFIX, 3,  "%02d");
+        manager.load(PLAYER_WALL_SLIDE, Texture.class);
 
         // COLLECTABLES
         loadFrames(COIN_GOLD_PREFIX, 4, "%02d");
