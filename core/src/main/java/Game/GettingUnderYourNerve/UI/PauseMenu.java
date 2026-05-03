@@ -1,17 +1,18 @@
 package Game.GettingUnderYourNerve.UI;
 
+import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class PauseMenu {
 
@@ -68,7 +69,8 @@ public class PauseMenu {
     // ---------------------------------------------------------------
     private Rectangle resumeRect = new Rectangle();
     private Rectangle helpRect   = new Rectangle();
-    private Rectangle howToRect  = new Rectangle();
+    private Rectangle cheatsRect = new Rectangle();
+    private Rectangle menuRect   = new Rectangle();
 
     // ---------------------------------------------------------------
     // Touch
@@ -88,6 +90,16 @@ public class PauseMenu {
     // ---------------------------------------------------------------
     // Constructor
     // ---------------------------------------------------------------
+
+    private boolean isRickrolling = false;
+    private float rickTimer = 0;
+    private Animation<TextureRegion> rickAnim;
+
+    // Squeezed dimensions: 280x210 fits perfectly in your 320x260 board
+    private static final float RICK_DRAW_W = 280f;
+    private static final float RICK_DRAW_H = 210f;
+
+
     public PauseMenu() {
         layout = new GlyphLayout();
     }
@@ -112,6 +124,22 @@ public class PauseMenu {
 
         font = loadFont("ui/runescape_uf.ttf", 18);
 
+        Texture sheet = assets.manager.get(GameAssetManager.RICK_SHEET, Texture.class);
+        // Split into 240x135 frames
+        TextureRegion[][] tmp =
+            TextureRegion.split(sheet, 240, 135);
+
+        Array<TextureRegion> frames = new Array<>();
+        int count = 0;
+        for (int row = 0; row < tmp.length; row++) {
+            for (int col = 0; col < tmp[row].length; col++) {
+                if (count < 84) { // Only take the 84 frames you have
+                    frames.add(tmp[row][col]);
+                    count++;
+                }
+            }
+        }
+        rickAnim = new com.badlogic.gdx.graphics.g2d.Animation<>(1/12f, frames);
         // Banner loaded here — Main knows nothing about it
         hudBanner.loadAssets(assets);
     }
@@ -130,12 +158,17 @@ public class PauseMenu {
     // handleInput — call at top of Main.render()
     // ---------------------------------------------------------------
     public void handleInput() {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.P)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             paused = !paused;
+            // Ensure that whenever we unpause (regardless of how), the prank is reset
+            if (!paused) {
+                stopRickroll();
+            }
         }
     }
 
     public boolean isPaused() { return paused; }
+
 
     // ---------------------------------------------------------------
     // render
@@ -147,16 +180,21 @@ public class PauseMenu {
     //       pauseMenu.render(batch, player.getHealth(), player.getScore());
     //   }
     // ---------------------------------------------------------------
-    public void render(SpriteBatch batch, int health, int score) {
+    public void render(SpriteBatch batch, int health, int score, Viewport uiViewport) {
         if (!paused) return;
 
-        handleMenuInput();
+        if (isRickrolling) {
+            if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+                stopRickroll();
+            }
+        } else {
+            handleMenuInput(uiViewport);
+        }
 
-        screenMatrix.setToOrtho2D(0, 0, screenW, screenH);
-        batch.setProjectionMatrix(screenMatrix);
+        batch.setProjectionMatrix(uiViewport.getCamera().combined);
 
-        float bx = (screenW - BOARD_WIDTH)  / 2f;
-        float by = (screenH - BOARD_HEIGHT) / 2f - BOARD_OFFSET_Y;
+        float bx = (uiViewport.getWorldWidth() - BOARD_WIDTH)  / 2f;
+        float by = (uiViewport.getWorldHeight() - BOARD_HEIGHT) / 2f - BOARD_OFFSET_Y;
 
         float innerW = BOARD_WIDTH  - BOARD_CORNER * 2;
         float innerH = BOARD_HEIGHT - BOARD_CORNER * 2;
@@ -176,24 +214,42 @@ public class PauseMenu {
         drawTex(batch, boardBC, bx + BOARD_CORNER,               by,                                innerW,       BOARD_EDGE_H);
         drawTex(batch, boardBR, bx + BOARD_WIDTH - BOARD_CORNER, by,                                BOARD_CORNER, BOARD_CORNER);
 
-        // ---- "PAUSED" title ----
-        font.setColor(Color.WHITE);
-        String title = "PAUSED";
-        layout.setText(font, title);
-        font.draw(batch, title,
-            bx + (BOARD_WIDTH - layout.width) / 2f,
-            by + BOARD_HEIGHT - BOARD_CORNER - 0f);
+        if (isRickrolling) {
+            rickTimer += Gdx.graphics.getDeltaTime();
+            com.badlogic.gdx.graphics.g2d.TextureRegion frame = rickAnim.getKeyFrame(rickTimer);
 
-        // ---- Buttons ----
-        drawButton(batch, resumeRect, "Resume");
-        drawButton(batch, helpRect,   "Help");
-        drawButton(batch, howToRect,  "How to Play");
+            // Center the squeezed 280x210 video
+            float rx = bx + (BOARD_WIDTH - RICK_DRAW_W) / 2f;
+            float ry = by + (BOARD_HEIGHT - RICK_DRAW_H) / 2f;
+            batch.draw(frame, rx, ry, RICK_DRAW_W, RICK_DRAW_H);
 
+            if (rickAnim.isAnimationFinished(rickTimer)) {
+                isRickrolling = false;
+                AudioManager.rickMusic.stop();
+            }
+        }
+        else {
+            // ---- "PAUSED" title ----
+            font.setColor(Color.WHITE);
+            String title = "PAUSED";
+            layout.setText(font, title);
+            font.draw(batch, title,
+                bx + (BOARD_WIDTH - layout.width) / 2f,
+                by + BOARD_HEIGHT - BOARD_CORNER - 0f);
+
+            // ---- Buttons ----
+            drawButton(batch, resumeRect, "Resume");
+            drawButton(batch, helpRect, "Need Some Help?");
+            drawButton(batch, cheatsRect, "Cheat Codes");
+            drawButton(batch, menuRect, "Return to Menu");
+        }
         batch.end();
 
         // ---- Banner: attach to board's top-left edge, then render ----
-        hudBanner.attachToBoard(bx - 200, by, BOARD_HEIGHT);
-        hudBanner.render(batch, health, score);
+
+        hudBanner.attachToBoard(bx - 180, by + 25, BOARD_HEIGHT);
+        hudBanner.render(batch, health, score, uiViewport.getCamera().combined);
+
     }
 
     // ---------------------------------------------------------------
@@ -212,25 +268,31 @@ public class PauseMenu {
         float bx = (screenW - BOARD_WIDTH)  / 2f;
         float by = (screenH - BOARD_HEIGHT) / 2f - BOARD_OFFSET_Y;
 
-        float totalBtns = BTN_HEIGHT * 3 + BTN_GAP * 2;
+        // Adjusted for 4 buttons and 3 gaps
+        float totalBtns = (BTN_HEIGHT * 4) + (BTN_GAP * 3);
         float startY    = by + (BOARD_HEIGHT - totalBtns) / 2f;
         float btnX      = bx + (BOARD_WIDTH  - BTN_WIDTH) / 2f;
 
-        howToRect .set(btnX, startY,                               BTN_WIDTH, BTN_HEIGHT);
-        helpRect  .set(btnX, startY + BTN_HEIGHT + BTN_GAP,        BTN_WIDTH, BTN_HEIGHT);
-        resumeRect.set(btnX, startY + (BTN_HEIGHT + BTN_GAP) * 2f, BTN_WIDTH, BTN_HEIGHT);
+        // Position buttons from bottom to top
+        menuRect  .set(btnX, startY,                               BTN_WIDTH, BTN_HEIGHT);
+        cheatsRect.set(btnX, startY + BTN_HEIGHT + BTN_GAP,        BTN_WIDTH, BTN_HEIGHT);
+        helpRect  .set(btnX, startY + (BTN_HEIGHT + BTN_GAP) * 2f, BTN_WIDTH, BTN_HEIGHT);
+        resumeRect.set(btnX, startY + (BTN_HEIGHT + BTN_GAP) * 3f, BTN_WIDTH, BTN_HEIGHT);
     }
 
-    private void handleMenuInput() {
+    private void handleMenuInput(Viewport uiViewport) {
         if (!Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) return;
 
         touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+        uiViewport.unproject(touchVec);
+
         float tx = touchVec.x;
-        float ty = screenH - touchVec.y;
+        float ty = touchVec.y;
 
         if      (resumeRect.contains(tx, ty)) paused = false;
         else if (helpRect  .contains(tx, ty)) onHelp();
-        else if (howToRect .contains(tx, ty)) onHowToPlay();
+        else if (cheatsRect.contains(tx, ty)) onCheatCodes();
+        else if (menuRect  .contains(tx, ty)) onReturnToMenu();
     }
 
     private void drawButton(SpriteBatch batch, Rectangle rect, String label) {
@@ -284,6 +346,22 @@ public class PauseMenu {
         }
     }
 
-    private void onHelp()      { Gdx.app.log("PauseMenu", "Help pressed");        }
-    private void onHowToPlay() { Gdx.app.log("PauseMenu", "How To Play pressed"); }
+    private void stopRickroll() {
+        isRickrolling = false;
+        rickTimer = 0;
+        if (AudioManager.rickMusic != null && AudioManager.rickMusic.isPlaying()) {
+            AudioManager.rickMusic.stop();
+        }
+    }
+
+    private void onHelp() {
+        // TROLL: Instantly terminate the game as requested
+        Gdx.app.exit();
+    }
+    private void onCheatCodes() {
+        isRickrolling = true; // Troll 2: The Rickroll
+        rickTimer = 0;
+        AudioManager.rickMusic.play();
+    }
+    private void onReturnToMenu()  { Gdx.app.log("PauseMenu", "Returning to Menu..."); }
 }

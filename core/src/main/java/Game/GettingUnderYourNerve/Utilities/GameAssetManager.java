@@ -118,12 +118,13 @@ public class GameAssetManager {
         "Treasure Hunters/Wood and Paper UI/Sprites/Big Banner/5.png";
     public static final String BANNER_BR =
         "Treasure Hunters/Wood and Paper UI/Sprites/Big Banner/6.png";
-
+    public static final String RICK_SHEET = "ui/rickRoll.png";
 
     public void loadAllAssets() {
 
         manager.load(SKY_BASE, Texture.class);
         manager.load(WATER_DEEP, Texture.class);
+        manager.load(RICK_SHEET, Texture.class);
 
         // PLAYER
         loadFrames(PLAYER_IDLE_PREFIX, 5, "%02d");

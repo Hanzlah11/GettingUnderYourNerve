@@ -108,9 +108,8 @@ public class HudBanner {
     // ---------------------------------------------------------------
     // render — called by PauseMenu.render() after attachToBoard()
     // ---------------------------------------------------------------
-    public void render(SpriteBatch batch, int health, int score) {
-        screenMatrix.setToOrtho2D(0, 0, screenW, screenH);
-        batch.setProjectionMatrix(screenMatrix);
+    public void render(SpriteBatch batch, int health, int score, Matrix4 projectionMatrix) {
+        batch.setProjectionMatrix(projectionMatrix);
 
         float x = bannerX;
         float y = bannerY;
