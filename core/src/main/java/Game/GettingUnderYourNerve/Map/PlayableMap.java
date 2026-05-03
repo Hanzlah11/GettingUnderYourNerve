@@ -9,6 +9,8 @@ import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Trap.Spike;
 import Game.GettingUnderYourNerve.Trap.SpikedBall;
 import Game.GettingUnderYourNerve.Trap.Trap;
+import Game.GettingUnderYourNerve.Trolls.TriggerZone;
+import Game.GettingUnderYourNerve.Trolls.TrollTile;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -28,292 +30,130 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import java.util.Iterator;
 
 public class PlayableMap {
-    private static final float PPM = 32f; // Pixels Per Meter
+
+    private static final float PPM = 32f;
+
     public TiledMap map;
     private OrthogonalTiledMapRenderer mapRenderer;
 
-    // --- THE VAULT ---
     private GameAssetManager assets;
 
-    // Platform Storage
+    // Platforms
     private Array<HorizontalPlatform> horizontalPlatforms;
-    private Array<VerticalPlatform> verticalPlatforms;
+    private Array<VerticalPlatform>   verticalPlatforms;
 
-    // Coins & Potions
-    private Array<Coin> coins;
+    // Collectables
+    private Array<Coin>   coins;
     private Array<Potion> potions;
 
-    // BackGround
+    // Background
     BackGround backGround;
 
-    //Water
+    // Water & Enemies
     private Array<Water> waterPools;
     private Array<Enemy> enemies;
 
-    //Traps
+    // Traps
     public Array<Trap> mapTraps;
 
-    public PlayableMap(GameAssetManager assets) {
-        this.assets = assets; // Store the vault!
+    // ---------------------------------------------------------------
+    // Trigger system
+    // ---------------------------------------------------------------
+    private Array<TrollTile>   trollTiles;
+    private Array<TrollTile>   deactivatedTrollTiles;
+    private Array<TriggerZone> triggerZones;
 
-        map = new TmxMapLoader().load("data/tilemaps/untitled.tmx");
+    // Pending trigger activations — collected during contact callback,
+    // applied safely outside the Box2D step in updateTriggers()
+    private Array<Integer> pendingTriggers;
+
+    public java.util.HashMap<Coin, String> coinIds = new java.util.HashMap<>();
+    public java.util.ArrayList<String> collectedCoinIds = new java.util.ArrayList<>();
+    public java.util.ArrayList<String> pendingDestroyCoinIds = new java.util.ArrayList<>();
+
+    public java.util.HashMap<Potion, String> potionIds = new java.util.HashMap<>();
+    public java.util.ArrayList<String> collectedPotionIds = new java.util.ArrayList<>();
+    public java.util.ArrayList<String> pendingDestroyPotionIds = new java.util.ArrayList<>();
+
+    public PlayableMap(GameAssetManager assets) {
+        this.assets = assets;
+
+        map         = new TmxMapLoader().load("data/tilemaps/untitled.tmx");
         mapRenderer = new OrthogonalTiledMapRenderer(map, 1f / PPM);
 
-        horizontalPlatforms = new Array<HorizontalPlatform>();
-        verticalPlatforms = new Array<VerticalPlatform>();
+        horizontalPlatforms   = new Array<>();
+        verticalPlatforms     = new Array<>();
+        coins                 = new Array<>();
+        potions               = new Array<>();
+        waterPools            = new Array<>();
+        enemies               = new Array<>();
+        mapTraps              = new Array<>();
 
-        coins = new Array<Coin>();
-        potions = new Array<Potion>();
-        waterPools = new Array<Water>();
-        enemies = new Array<Enemy>();
+        trollTiles            = new Array<>();
+        deactivatedTrollTiles = new Array<>();
+        triggerZones          = new Array<>();
+        pendingTriggers       = new Array<>();
 
         backGround = new BackGround();
-
-        mapTraps = new Array<>();
     }
 
-    public void createEnemiesFromMap(World world) {
-        // Loop through EVERY layer in the map[cite: 14]
-        for (MapLayer layer : map.getLayers()) {
-
-            // Skip Tile Layers; only look inside Object Layers[cite: 14]
-            if (layer instanceof TiledMapTileLayer) continue;
-
-            // Iterate through all objects in THIS specific layer[cite: 14]
-            for (MapObject object : layer.getObjects()) {
-
-                // Ensure the object has coordinates[cite: 14]
-                if (object.getProperties().containsKey("x")) {
-                    float x = object.getProperties().get("x", Float.class);
-                    float y = object.getProperties().get("y", Float.class);
-                    String name = object.getName();
-
-                    // Spawn based on the Name field in Tiled[cite: 14]
-                    if ("Shell".equals(name)) {
-                        enemies.add(new Shell(world, x, y, assets));
-                    } else if ("Crab".equals(name)) {
-                        enemies.add(new Crab(world, x, y, assets));
-                    }
-                }
-            }
+    // Safely queues collected items for destruction so Box2D doesn't crash
+    public void applyLoadedCollectables(java.util.ArrayList<String> loadedCoins, java.util.ArrayList<String> loadedPotions) {
+        if (loadedCoins != null) {
+            this.collectedCoinIds = loadedCoins;
+            this.pendingDestroyCoinIds.addAll(loadedCoins);
+        }
+        if (loadedPotions != null) {
+            this.collectedPotionIds = loadedPotions;
+            this.pendingDestroyPotionIds.addAll(loadedPotions);
         }
     }
 
-    public void createTrapsFromMap(World world){
-        MapLayer trapLayer = map.getLayers().get("Traps");
-
-        if (trapLayer != null) {
-            for (MapObject object : trapLayer.getObjects()) {
-                if (object instanceof RectangleMapObject) {
-                    Rectangle rect = ((RectangleMapObject) object).getRectangle();
-
-                    // Look for the name you typed in Tiled!
-                    if (object.getName() != null && object.getName().equals("spike")) {
-                        Spike spike = new Spike(world, object, assets);
-                        mapTraps.add(spike);
-                    } else if (object.getName().equals("spikedball")) {
-                        mapTraps.add(new SpikedBall(world, object, assets)); // Automatically reads your custom properties!
-                    }
-                    // Later you can add: else if (object.getName().equals("sawblade")) ...
-                }
-            }
-        }
-    }
-
-    public void RenderTileMap(OrthographicCamera camera) {
-        mapRenderer.setView(camera);
-        mapRenderer.render();
-    }
-
-    public void createWaterFromMap(World world) {
-        MapLayer layer = map.getLayers().get("Water");
-        if (layer == null) return;
-
-        for (MapObject object : layer.getObjects()) {
-            if (object instanceof RectangleMapObject) {
-                Rectangle rect = ((RectangleMapObject) object).getRectangle();
-
-                // 1. Create the Visual Water
-                waterPools.add(new Water(rect, assets));
-
-                // 2. Create the Box2D Sensor Trap
-                BodyDef bdef = new BodyDef();
-                bdef.type = BodyDef.BodyType.StaticBody;
-                bdef.position.set((rect.x + rect.width / 2f) / PPM, (rect.y + rect.height / 2f) / PPM);
-                Body body = world.createBody(bdef);
-
-                PolygonShape shape = new PolygonShape();
-                shape.setAsBox((rect.width / 2f) / PPM, (rect.height / 2f) / PPM);
-
-                FixtureDef fdef = new FixtureDef();
-                fdef.shape = shape;
-                fdef.isSensor = true; // Ghost Hitbox!
-                fdef.filter.categoryBits = Main.WATER_BIT;
-                fdef.filter.maskBits = Main.PLAYER_BIT;
-
-                // Tag it so the Contact Listener recognizes it
-                body.createFixture(fdef).setUserData("water_sensor");
-                shape.dispose();
-            }
-        }
-    }
-
-    public void createPotionsFromMap(World world) {
-        MapLayer layer = map.getLayers().get("Collectables");
-        if (layer == null) return;
-
-        for (MapObject object : layer.getObjects()) {
-            if (object instanceof RectangleMapObject) {
-                Rectangle rect = ((RectangleMapObject) object).getRectangle();
-                MapProperties props = object.getProperties();
-
-                String type = props.containsKey("type") ? props.get("type", String.class) : "null";
-                if (type.equals("Potion")) {
-                    String name = object.getName();
-                    potions.add(new Potion(world, rect, name, assets));
-                }
-            }
-        }
-    }
-
-    public void createCoinsFromMap(World world) {
-        MapLayer layer = map.getLayers().get("Collectables");
-        if (layer == null) return;
-
-        for (MapObject object : layer.getObjects()) {
-            if (object instanceof RectangleMapObject) {
-                Rectangle rect = ((RectangleMapObject) object).getRectangle();
-                MapProperties props = object.getProperties();
-
-                String type = props.containsKey("type") ? props.get("type", String.class) : "null";
-                if (type.equals("Coin")) {
-                    String name = object.getName();
-                    coins.add(new Coin(world, rect, name, assets));
-                }
-            }
-        }
-    }
-
-    public void updateCoins(float dt, World world) {
-        Iterator<Coin> iter = coins.iterator();
-        while (iter.hasNext()) {
-            Coin coin = iter.next();
-            coin.update(dt);
-
-            if (coin.isCollected && !coin.isDestroyed) {
-                world.destroyBody(coin.body);
-                coin.isDestroyed = true;
-                // Memory is safe! AssetManager handles disposal now.
-                iter.remove();
-            }
-        }
-    }
-
-
-
-    public void updatePotions(float dt, World world) {
-        Iterator<Potion> iter = potions.iterator();
-        while (iter.hasNext()) {
-            Potion potion = iter.next();
-            potion.update(dt);
-
-            if (potion.isCollected && !potion.isDestroyed) {
-                world.destroyBody(potion.body);
-                potion.isDestroyed = true;
-                // Memory is safe! AssetManager handles disposal now.
-                iter.remove();
-            }
-        }
-    }
-
-    public void drawCoins(SpriteBatch batch) {
-        for (Coin coin : coins) {
-            coin.draw(batch);
-        }
-    }
-
-    public void drawPotions(SpriteBatch batch) {
-        for (Potion potion : potions) {
-            potion.draw(batch);
-        }
-    }
-
-    public void createPlatformsFromMap(World world) {
-        MapLayer platformLayer = map.getLayers().get("Platforms");
-        if (platformLayer == null) return;
-
-        for (MapObject object : platformLayer.getObjects()) {
-            if (object instanceof RectangleMapObject && object.getName() != null) {
-                Rectangle rect = ((RectangleMapObject) object).getRectangle();
-                MapProperties props = object.getProperties();
-                String name = object.getName();
-
-                float speed = props.containsKey("Speed") ? props.get("Speed", Float.class) : 1f;
-
-                if (name.equals("HorizontalPlatform")) {
-                    float startX = rect.x;
-                    float tiledStartX = props.containsKey("startX") ? props.get("startX", Float.class) : rect.x;
-                    float tiledEndX = props.containsKey("endX") ? props.get("endX", Float.class) : rect.x;
-                    float endX = startX + (tiledEndX - tiledStartX);
-
-                    horizontalPlatforms.add(new HorizontalPlatform(world, rect, startX, endX, speed, assets));
-                }
-                else if (name.equals("VerticalPlatform")) {
-                    float startY = rect.y;
-                    float tiledStartY = props.containsKey("startY") ? props.get("startY", Float.class) : rect.y;
-                    float tiledEndY = props.containsKey("endY") ? props.get("endY", Float.class) : rect.y;
-                    float moveDistance = tiledStartY - tiledEndY;
-                    float endY = startY + moveDistance;
-
-                    verticalPlatforms.add(new VerticalPlatform(world, rect, startY, endY, speed, assets));
-                }
-            }
-        }
-    }
-
-    public void updatePlatforms(float dt) {
-        for (HorizontalPlatform hp : horizontalPlatforms) {
-            hp.update(dt);
-        }
-        for (VerticalPlatform vp : verticalPlatforms) {
-            vp.update(dt);
-        }
-    }
-
-    public void drawPlatforms(SpriteBatch batch) {
-        for (HorizontalPlatform hp : horizontalPlatforms) {
-            hp.draw(batch);
-        }
-        for (VerticalPlatform vp : verticalPlatforms) {
-            vp.draw(batch);
-        }
-    }
-
+    // ===============================================================
+    // createPhysicsFromMap
+    // ===============================================================
     public void createPhysicsFromMap(World world) {
-        TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get("Tile Layer 1");
+        TiledMapTileLayer layer =
+            (TiledMapTileLayer) map.getLayers().get("Tile Layer 1");
         if (layer == null) return;
 
-        BodyDef bdef = new BodyDef();
-        FixtureDef fdef = new FixtureDef();
+        BodyDef      bdef  = new BodyDef();
+        FixtureDef   fdef  = new FixtureDef();
         PolygonShape shape = new PolygonShape();
 
         for (int row = 0; row < layer.getHeight(); row++) {
             for (int col = 0; col < layer.getWidth(); col++) {
                 TiledMapTileLayer.Cell cell = layer.getCell(col, row);
+                if (cell == null || cell.getTile() == null) continue;
 
-                if (cell != null && cell.getTile() != null && cell.getTile().getProperties().containsKey("Solid")) {
+                MapProperties tileProps = cell.getTile().getProperties();
+
+                if (tileProps.containsKey("Solid")) {
+
+                    // Skip tiles covered by a TrollZone — they get their
+                    // own dedicated body created in createTrollTilesFromMap()
+                    if (isCoveredByTrollZone(col, row)) continue;
+
                     bdef.type = BodyDef.BodyType.StaticBody;
-                    bdef.position.set((col + 0.5f) * 16 / PPM, (row + 0.5f) * 16 / PPM);
+                    bdef.position.set(
+                        (col + 0.5f) * 16 / PPM,
+                        (row + 0.5f) * 16 / PPM
+                    );
 
                     Body body = world.createBody(bdef);
                     shape.setAsBox(8 / PPM, 8 / PPM);
                     fdef.shape = shape;
+                    fdef.filter.categoryBits = Main.GROUND_BIT;
+                    fdef.filter.maskBits     = Main.PLAYER_BIT | Main.ENEMY_BIT |
+                        Main.PROJECTILE_BIT;
                     body.createFixture(fdef);
                 }
             }
         }
         shape.dispose();
 
+        createTrollTilesFromMap(world);  // reads TrollZones object layer
+        createTriggersFromMap(world);
         createPlatformsFromMap(world);
         createCoinsFromMap(world);
         createPotionsFromMap(world);
@@ -322,30 +162,259 @@ public class PlayableMap {
         createTrapsFromMap(world);
     }
 
+    // ===============================================================
+    // isCoveredByTrollZone
+    // Returns true if the tile at (col, row) falls inside any
+    // rectangle in the TrollZones object layer.
+    // Used to avoid creating two overlapping Box2D bodies for the
+    // same tile (one from createPhysicsFromMap, one from createTrollTilesFromMap).
+    // ===============================================================
+    private boolean isCoveredByTrollZone(int col, int row) {
+        MapLayer trollLayer = map.getLayers().get("TrollZones");
+        if (trollLayer == null) return false;
 
-    public void updateEnemies(float dt, Player player, World world) {
-        Iterator<Enemy> enemyIter = enemies.iterator();
-        while (enemyIter.hasNext()) {
-            Enemy enemy = enemyIter.next();
+        int tileWidth  = map.getProperties().get("tilewidth",  Integer.class);
+        int tileHeight = map.getProperties().get("tileheight", Integer.class);
 
-            // 1. Update the enemy logic
-            enemy.updateEnemy(dt, player);
+        // Use the center of the tile for the contains() check
+        float tileCenterX = (col + 0.5f) * tileWidth;
+        float tileCenterY = (row + 0.5f) * tileHeight;
 
-            // 2. Safely remove them if they died this frame
-            if (enemy.setToDestroy && !enemy.destroyed) {
+        for (MapObject object : trollLayer.getObjects()) {
+            if (!(object instanceof RectangleMapObject)) continue;
+            Rectangle rect = ((RectangleMapObject) object).getRectangle();
+            if (rect.contains(tileCenterX, tileCenterY)) return true;
+        }
+        return false;
+    }
 
-                world.destroyBody(enemy.b2body); // Remove from Box2D Physics
-                enemy.destroyed = true;          // Flag as fully handled
+    // ===============================================================
+    // createTrollTilesFromMap
+    // Reads the "TrollZones" object layer. Each rectangle object must
+    // have an "id" (int) property. Every Solid tile whose center falls
+    // inside the rectangle gets its own Box2D body and is registered
+    // as a TrollTile with that trigger ID.
+    //
+    // Tiled setup:
+    //   Layer type  : Object Layer, named "TrollZones"
+    //   Rectangle   : draw over the tiles you want to disappear
+    //   Property    : id (int) = 1  (match the Triggers zone id)
+    // ===============================================================
+    private void createTrollTilesFromMap(World world) {
+        TiledMapTileLayer tileLayer =
+            (TiledMapTileLayer) map.getLayers().get("Tile Layer 1");
+        MapLayer trollLayer = map.getLayers().get("TrollZones");
+        if (tileLayer == null || trollLayer == null) return;
 
-                // Optional: enemy.dispose(); if you need to clear anything else!
+        int tileWidth  = map.getProperties().get("tilewidth",  Integer.class);
+        int tileHeight = map.getProperties().get("tileheight", Integer.class);
 
-                enemyIter.remove();              // Safely wipe from the Java Array!
+        for (MapObject object : trollLayer.getObjects()) {
+            if (!(object instanceof RectangleMapObject)) continue;
+
+            MapProperties props = object.getProperties();
+            if (!props.containsKey("id")) continue;
+
+            int       triggerId = props.get("id", Integer.class);
+            Rectangle rect      = ((RectangleMapObject) object).getRectangle();
+
+            // Calculate which tile columns and rows this rectangle covers
+            int colStart = (int) (rect.x / tileWidth);
+            int colEnd   = (int) ((rect.x + rect.width)  / tileWidth);
+            int rowStart = (int) (rect.y / tileHeight);
+            int rowEnd   = (int) ((rect.y + rect.height) / tileHeight);
+
+            for (int row = rowStart; row < rowEnd; row++) {
+                for (int col = colStart; col < colEnd; col++) {
+                    TiledMapTileLayer.Cell cell = tileLayer.getCell(col, row);
+                    if (cell == null || cell.getTile() == null) continue;
+
+                    // Create a dedicated Box2D body for this troll tile
+                    BodyDef bdef = new BodyDef();
+                    bdef.type = BodyDef.BodyType.StaticBody;
+                    bdef.position.set(
+                        (col + 0.5f) * tileWidth  / PPM,
+                        (row + 0.5f) * tileHeight / PPM
+                    );
+                    Body body = world.createBody(bdef);
+
+                    PolygonShape shape = new PolygonShape();
+                    shape.setAsBox(
+                        (tileWidth  / 2f) / PPM,
+                        (tileHeight / 2f) / PPM
+                    );
+                    FixtureDef fdef = new FixtureDef();
+                    fdef.shape = shape;
+                    fdef.filter.categoryBits = Main.GROUND_BIT;
+                    fdef.filter.maskBits     = Main.PLAYER_BIT | Main.ENEMY_BIT |
+                        Main.PROJECTILE_BIT;
+                    body.createFixture(fdef);
+                    shape.dispose();
+
+                    trollTiles.add(new TrollTile(triggerId, body, tileLayer, col, row));
+
+                    System.out.println("TrollZone id=" + triggerId +
+                        " cols=" + colStart + "-" + colEnd +
+                        " rows=" + rowStart + "-" + rowEnd);
+
+                    // inside the inner loop after the Solid check:
+                    System.out.println("  → TrollTile added at col=" + col + " row=" + row);
+                }
             }
         }
     }
 
-    public void UpdateMap(OrthographicCamera camera, float dt, World world, Player player) {
+    // ===============================================================
+    // createTriggersFromMap
+    // ===============================================================
+    private void createTriggersFromMap(World world) {
+        MapLayer triggerLayer = map.getLayers().get("Triggers");
+        if (triggerLayer == null) return;
 
+        for (MapObject object : triggerLayer.getObjects()) {
+            if (!(object instanceof RectangleMapObject)) continue;
+
+            MapProperties props = object.getProperties();
+            if (!props.containsKey("id")) continue;
+
+            int       triggerId = props.get("id", Integer.class);
+            Rectangle rect      = ((RectangleMapObject) object).getRectangle();
+
+            BodyDef bdef = new BodyDef();
+            bdef.type = BodyDef.BodyType.StaticBody;
+            bdef.position.set(
+                (rect.x + rect.width  / 2f) / PPM,
+                (rect.y + rect.height / 2f) / PPM
+            );
+
+            Body body = world.createBody(bdef);
+
+            PolygonShape shape = new PolygonShape();
+            shape.setAsBox(
+                (rect.width  / 2f) / PPM,
+                (rect.height / 2f) / PPM
+            );
+
+            FixtureDef fdef = new FixtureDef();
+            fdef.shape       = shape;
+            fdef.isSensor    = true;
+            fdef.filter.categoryBits = Main.TRIGGER_BIT;
+            fdef.filter.maskBits     = Main.PLAYER_BIT;
+
+            TriggerZone zone = new TriggerZone(triggerId, body);
+            body.createFixture(fdef).setUserData(zone);
+
+            triggerZones.add(zone);
+            shape.dispose();
+        }
+    }
+
+    // ===============================================================
+    // activateTrigger — called by WorldContactListener
+    // ===============================================================
+    public void activateTrigger(int triggerId) {
+        for (TriggerZone zone : triggerZones) {
+            if (zone.id == triggerId && zone.fired) return;
+        }
+        if (!pendingTriggers.contains(triggerId, false)) {
+            pendingTriggers.add(triggerId);
+        }
+    }
+
+    // ===============================================================
+    // updateTriggers — called every frame from UpdateMap()
+    // ===============================================================
+    private void updateTriggers(World world) {
+        if (pendingTriggers.size == 0) return;
+
+        for (int triggerId : pendingTriggers) {
+
+            // 1. Mark the zone as fired
+            for (TriggerZone zone : triggerZones) {
+                if (zone.id == triggerId) zone.fired = true;
+            }
+
+            // 2. Deactivate all matching TrollTiles
+            Iterator<TrollTile> iter = trollTiles.iterator();
+            while (iter.hasNext()) {
+                TrollTile troll = iter.next();
+                if (troll.triggerId == triggerId && !troll.activated) {
+                    troll.activated = true;
+
+                    world.destroyBody(troll.body);
+                    troll.body = null;
+
+                    troll.layer.setCell(troll.col, troll.row, null);
+
+                    // Move to deactivated — NOT discarded, needed for respawn
+                    deactivatedTrollTiles.add(troll);
+                    iter.remove();
+                }
+            }
+        }
+
+        pendingTriggers.clear();
+    }
+
+    // ===============================================================
+    // resetTriggers — call this when the player respawns.
+    // Restores every fired TrollTile (visually + physically) and
+    // resets every TriggerZone so they can fire again.
+    // ===============================================================
+    public void resetTriggers(World world) {
+
+        // 1. Reset all trigger zones so they can fire again
+        for (TriggerZone zone : triggerZones) {
+            zone.fired = false;
+        }
+
+        // 2. Restore all deactivated troll tiles
+        Iterator<TrollTile> iter = deactivatedTrollTiles.iterator();
+        while (iter.hasNext()) {
+            TrollTile troll = iter.next();
+
+            // Restore the tile cell → visible again
+            troll.layer.setCell(troll.col, troll.row, troll.originalCell);
+
+            // Recreate the Box2D static body at the saved position
+            BodyDef bdef = new BodyDef();
+            bdef.type = BodyDef.BodyType.StaticBody;
+            bdef.position.set(troll.bodyX, troll.bodyY);
+            Body newBody = world.createBody(bdef);
+
+            int tileWidth  = map.getProperties().get("tilewidth",  Integer.class);
+            int tileHeight = map.getProperties().get("tileheight", Integer.class);
+
+            PolygonShape shape = new PolygonShape();
+            shape.setAsBox(
+                (tileWidth  / 2f) / PPM,
+                (tileHeight / 2f) / PPM
+            );
+            FixtureDef fdef = new FixtureDef();
+            fdef.shape = shape;
+            fdef.filter.categoryBits = Main.GROUND_BIT;
+            fdef.filter.maskBits     = Main.PLAYER_BIT | Main.ENEMY_BIT | Main.PROJECTILE_BIT;
+            newBody.createFixture(fdef);
+            shape.dispose();
+
+            troll.body      = newBody;
+            troll.activated = false;
+
+            // Move back to active list
+            trollTiles.add(troll);
+            iter.remove();
+        }
+
+        // 3. Clear any queued triggers that hadn't fired yet
+        pendingTriggers.clear();
+    }
+
+    // ===============================================================
+    // UpdateMap — called every frame from Main (when not paused)
+    // ===============================================================
+    public void UpdateMap(OrthographicCamera camera, float dt,
+                          World world, Player player) {
+        updateTriggers(world);
         updatePlatforms(dt);
         updateCoins(dt, world);
         updatePotions(dt, world);
@@ -354,34 +423,235 @@ public class PlayableMap {
         updateTraps(dt);
     }
 
-    public void updatewaters(float dt){
-        for (Water w : waterPools) {
-            w.update(dt);
+    // ===============================================================
+    // Render
+    // ===============================================================
+    public void RenderTileMap(OrthographicCamera camera) {
+        mapRenderer.setView(camera);
+        mapRenderer.render();
+    }
+
+    // ===============================================================
+    // All creation methods — unchanged
+    // ===============================================================
+
+    public void createEnemiesFromMap(World world) {
+        for (MapLayer layer : map.getLayers()) {
+            if (layer instanceof TiledMapTileLayer) continue;
+            for (MapObject object : layer.getObjects()) {
+                if (object.getProperties().containsKey("x")) {
+                    float  x    = object.getProperties().get("x", Float.class);
+                    float  y    = object.getProperties().get("y", Float.class);
+                    String name = object.getName();
+                    if ("Shell".equals(name)) enemies.add(new Shell(world, x, y, assets));
+                    else if ("Crab".equals(name)) enemies.add(new Crab(world, x, y, assets));
+                }
+            }
         }
     }
 
-    public void updateTraps(float dt){
-        for(Trap t: mapTraps){
-            t.update(dt);
+    public void createTrapsFromMap(World world) {
+        MapLayer trapLayer = map.getLayers().get("Traps");
+        if (trapLayer == null) return;
+        for (MapObject object : trapLayer.getObjects()) {
+            if (!(object instanceof RectangleMapObject)) continue;
+            if (object.getName() == null) continue;
+            if (object.getName().equals("spike"))
+                mapTraps.add(new Spike(world, object, assets));
+            else if (object.getName().equals("spikedball"))
+                mapTraps.add(new SpikedBall(world, object, assets));
         }
     }
 
-    public void drawTraps(SpriteBatch batch, float dt) {
-        for (Trap t : mapTraps) {
-            t.render(batch, dt);
+    public void createWaterFromMap(World world) {
+        MapLayer layer = map.getLayers().get("Water");
+        if (layer == null) return;
+        for (MapObject object : layer.getObjects()) {
+            if (!(object instanceof RectangleMapObject)) continue;
+            Rectangle rect = ((RectangleMapObject) object).getRectangle();
+            waterPools.add(new Water(rect, assets));
+
+            BodyDef bdef = new BodyDef();
+            bdef.type = BodyDef.BodyType.StaticBody;
+            bdef.position.set(
+                (rect.x + rect.width  / 2f) / PPM,
+                (rect.y + rect.height / 2f) / PPM
+            );
+            Body body = world.createBody(bdef);
+            PolygonShape shape = new PolygonShape();
+            shape.setAsBox((rect.width / 2f) / PPM, (rect.height / 2f) / PPM);
+            FixtureDef fdef = new FixtureDef();
+            fdef.shape = shape;
+            fdef.isSensor = true;
+            fdef.filter.categoryBits = Main.WATER_BIT;
+            fdef.filter.maskBits     = Main.PLAYER_BIT;
+            body.createFixture(fdef).setUserData("water_sensor");
+            shape.dispose();
         }
     }
 
-    public void drawWater(SpriteBatch batch) {
-        for (Water w : waterPools)
-            w.render(batch);
-    }
+    public void createPotionsFromMap(World world) {
+        MapLayer layer = map.getLayers().get("Collectables");
+        if (layer == null) return;
+        for (MapObject object : layer.getObjects()) {
+            if (!(object instanceof RectangleMapObject)) continue;
+            Rectangle rect = ((RectangleMapObject) object).getRectangle();
+            MapProperties props = object.getProperties();
+            String type = props.containsKey("type") ? props.get("type", String.class) : "null";
 
-    public void drawEnemies(SpriteBatch batch, float dt) {
-        for (Enemy e : enemies) {
-            e.render(dt, batch);
+            if (type.equals("Potion")) {
+                Potion newPotion = new Potion(world, rect, object.getName(), assets);
+                potions.add(newPotion);
+                // Create a unique ID using its Tiled X/Y coordinates
+                potionIds.put(newPotion, "potion_" + rect.x + "_" + rect.y);
+            }
         }
     }
+
+    public void createCoinsFromMap(World world) {
+        MapLayer layer = map.getLayers().get("Collectables");
+        if (layer == null) return;
+        for (MapObject object : layer.getObjects()) {
+            if (!(object instanceof RectangleMapObject)) continue;
+            Rectangle rect = ((RectangleMapObject) object).getRectangle();
+            MapProperties props = object.getProperties();
+            String type = props.containsKey("type") ? props.get("type", String.class) : "null";
+
+            if (type.equals("Coin")) {
+                Coin newCoin = new Coin(world, rect, object.getName(), assets);
+                coins.add(newCoin);
+                // Create a unique ID using its Tiled X/Y coordinates
+                coinIds.put(newCoin, "coin_" + rect.x + "_" + rect.y);
+            }
+        }
+    }
+
+    public void createPlatformsFromMap(World world) {
+        MapLayer platformLayer = map.getLayers().get("Platforms");
+        if (platformLayer == null) return;
+        for (MapObject object : platformLayer.getObjects()) {
+            if (!(object instanceof RectangleMapObject) || object.getName() == null) continue;
+            Rectangle     rect  = ((RectangleMapObject) object).getRectangle();
+            MapProperties props = object.getProperties();
+            String name  = object.getName();
+            float  speed = props.containsKey("Speed") ? props.get("Speed", Float.class) : 1f;
+
+            if (name.equals("HorizontalPlatform")) {
+                float startX      = rect.x;
+                float tiledStartX = props.containsKey("startX") ? props.get("startX", Float.class) : rect.x;
+                float tiledEndX   = props.containsKey("endX")   ? props.get("endX",   Float.class) : rect.x;
+                float endX        = startX + (tiledEndX - tiledStartX);
+                horizontalPlatforms.add(new HorizontalPlatform(world, rect, startX, endX, speed, assets));
+            } else if (name.equals("VerticalPlatform")) {
+                float startY      = rect.y;
+                float tiledStartY = props.containsKey("startY") ? props.get("startY", Float.class) : rect.y;
+                float tiledEndY   = props.containsKey("endY")   ? props.get("endY",   Float.class) : rect.y;
+                float moveDistance = tiledStartY - tiledEndY;
+                float endY        = startY + moveDistance;
+                verticalPlatforms.add(new VerticalPlatform(world, rect, startY, endY, speed, assets));
+            }
+        }
+    }
+
+    // ===============================================================
+    // All update methods — unchanged
+    // ===============================================================
+
+    public void updateCoins(float dt, World world) {
+        Iterator<Coin> iter = coins.iterator();
+        while (iter.hasNext()) {
+            Coin coin = iter.next();
+
+            // 1. If this coin was already collected in the save file, trigger its destruction!
+            String id = coinIds.get(coin);
+            if (pendingDestroyCoinIds.contains(id)) {
+                coin.isCollected = true;
+                pendingDestroyCoinIds.remove(id);
+            }
+
+            coin.update(dt);
+
+            if (coin.isCollected && !coin.isDestroyed) {
+                world.destroyBody(coin.body);
+                coin.isDestroyed = true;
+
+                // 2. Track that we collected it so it gets saved
+                if (!collectedCoinIds.contains(id)) {
+                    collectedCoinIds.add(id);
+                }
+
+                iter.remove();
+            }
+        }
+    }
+
+    public void updatePotions(float dt, World world) {
+        Iterator<Potion> iter = potions.iterator();
+        while (iter.hasNext()) {
+            Potion potion = iter.next();
+
+            // 1. Trigger destruction if loaded from save
+            String id = potionIds.get(potion);
+            if (pendingDestroyPotionIds.contains(id)) {
+                potion.isCollected = true;
+                pendingDestroyPotionIds.remove(id);
+            }
+
+            potion.update(dt);
+
+            if (potion.isCollected && !potion.isDestroyed) {
+                world.destroyBody(potion.body);
+                potion.isDestroyed = true;
+
+                // 2. Track that we collected it
+                if (!collectedPotionIds.contains(id)) {
+                    collectedPotionIds.add(id);
+                }
+
+                iter.remove();
+            }
+        }
+    }
+
+    public void updatePlatforms(float dt) {
+        for (HorizontalPlatform hp : horizontalPlatforms) hp.update(dt);
+        for (VerticalPlatform   vp : verticalPlatforms)   vp.update(dt);
+    }
+
+    public void updateEnemies(float dt, Player player, World world) {
+        Iterator<Enemy> iter = enemies.iterator();
+        while (iter.hasNext()) {
+            Enemy enemy = iter.next();
+            enemy.updateEnemy(dt, player);
+            if (enemy.setToDestroy && !enemy.destroyed) {
+                world.destroyBody(enemy.b2body);
+                enemy.destroyed = true;
+                iter.remove();
+            }
+        }
+    }
+
+    public void updatewaters(float dt) {
+        for (Water w : waterPools) w.update(dt);
+    }
+
+    public void updateTraps(float dt) {
+        for (Trap t : mapTraps) t.update(dt);
+    }
+
+    // ===============================================================
+    // All draw methods — unchanged
+    // ===============================================================
+
+    public void drawCoins(SpriteBatch batch)     { for (Coin c : coins)     c.draw(batch); }
+    public void drawPotions(SpriteBatch batch)   { for (Potion p : potions) p.draw(batch); }
+    public void drawPlatforms(SpriteBatch batch) {
+        for (HorizontalPlatform hp : horizontalPlatforms) hp.draw(batch);
+        for (VerticalPlatform   vp : verticalPlatforms)   vp.draw(batch);
+    }
+    public void drawWater(SpriteBatch batch)              { for (Water w : waterPools) w.render(batch); }
+    public void drawEnemies(SpriteBatch batch, float dt)  { for (Enemy e : enemies)    e.render(dt, batch); }
+    public void drawTraps(SpriteBatch batch, float dt)    { for (Trap t : mapTraps)    t.render(batch, dt); }
 
     public void DrawElements(SpriteBatch batch, float dt) {
         drawPlatforms(batch);
@@ -392,59 +662,42 @@ public class PlayableMap {
         drawTraps(batch, dt);
     }
 
-    public void DrawBackGround(SpriteBatch batch, GameCam camera, Viewport viewport, float dt) {
-        float camX = camera.GetCam().position.x;
-        float camY = camera.GetCam().position.y;
-
-        float viewWidth = viewport.getWorldWidth();
+    public void DrawBackGround(SpriteBatch batch, GameCam camera,
+                               Viewport viewport, float dt) {
+        float camX       = camera.GetCam().position.x;
+        float camY       = camera.GetCam().position.y;
+        float viewWidth  = viewport.getWorldWidth();
         float viewHeight = viewport.getWorldHeight();
         backGround.RenderBg(camX, camY, viewWidth, viewHeight, dt, batch);
     }
 
-    public TiledMap GetMap() {
-        return map;
-    }
-
-    public void dispose() {
-        // 1. Dispose of the Map and its specific Renderer
-        map.dispose();
-        mapRenderer.dispose();
-
-        // 2. Dispose of the Background system
-        backGround.dispose();
-
-        // 3. Dispose of all Enemies
-        // We must manually loop through and call their dispose methods
-        for (Enemy e : enemies) {
-            e.dispose();
-        }
-        enemies.clear(); // Empty the reference list
-
-        // 4. Clear Collectables and Water
-        // These lists don't have separate .dispose() methods usually,
-        // but clearing them helps the Garbage Collector.
-        coins.clear();
-        potions.clear();
-        waterPools.clear();
-
-        // 5. Clear Platform arrays
-        horizontalPlatforms.clear();
-        verticalPlatforms.clear();
-
-        // IMPORTANT: As noted in your code, we do NOT call assets.dispose()
-        // here. Main.java owns the GameAssetManager and will kill it at
-        // the very end.
-    }
+    public TiledMap GetMap() { return map; }
 
     public float getMapWidthInMeters() {
-        int mapWidth = map.getProperties().get("width", Integer.class);
+        int mapWidth  = map.getProperties().get("width",     Integer.class);
         int tileWidth = map.getProperties().get("tilewidth", Integer.class);
         return (mapWidth * tileWidth) / PPM;
     }
 
     public float getMapHeightInMeters() {
-        int mapHeight = map.getProperties().get("height", Integer.class);
+        int mapHeight  = map.getProperties().get("height",     Integer.class);
         int tileHeight = map.getProperties().get("tileheight", Integer.class);
         return (mapHeight * tileHeight) / PPM;
+    }
+
+    public void dispose() {
+        map.dispose();
+        mapRenderer.dispose();
+        backGround.dispose();
+        for (Enemy e : enemies) e.dispose();
+        enemies.clear();
+        coins.clear();
+        potions.clear();
+        waterPools.clear();
+        horizontalPlatforms.clear();
+        verticalPlatforms.clear();
+        trollTiles.clear();
+        deactivatedTrollTiles.clear();
+        triggerZones.clear();
     }
 }

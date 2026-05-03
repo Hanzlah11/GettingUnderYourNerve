@@ -4,6 +4,7 @@ import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -36,7 +37,8 @@ public class Player {
         RUNNING,
         JUMPING,
         FALLING,
-        ATTACKING
+        ATTACKING,
+        SLIDING
     }
 
     // --- KNOCKBACK & STUN VARIABLES ---
@@ -54,6 +56,7 @@ public class Player {
     private Animation<TextureRegion> fallAnimation;
     private Animation<TextureRegion> hitAnimation;
     private Animation<TextureRegion> attackAnimation;
+    private TextureRegion SlideTexture;
 
     private float stateTime = 0f;
     private boolean facingRight = true;
@@ -65,6 +68,7 @@ public class Player {
     // ---------------- COLLISION FLAGS ----------------
     public boolean isGrounded = false;
     private boolean isTouchingWall = false;
+    private boolean isSliding = false;
 
     //----------------- ATTACK --------------------
     public int swordUses = 10;
@@ -87,6 +91,8 @@ public class Player {
         fallAnimation = assets.getAnimation(GameAssetManager.PLAYER_FALL_PREFIX, 1, 0.15f, Animation.PlayMode.NORMAL, "%02d");
         hitAnimation = assets.getAnimation(GameAssetManager.PLAYER_HIT_PREFIX, 4, 0.1f, Animation.PlayMode.LOOP, "%02d");
         attackAnimation = assets.getAnimation(GameAssetManager.PLAYER_ATTACK_PREFIX, 3, 0.1f, Animation.PlayMode.NORMAL, "%02d");
+        Texture slideTex = assets.manager.get(GameAssetManager.PLAYER_WALL_SLIDE, Texture.class);
+        SlideTexture = new TextureRegion(slideTex);
     }
 
     // ---------------------------------------------------
@@ -144,7 +150,7 @@ public class Player {
         fdef.density = 1f;
 
         fdef.filter.categoryBits = Main.PLAYER_BIT;
-        fdef.filter.maskBits = (short) (Main.GROUND_BIT | Main.ENEMY_BIT | Main.PROJECTILE_BIT | Main.COIN_BIT | Main.POTION_BIT | Main.WATER_BIT | Main.TRAP_BIT);
+        fdef.filter.maskBits = (short) (Main.GROUND_BIT | Main.ENEMY_BIT | Main.PROJECTILE_BIT | Main.COIN_BIT | Main.POTION_BIT | Main.WATER_BIT | Main.TRAP_BIT | Main.TRIGGER_BIT);
 
         playerBody.createFixture(fdef).setUserData(this);
         playerBody.setFixedRotation(true);
@@ -172,6 +178,12 @@ public class Player {
 
         if (isDead) {
             Respawn();
+            return;
+        }
+
+        if(GetYpos() < 0){
+            isDead = true;
+            Hp = 0;
             return;
         }
 
@@ -225,6 +237,7 @@ public class Player {
 
         isGrounded = false;
         isTouchingWall = false;
+        isSliding = false;
 
         for (Contact contact : world.getContactList()) {
             if (!contact.isTouching()) continue;
@@ -261,6 +274,7 @@ public class Player {
         boolean falling = vel.y < 0;
 
         if (pushingWall && falling && !isGrounded) {
+            isSliding = true;
             playerBody.setLinearVelocity(vel.x, Math.max(vel.y, -2f));
         }
 
@@ -275,6 +289,7 @@ public class Player {
     // ---------------------------------------------------
     private State getState() {
         if (isAttacking) return State.ATTACKING;
+        if(isSliding) return State.SLIDING;
 
         Vector2 vel = playerBody.getLinearVelocity();
 
@@ -321,6 +336,7 @@ public class Player {
                 case JUMPING: region = jumpAnimation.getKeyFrame(stateTime); break;
                 case FALLING: region = fallAnimation.getKeyFrame(stateTime); break;
                 case RUNNING: region = runAnimation.getKeyFrame(stateTime); break;
+                case SLIDING: region = SlideTexture ; break;
                 default: region = idleAnimation.getKeyFrame(stateTime); break;
             }
         }

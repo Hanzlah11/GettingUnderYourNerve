@@ -1,76 +1,135 @@
 package Game.GettingUnderYourNerve.Utilities;
 
+import Game.GettingUnderYourNerve.Map.PlayableMap;
 import Game.GettingUnderYourNerve.Player;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.Json;
 
-public class FileHandler {
-    private static final String SAVE_FILE = "savegame.json";
+import java.util.ArrayList;
+
+public class FileHandler extends InputAdapter {
     private Json json;
-    public static class PlayerSaveData {
+
+    private boolean isSavingMode = false;
+    private boolean isLoadingMode = false;
+    private StringBuilder typedName;
+
+    private Player currentPlayerRef;
+    private PlayableMap currentMapRef; // Added Map Reference
+
+    public static class GameSaveData {
         public float x;
         public float y;
         public int score;
         public int health;
         public boolean isJumping;
+
+        // NEW: Track collectables
+        public ArrayList<String> collectedCoins = new ArrayList<>();
+        public ArrayList<String> collectedPotions = new ArrayList<>();
     }
+
     public FileHandler() {
         json = new Json();
+        typedName = new StringBuilder();
+        Gdx.input.setInputProcessor(this);
     }
-    public void savePlayerState(Player player) {
-        PlayerSaveData data = new PlayerSaveData();
+
+    public void saveGameState(Player player, PlayableMap map, String fileName) {
+        GameSaveData data = new GameSaveData();
         data.x = player.GetXpos();
         data.y = player.GetYpos();
         data.score = player.getScore();
         data.health = player.getHealth();
         data.isJumping = !player.isGrounded && player.getPlayerBody().getLinearVelocity().y > 0;
 
+        // Save the map's collected items
+        data.collectedCoins = map.collectedCoinIds;
+        data.collectedPotions = map.collectedPotionIds;
+
         String saveString = json.toJson(data);
-        FileHandle file = Gdx.files.local(SAVE_FILE);
+        FileHandle file = Gdx.files.local(fileName);
         file.writeString(saveString, false);
 
-        System.out.println("Game Saved Successfully!");
-        System.out.println("Data: " + saveString);
+        System.out.println("Game Saved Successfully to " + fileName + "!");
     }
 
-    public void loadPlayerState(Player player) {
-        FileHandle file = Gdx.files.local(SAVE_FILE);
+    public void loadGameState(Player player, PlayableMap map, String fileName) {
+        FileHandle file = Gdx.files.local(fileName);
 
         if (file.exists()) {
             String saveString = file.readString();
+            GameSaveData data = json.fromJson(GameSaveData.class, saveString);
 
-            // Read JSON back into our SaveData format
-            PlayerSaveData data = json.fromJson(PlayerSaveData.class, saveString);
-
-            // 1. Restore Position
             player.OverridePos(data.x, data.y);
-
-            // 2. Restore Points & Health
             player.OverrideScore(data.score);
             player.OverrideHealth(data.health);
 
-            // 3. Restore Jump State
             if (data.isJumping) {
                 player.ApplyJump();
             }
 
-            System.out.println("Game Loaded Successfully!");
-            System.out.println("Loaded - Score: " + data.score + ", Health: " + data.health + ", Was Jumping: " + data.isJumping);
+            // Tell the map which items are already gone
+            map.applyLoadedCollectables(data.collectedCoins, data.collectedPotions);
+
+            System.out.println("Game Loaded Successfully from " + fileName + "!");
         } else {
-            System.out.println("No save file found! Creating a new save next time you press Ctrl+S.");
+            System.out.println("No save file found with name: " + fileName);
         }
     }
 
-    public void GetFilInput(Player player){
+    // NOTE: Update this method signature in your main Game/PlayScreen loop!
+    public void GetFilInput(Player player, PlayableMap map) {
+        this.currentPlayerRef = player;
+        this.currentMapRef = map;
+
+        if (isSavingMode || isLoadingMode) return;
+
         boolean isCtrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
 
-        if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.S)) {
-            savePlayerState(player);
+        if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.N)) {
+            isSavingMode = true;
+            isLoadingMode = false;
+            typedName.setLength(0);
+            System.out.println("\n--- SAVE MODE ACTIVATED ---");
         }
-        if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.L)) { // Changed to L
-            loadPlayerState(player);
+
+        if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.L)) {
+            isLoadingMode = true;
+            isSavingMode = false;
+            typedName.setLength(0);
+            System.out.println("\n--- LOAD MODE ACTIVATED ---");
         }
+    }
+
+    @Override
+    public boolean keyTyped(char character) {
+        if (isSavingMode || isLoadingMode) {
+            if (character == '\b' && typedName.length() > 0) {
+                typedName.setLength(typedName.length() - 1);
+                System.out.println("Current Name: " + typedName.toString());
+            } else if (character == '\r' || character == '\n') {
+                if (typedName.length() > 0) {
+                    String fileName = "SavedFiles/" + typedName.toString().trim() + ".json";
+
+                    if (isSavingMode) {
+                        saveGameState(currentPlayerRef, currentMapRef, fileName);
+                    } else if (isLoadingMode) {
+                        loadGameState(currentPlayerRef, currentMapRef, fileName);
+                    }
+                }
+                isSavingMode = false;
+                isLoadingMode = false;
+                typedName.setLength(0);
+            } else if (Character.isLetterOrDigit(character) || character == ' ' || character == '_') {
+                typedName.append(character);
+                System.out.println("Current Name: " + typedName.toString());
+            }
+            return true;
+        }
+        return false;
     }
 }
