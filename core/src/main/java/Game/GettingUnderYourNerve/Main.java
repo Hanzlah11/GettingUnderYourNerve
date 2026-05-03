@@ -42,6 +42,7 @@ public class Main extends ApplicationAdapter {
     // --- Camera & Viewport ---
     private Viewport viewport;
     private GameCam cam;
+    private Viewport uiViewport;
 
     private boolean DebugOption = true;
 
@@ -85,7 +86,7 @@ public class Main extends ApplicationAdapter {
         //-- Pause Menu
         pauseMenu = new PauseMenu();
         pauseMenu.loadAssets(assets);
-        pauseMenu.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        pauseMenu.resize((int)WORLD_WIDTH, (int)WORLD_HEIGHT);
 
         // Create Player + Map
         player = new Player(20, assets);
@@ -97,6 +98,8 @@ public class Main extends ApplicationAdapter {
         // Camera
         cam = new GameCam();
         viewport = new FitViewport(WORLD_WIDTH / PPM, WORLD_HEIGHT / PPM, cam.GetCam());
+
+        uiViewport = new FitViewport(WORLD_WIDTH, WORLD_HEIGHT);
 
         // Map Physics
         playableMap.createPhysicsFromMap(world);
@@ -168,14 +171,16 @@ public class Main extends ApplicationAdapter {
 
         // --- Pause menu on top ---
         if (pauseMenu.isPaused()) {
-            pauseMenu.render(batch, player.getHealth(), player.getScore());
+            uiViewport.apply();
+            pauseMenu.render(batch, player.getHealth(), player.getScore(), uiViewport);
         }
     }
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height, true);
-        pauseMenu.resize(width, height);
+        viewport.update(width, height, false);
+        uiViewport.update(width, height, true);
+        pauseMenu.resize((int)WORLD_WIDTH, (int)WORLD_HEIGHT);
     }
 
     @Override
