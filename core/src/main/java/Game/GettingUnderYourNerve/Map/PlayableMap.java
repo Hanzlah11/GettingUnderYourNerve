@@ -58,6 +58,9 @@ public class PlayableMap {
     // Boxes
     private Array<Box> boxes;
 
+    // Evil Coins
+    private Array<EvilCoin> evilCoins;
+
     // ---------------------------------------------------------------
     // Trigger system
     // ---------------------------------------------------------------
@@ -91,6 +94,7 @@ public class PlayableMap {
         enemies               = new Array<>();
         mapTraps              = new Array<>();
         boxes                 = new Array<>();
+        evilCoins             = new Array<>();
 
         trollTiles            = new Array<>();
         deactivatedTrollTiles = new Array<>();
@@ -164,7 +168,8 @@ public class PlayableMap {
         createWaterFromMap(world);
         createEnemiesFromMap(world);
         createTrapsFromMap(world);
-        createBoxesFromMap(world);  // ← Boxes
+        createBoxesFromMap(world);
+        createEvilCoinsFromMap(world);  // ← Evil Coins
     }
 
     // ===============================================================
@@ -298,14 +303,6 @@ public class PlayableMap {
 
     // ===============================================================
     // createBoxesFromMap
-    // Reads the "Boxes" object layer.
-    // Rectangle named "NormalBox"   → solid static box
-    // Rectangle named "RotatingBox" → tilts toward player landing side
-    //
-    // Tiled setup:
-    //   Object Layer : "Boxes"
-    //   Name         : "NormalBox" or "RotatingBox"
-    //   Optional     : Speed (float) on RotatingBox
     // ===============================================================
     private void createBoxesFromMap(World world) {
         MapLayer layer = map.getLayers().get("Boxes");
@@ -326,6 +323,19 @@ public class PlayableMap {
                     boxes.add(new LauncherBox(world, object, assets));
                     break;
             }
+        }
+    }
+
+    // ===============================================================
+    // createEvilCoinsFromMap
+    // ===============================================================
+    private void createEvilCoinsFromMap(World world) {
+        MapLayer layer = map.getLayers().get("EvilCoins");
+        if (layer == null) return;
+
+        for (MapObject object : layer.getObjects()) {
+            if (!(object instanceof RectangleMapObject)) continue;
+            evilCoins.add(new EvilCoin(world, object, assets));
         }
     }
 
@@ -419,7 +429,7 @@ public class PlayableMap {
     }
 
     // ===============================================================
-    // UpdateMap — called every frame from Main (when not paused)
+    // UpdateMap — called every frame from PlayScreen (when not paused)
     // ===============================================================
     public void UpdateMap(OrthographicCamera camera, float dt,
                           World world, Player player) {
@@ -430,7 +440,8 @@ public class PlayableMap {
         updatewaters(dt);
         updateEnemies(dt, player, world);
         updateTraps(dt);
-        updateBoxes(dt);            // ← Boxes
+        updateBoxes(dt);
+        updateEvilCoins(dt, player, world);  // ← Evil Coins
     }
 
     // ===============================================================
@@ -647,29 +658,44 @@ public class PlayableMap {
         for (Box b : boxes) b.update(dt);
     }
 
+    public void updateEvilCoins(float dt, Player player, World world) {
+        Iterator<EvilCoin> iter = evilCoins.iterator();
+        while (iter.hasNext()) {
+            EvilCoin coin = iter.next();
+            coin.update(dt, player);
+            if (coin.setToDestroy && !coin.destroyed) {
+                world.destroyBody(coin.body);
+                coin.destroyed = true;
+                iter.remove();
+            }
+        }
+    }
+
     // ===============================================================
     // Draw methods
     // ===============================================================
 
-    public void drawCoins(SpriteBatch batch)     { for (Coin c : coins)     c.draw(batch); }
-    public void drawPotions(SpriteBatch batch)   { for (Potion p : potions) p.draw(batch); }
-    public void drawPlatforms(SpriteBatch batch) {
+    public void drawCoins(SpriteBatch batch)      { for (Coin c : coins)      c.draw(batch); }
+    public void drawPotions(SpriteBatch batch)    { for (Potion p : potions)  p.draw(batch); }
+    public void drawPlatforms(SpriteBatch batch)  {
         for (HorizontalPlatform hp : horizontalPlatforms) hp.draw(batch);
         for (VerticalPlatform   vp : verticalPlatforms)   vp.draw(batch);
     }
-    public void drawWater(SpriteBatch batch)              { for (Water w : waterPools) w.render(batch); }
-    public void drawEnemies(SpriteBatch batch, float dt)  { for (Enemy e : enemies)    e.render(dt, batch); }
-    public void drawTraps(SpriteBatch batch, float dt)    { for (Trap t : mapTraps)    t.render(batch, dt); }
-    public void drawBoxes(SpriteBatch batch)              { for (Box b : boxes)        b.render(batch); }
+    public void drawWater(SpriteBatch batch)             { for (Water w : waterPools) w.render(batch); }
+    public void drawEnemies(SpriteBatch batch, float dt) { for (Enemy e : enemies)    e.render(dt, batch); }
+    public void drawTraps(SpriteBatch batch, float dt)   { for (Trap t : mapTraps)    t.render(batch, dt); }
+    public void drawBoxes(SpriteBatch batch)             { for (Box b : boxes)        b.render(batch); }
+    public void drawEvilCoins(SpriteBatch batch, float dt) { for (EvilCoin ec : evilCoins) ec.render(batch, dt); }
 
     public void DrawElements(SpriteBatch batch, float dt) {
         drawPlatforms(batch);
-        drawBoxes(batch);           // ← Boxes rendered alongside platforms
+        drawBoxes(batch);
         drawCoins(batch);
         drawPotions(batch);
         drawWater(batch);
         drawEnemies(batch, dt);
         drawTraps(batch, dt);
+        drawEvilCoins(batch, dt);   // ← Evil Coins
     }
 
     public void DrawBackGround(SpriteBatch batch, GameCam camera,
@@ -709,6 +735,7 @@ public class PlayableMap {
         trollTiles.clear();
         deactivatedTrollTiles.clear();
         triggerZones.clear();
-        boxes.clear();              // ← Boxes
+        boxes.clear();
+        evilCoins.clear();  // ← Evil Coins
     }
 }

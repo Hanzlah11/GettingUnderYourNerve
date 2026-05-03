@@ -17,6 +17,8 @@ import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import java.util.Random;
+
 public class PlayScreen implements Screen {
 
     // Reference to the main game object so we can access the SpriteBatch & Assets
@@ -40,6 +42,12 @@ public class PlayScreen implements Screen {
 
     private final float WORLD_WIDTH  = 800;
     private final float WORLD_HEIGHT = 480;
+
+    // --- Screen Shake ---
+    private float   shakeDuration  = 0f;
+    private float   shakeIntensity = 0f;
+    private float   shakeTimer     = 0f;
+    private Random  random         = new Random();
 
     // --- Pause Menu ---
     private PauseMenu pauseMenu;
@@ -80,10 +88,9 @@ public class PlayScreen implements Screen {
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
     }
 
+
     @Override
-    public void show() {
-        // Called when this screen becomes the active screen
-    }
+    public void show() { }
 
     @Override
     public void render(float delta) {
@@ -93,13 +100,28 @@ public class PlayScreen implements Screen {
         if (!pauseMenu.isPaused()) {
             fileHandler.GetFilInput(player, playableMap);
 
-            // Note: We use the 'delta' passed in by the render method instead of Gdx.graphics.getDeltaTime()
+            // --- Respawn detection ---
+            boolean wasDead     = player.isDead;
+            int healthBefore    = player.getHealth();
+
             world.step(1 / 60f, 6, 2);
 
-            boolean wasDead = player.isDead;
             player.UpdatePlayer(delta, world);
+
+            // Respawn — reset triggers
             if (wasDead && !player.isDead) {
                 playableMap.resetTriggers(world);
+            }
+
+            // Screen shake — triggered by health loss
+            if (!player.isDead && player.getHealth() < healthBefore) {
+                if (healthBefore - player.getHealth() >= 25) {
+                    // Heavy hit (e.g. spike, shell)
+                    cam.startShake(0.4f, 0.6f);
+                } else {
+                    // Light hit (e.g. crab graze, projectile)
+                    cam.startShake(0.2f, 0.4f);
+                }
             }
 
             float worldWidth  = playableMap.getMapWidthInMeters();
@@ -127,7 +149,6 @@ public class PlayScreen implements Screen {
         ScreenUtils.clear(0.1f, 0.1f, 0.2f, 1);
         viewport.apply();
 
-        // Notice how we use 'game.batch' to access the SpriteBatch from Main
         game.batch.setProjectionMatrix(cam.GetCam().combined);
         game.batch.begin();
         playableMap.DrawBackGround(game.batch, cam, viewport, delta);
@@ -165,18 +186,12 @@ public class PlayScreen implements Screen {
         pauseMenu.resize((int) WORLD_WIDTH, (int) WORLD_HEIGHT);
     }
 
-    @Override
-    public void pause() { }
-
-    @Override
-    public void resume() { }
-
-    @Override
-    public void hide() { }
+    @Override public void pause()  { }
+    @Override public void resume() { }
+    @Override public void hide()   { }
 
     @Override
     public void dispose() {
-        // Dispose of level-specific things here
         world.dispose();
         debugRenderer.dispose();
         player.dispose();
