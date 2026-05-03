@@ -1,6 +1,7 @@
 package Game.GettingUnderYourNerve.Map;
 
 import Game.GettingUnderYourNerve.*;
+import Game.GettingUnderYourNerve.Trolls.*;
 import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Collectables.Potion;
 import Game.GettingUnderYourNerve.Enemies.Crab;
@@ -9,8 +10,6 @@ import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Trap.Spike;
 import Game.GettingUnderYourNerve.Trap.SpikedBall;
 import Game.GettingUnderYourNerve.Trap.Trap;
-import Game.GettingUnderYourNerve.Trolls.TriggerZone;
-import Game.GettingUnderYourNerve.Trolls.TrollTile;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -56,6 +55,9 @@ public class PlayableMap {
     // Traps
     public Array<Trap> mapTraps;
 
+    // Boxes
+    private Array<Box> boxes;
+
     // ---------------------------------------------------------------
     // Trigger system
     // ---------------------------------------------------------------
@@ -88,6 +90,7 @@ public class PlayableMap {
         waterPools            = new Array<>();
         enemies               = new Array<>();
         mapTraps              = new Array<>();
+        boxes                 = new Array<>();
 
         trollTiles            = new Array<>();
         deactivatedTrollTiles = new Array<>();
@@ -98,7 +101,8 @@ public class PlayableMap {
     }
 
     // Safely queues collected items for destruction so Box2D doesn't crash
-    public void applyLoadedCollectables(java.util.ArrayList<String> loadedCoins, java.util.ArrayList<String> loadedPotions) {
+    public void applyLoadedCollectables(java.util.ArrayList<String> loadedCoins,
+                                        java.util.ArrayList<String> loadedPotions) {
         if (loadedCoins != null) {
             this.collectedCoinIds = loadedCoins;
             this.pendingDestroyCoinIds.addAll(loadedCoins);
@@ -152,7 +156,7 @@ public class PlayableMap {
         }
         shape.dispose();
 
-        createTrollTilesFromMap(world);  // reads TrollZones object layer
+        createTrollTilesFromMap(world);
         createTriggersFromMap(world);
         createPlatformsFromMap(world);
         createCoinsFromMap(world);
@@ -160,14 +164,11 @@ public class PlayableMap {
         createWaterFromMap(world);
         createEnemiesFromMap(world);
         createTrapsFromMap(world);
+        createBoxesFromMap(world);  // ← Boxes
     }
 
     // ===============================================================
     // isCoveredByTrollZone
-    // Returns true if the tile at (col, row) falls inside any
-    // rectangle in the TrollZones object layer.
-    // Used to avoid creating two overlapping Box2D bodies for the
-    // same tile (one from createPhysicsFromMap, one from createTrollTilesFromMap).
     // ===============================================================
     private boolean isCoveredByTrollZone(int col, int row) {
         MapLayer trollLayer = map.getLayers().get("TrollZones");
@@ -176,7 +177,6 @@ public class PlayableMap {
         int tileWidth  = map.getProperties().get("tilewidth",  Integer.class);
         int tileHeight = map.getProperties().get("tileheight", Integer.class);
 
-        // Use the center of the tile for the contains() check
         float tileCenterX = (col + 0.5f) * tileWidth;
         float tileCenterY = (row + 0.5f) * tileHeight;
 
@@ -190,15 +190,6 @@ public class PlayableMap {
 
     // ===============================================================
     // createTrollTilesFromMap
-    // Reads the "TrollZones" object layer. Each rectangle object must
-    // have an "id" (int) property. Every Solid tile whose center falls
-    // inside the rectangle gets its own Box2D body and is registered
-    // as a TrollTile with that trigger ID.
-    //
-    // Tiled setup:
-    //   Layer type  : Object Layer, named "TrollZones"
-    //   Rectangle   : draw over the tiles you want to disappear
-    //   Property    : id (int) = 1  (match the Triggers zone id)
     // ===============================================================
     private void createTrollTilesFromMap(World world) {
         TiledMapTileLayer tileLayer =
@@ -218,7 +209,6 @@ public class PlayableMap {
             int       triggerId = props.get("id", Integer.class);
             Rectangle rect      = ((RectangleMapObject) object).getRectangle();
 
-            // Calculate which tile columns and rows this rectangle covers
             int colStart = (int) (rect.x / tileWidth);
             int colEnd   = (int) ((rect.x + rect.width)  / tileWidth);
             int rowStart = (int) (rect.y / tileHeight);
@@ -229,7 +219,6 @@ public class PlayableMap {
                     TiledMapTileLayer.Cell cell = tileLayer.getCell(col, row);
                     if (cell == null || cell.getTile() == null) continue;
 
-                    // Create a dedicated Box2D body for this troll tile
                     BodyDef bdef = new BodyDef();
                     bdef.type = BodyDef.BodyType.StaticBody;
                     bdef.position.set(
@@ -256,8 +245,6 @@ public class PlayableMap {
                     System.out.println("TrollZone id=" + triggerId +
                         " cols=" + colStart + "-" + colEnd +
                         " rows=" + rowStart + "-" + rowEnd);
-
-                    // inside the inner loop after the Solid check:
                     System.out.println("  → TrollTile added at col=" + col + " row=" + row);
                 }
             }
@@ -310,6 +297,39 @@ public class PlayableMap {
     }
 
     // ===============================================================
+    // createBoxesFromMap
+    // Reads the "Boxes" object layer.
+    // Rectangle named "NormalBox"   → solid static box
+    // Rectangle named "RotatingBox" → tilts toward player landing side
+    //
+    // Tiled setup:
+    //   Object Layer : "Boxes"
+    //   Name         : "NormalBox" or "RotatingBox"
+    //   Optional     : Speed (float) on RotatingBox
+    // ===============================================================
+    private void createBoxesFromMap(World world) {
+        MapLayer layer = map.getLayers().get("Boxes");
+        if (layer == null) return;
+
+        for (MapObject object : layer.getObjects()) {
+            if (!(object instanceof RectangleMapObject)) continue;
+            if (object.getName() == null) continue;
+
+            switch (object.getName()) {
+                case "NormalBox":
+                    boxes.add(new NormalBox(world, object, assets));
+                    break;
+                case "RotatingBox":
+                    boxes.add(new RotatingBox(world, object, assets));
+                    break;
+                case "LauncherBox":
+                    boxes.add(new LauncherBox(world, object, assets));
+                    break;
+            }
+        }
+    }
+
+    // ===============================================================
     // activateTrigger — called by WorldContactListener
     // ===============================================================
     public void activateTrigger(int triggerId) {
@@ -329,12 +349,10 @@ public class PlayableMap {
 
         for (int triggerId : pendingTriggers) {
 
-            // 1. Mark the zone as fired
             for (TriggerZone zone : triggerZones) {
                 if (zone.id == triggerId) zone.fired = true;
             }
 
-            // 2. Deactivate all matching TrollTiles
             Iterator<TrollTile> iter = trollTiles.iterator();
             while (iter.hasNext()) {
                 TrollTile troll = iter.next();
@@ -346,7 +364,6 @@ public class PlayableMap {
 
                     troll.layer.setCell(troll.col, troll.row, null);
 
-                    // Move to deactivated — NOT discarded, needed for respawn
                     deactivatedTrollTiles.add(troll);
                     iter.remove();
                 }
@@ -357,26 +374,20 @@ public class PlayableMap {
     }
 
     // ===============================================================
-    // resetTriggers — call this when the player respawns.
-    // Restores every fired TrollTile (visually + physically) and
-    // resets every TriggerZone so they can fire again.
+    // resetTriggers — called on player respawn
     // ===============================================================
     public void resetTriggers(World world) {
 
-        // 1. Reset all trigger zones so they can fire again
         for (TriggerZone zone : triggerZones) {
             zone.fired = false;
         }
 
-        // 2. Restore all deactivated troll tiles
         Iterator<TrollTile> iter = deactivatedTrollTiles.iterator();
         while (iter.hasNext()) {
             TrollTile troll = iter.next();
 
-            // Restore the tile cell → visible again
             troll.layer.setCell(troll.col, troll.row, troll.originalCell);
 
-            // Recreate the Box2D static body at the saved position
             BodyDef bdef = new BodyDef();
             bdef.type = BodyDef.BodyType.StaticBody;
             bdef.position.set(troll.bodyX, troll.bodyY);
@@ -400,12 +411,10 @@ public class PlayableMap {
             troll.body      = newBody;
             troll.activated = false;
 
-            // Move back to active list
             trollTiles.add(troll);
             iter.remove();
         }
 
-        // 3. Clear any queued triggers that hadn't fired yet
         pendingTriggers.clear();
     }
 
@@ -421,6 +430,7 @@ public class PlayableMap {
         updatewaters(dt);
         updateEnemies(dt, player, world);
         updateTraps(dt);
+        updateBoxes(dt);            // ← Boxes
     }
 
     // ===============================================================
@@ -432,7 +442,7 @@ public class PlayableMap {
     }
 
     // ===============================================================
-    // All creation methods — unchanged
+    // Creation methods
     // ===============================================================
 
     public void createEnemiesFromMap(World world) {
@@ -495,14 +505,13 @@ public class PlayableMap {
         if (layer == null) return;
         for (MapObject object : layer.getObjects()) {
             if (!(object instanceof RectangleMapObject)) continue;
-            Rectangle rect = ((RectangleMapObject) object).getRectangle();
+            Rectangle     rect  = ((RectangleMapObject) object).getRectangle();
             MapProperties props = object.getProperties();
             String type = props.containsKey("type") ? props.get("type", String.class) : "null";
 
             if (type.equals("Potion")) {
                 Potion newPotion = new Potion(world, rect, object.getName(), assets);
                 potions.add(newPotion);
-                // Create a unique ID using its Tiled X/Y coordinates
                 potionIds.put(newPotion, "potion_" + rect.x + "_" + rect.y);
             }
         }
@@ -513,14 +522,13 @@ public class PlayableMap {
         if (layer == null) return;
         for (MapObject object : layer.getObjects()) {
             if (!(object instanceof RectangleMapObject)) continue;
-            Rectangle rect = ((RectangleMapObject) object).getRectangle();
+            Rectangle     rect  = ((RectangleMapObject) object).getRectangle();
             MapProperties props = object.getProperties();
             String type = props.containsKey("type") ? props.get("type", String.class) : "null";
 
             if (type.equals("Coin")) {
                 Coin newCoin = new Coin(world, rect, object.getName(), assets);
                 coins.add(newCoin);
-                // Create a unique ID using its Tiled X/Y coordinates
                 coinIds.put(newCoin, "coin_" + rect.x + "_" + rect.y);
             }
         }
@@ -554,7 +562,7 @@ public class PlayableMap {
     }
 
     // ===============================================================
-    // All update methods — unchanged
+    // Update methods
     // ===============================================================
 
     public void updateCoins(float dt, World world) {
@@ -562,7 +570,6 @@ public class PlayableMap {
         while (iter.hasNext()) {
             Coin coin = iter.next();
 
-            // 1. If this coin was already collected in the save file, trigger its destruction!
             String id = coinIds.get(coin);
             if (pendingDestroyCoinIds.contains(id)) {
                 coin.isCollected = true;
@@ -575,7 +582,6 @@ public class PlayableMap {
                 world.destroyBody(coin.body);
                 coin.isDestroyed = true;
 
-                // 2. Track that we collected it so it gets saved
                 if (!collectedCoinIds.contains(id)) {
                     collectedCoinIds.add(id);
                 }
@@ -590,7 +596,6 @@ public class PlayableMap {
         while (iter.hasNext()) {
             Potion potion = iter.next();
 
-            // 1. Trigger destruction if loaded from save
             String id = potionIds.get(potion);
             if (pendingDestroyPotionIds.contains(id)) {
                 potion.isCollected = true;
@@ -603,7 +608,6 @@ public class PlayableMap {
                 world.destroyBody(potion.body);
                 potion.isDestroyed = true;
 
-                // 2. Track that we collected it
                 if (!collectedPotionIds.contains(id)) {
                     collectedPotionIds.add(id);
                 }
@@ -639,8 +643,12 @@ public class PlayableMap {
         for (Trap t : mapTraps) t.update(dt);
     }
 
+    public void updateBoxes(float dt) {
+        for (Box b : boxes) b.update(dt);
+    }
+
     // ===============================================================
-    // All draw methods — unchanged
+    // Draw methods
     // ===============================================================
 
     public void drawCoins(SpriteBatch batch)     { for (Coin c : coins)     c.draw(batch); }
@@ -652,9 +660,11 @@ public class PlayableMap {
     public void drawWater(SpriteBatch batch)              { for (Water w : waterPools) w.render(batch); }
     public void drawEnemies(SpriteBatch batch, float dt)  { for (Enemy e : enemies)    e.render(dt, batch); }
     public void drawTraps(SpriteBatch batch, float dt)    { for (Trap t : mapTraps)    t.render(batch, dt); }
+    public void drawBoxes(SpriteBatch batch)              { for (Box b : boxes)        b.render(batch); }
 
     public void DrawElements(SpriteBatch batch, float dt) {
         drawPlatforms(batch);
+        drawBoxes(batch);           // ← Boxes rendered alongside platforms
         drawCoins(batch);
         drawPotions(batch);
         drawWater(batch);
@@ -699,5 +709,6 @@ public class PlayableMap {
         trollTiles.clear();
         deactivatedTrollTiles.clear();
         triggerZones.clear();
+        boxes.clear();              // ← Boxes
     }
 }

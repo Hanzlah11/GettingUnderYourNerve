@@ -46,6 +46,10 @@ public class Player {
     private float hitTimer = 0f;
     private float attackTimer;
 
+    private boolean isLaunched = false;
+    private float   launchTimer = 0f;
+    private static final float LAUNCH_DURATION = 0.4f;
+
     public State currentState = State.IDLE;
     public State previousState = State.IDLE;
 
@@ -195,6 +199,14 @@ public class Player {
             } else {
                 return; // Return early! Player cannot move left/right while stunned.
             }
+        }
+
+        if (isLaunched) {
+            launchTimer += dt;
+            if (launchTimer >= LAUNCH_DURATION) {
+                isLaunched = false;
+            }
+            return; // skip all movement input while launched
         }
 
         // --- SWORD COOLDOWN ---
@@ -421,6 +433,17 @@ public class Player {
         playerBody.setLinearVelocity(0, 0);
 
         System.out.println("RESPAWNED!");
+    }
+
+    public void launch(float horizontalForce, float verticalForce) {
+        playerBody.setLinearVelocity(0, 0);
+        playerBody.applyLinearImpulse(
+            new Vector2(horizontalForce, verticalForce),
+            playerBody.getWorldCenter(),
+            true
+        );
+        isLaunched  = true;
+        launchTimer = 0f;
     }
 
     public void dispose() {}

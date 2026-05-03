@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="100" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="14" nextobjectid="35">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="100" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="15" nextobjectid="42">
  <tileset firstgid="1" source="../tilesets/outside.tsx"/>
  <layer id="2" name="Tile Layer 1" width="100" height="50">
   <data encoding="csv">
@@ -64,6 +64,18 @@
   <object id="33" x="480" y="320" width="112" height="64">
    <properties>
     <property name="id" type="int" value="2"/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="14" name="Boxes">
+  <object id="40" name="RotatingBox" x="1152" y="320" width="48" height="48">
+   <properties>
+    <property name="Speed" type="float" value="250"/>
+   </properties>
+  </object>
+  <object id="41" name="LauncherBox" x="1072" y="352" width="16" height="16">
+   <properties>
+    <property name="Force" type="float" value="30"/>
    </properties>
   </object>
  </objectgroup>
