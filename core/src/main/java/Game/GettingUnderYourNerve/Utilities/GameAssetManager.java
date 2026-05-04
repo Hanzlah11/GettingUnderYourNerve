@@ -82,8 +82,9 @@ public class GameAssetManager {
         "Treasure Hunters/Palm Tree Island/Sprites/Objects/Spiked Ball/Spiked Ball.png";
     public static final String CHAIN_LINK =
         "Treasure Hunters/Palm Tree Island/Sprites/Objects/Spiked Ball/spiked_chain.png";
+    //For title Screen:
+    public static final String TITLE_BG = "Treasure Hunters/Title Screen/title_bg.png";
 
-    //---UI---
     public static final String BOARD_TL =
         "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Board/1.png";
     public static final String BOARD_TC =
@@ -131,6 +132,7 @@ public class GameAssetManager {
         manager.load(SKY_BASE, Texture.class);
         manager.load(WATER_DEEP, Texture.class);
         manager.load(RICK_SHEET, Texture.class);
+        manager.load(TITLE_BG, Texture.class);
 
         // PLAYER
         loadFrames(PLAYER_IDLE_PREFIX, 5, "%02d");
