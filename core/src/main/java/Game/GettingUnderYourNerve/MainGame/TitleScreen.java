@@ -58,8 +58,8 @@ public class TitleScreen implements Screen {
 
         // Load Font
         font = loadFont("ui/runescape_uf.ttf", 24);
-        playRect = new Rectangle(200f, 50f, BTN_WIDTH, BTN_HEIGHT);
-        settingsRect = new Rectangle(400f, 50f, BTN_WIDTH, BTN_HEIGHT);
+        playRect = new Rectangle(300f, 130f, BTN_WIDTH, BTN_HEIGHT);
+        settingsRect = new Rectangle(300f, 80f, BTN_WIDTH, BTN_HEIGHT);
     }
 
     @Override
