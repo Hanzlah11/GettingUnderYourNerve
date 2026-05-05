@@ -69,11 +69,20 @@ public class GameAssetManager {
     public static final String CRAB_ATTACK_PREFIX =
         "Treasure Hunters/The Crusty Crew/Sprites/Crabby/07-Attack/Attack ";
 
+    // --- BATMAN ---
+    public static final String BATMAN_IDLE_PREFIX =
+        "Treasure Hunters/Batman/Idle/";
+    public static final String BATMAN_MOVE_PREFIX =
+        "Treasure Hunters/Batman/Moving/";
+    public static final String BATMAN_ATTACK_PREFIX =
+        "Treasure Hunters/Batman/Attacking/";
+
     //---WATER---
     public static final String WATER_DEEP =
         "Treasure Hunters/Palm Tree Island/Sprites/Background/Additional Water.png";
     public static final String WATER_SURFACE =
         "Treasure Hunters/Palm Tree Island/Sprites/Background/top/";
+
 
     //---TRAPS---
     public static final String SPIKE_ANIM_PREFIX =
@@ -164,6 +173,11 @@ public class GameAssetManager {
         loadFrames(CRAB_IDLE_PREFIX, 9, "%02d");
         loadFrames(CRAB_RUN_PREFIX, 6, "%02d");
         loadFrames(CRAB_ATTACK_PREFIX, 4, "%02d");
+
+        // BATMAN
+        loadFrames(BATMAN_IDLE_PREFIX, 3, "%d");
+        loadFrames(BATMAN_MOVE_PREFIX, 3, "%d");
+        loadFrames(BATMAN_ATTACK_PREFIX, 8, "%d");
 
         //Water
         loadFrames(WATER_SURFACE, 3, "%d");
