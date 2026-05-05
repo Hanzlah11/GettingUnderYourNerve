@@ -68,15 +68,13 @@ public class PlayScreen implements Screen {
 
         contactListener.setPlayableMap(playableMap);
 
-        // Spawn Player[cite: 21]
+        // Spawn Player
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
         currentCutscene = new IntroEncounter(this, playableMap.getBatman());
     }
 
     @Override
     public void show() { }
-
-    // Inside PlayScreen.java
 
     // 1. Rename your rendering block to a public method
     public void drawWorld(float delta) {
@@ -132,9 +130,20 @@ public class PlayScreen implements Screen {
                 inCutscene = false; // Reset for the update call below
             }
         } else {
-            fileHandler.GetFilInput(player, playableMap);
-        }
+            // --- RE-ADDED: QUICK SAVE & QUICK LOAD HOTKEYS ---
+            boolean isCtrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
 
+            if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.S)) {
+                String playerSaveFile = "SavedFiles/" + EnterNameScreen.globalPlayerName + ".json";
+                fileHandler.saveGameState(player, playableMap, playerSaveFile);
+            }
+
+            if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.L)) {
+                game.setScreen(new LoadScreen(game, this));
+                return; // Stop updating for this frame while we switch to the Load menu
+            }
+            // -------------------------------------------------
+        }
 
         // --- 1. CAPTURE STATE BEFORE PHYSICS STEP ---
         boolean wasDead = player.isDead;
@@ -156,33 +165,33 @@ public class PlayScreen implements Screen {
             int damageTaken = healthBefore - player.getHealth();
 
             if (damageTaken >= 25) {
-                // Heavy hit (e.g., spike, heavy enemy attack)[cite: 15]
+                // Heavy hit (e.g., spike, heavy enemy attack)
                 cam.startShake(0.4f, 0.6f);
             } else {
-                // Light hit (e.g., minor projectile or graze)[cite: 15]
+                // Light hit (e.g., minor projectile or graze)
                 cam.startShake(0.2f, 0.4f);
             }
         }
 
-        // --- 4. CAMERA UPDATES ---[cite: 15, 18]
+        // --- 4. CAMERA UPDATES ---
         float worldWidth = playableMap.getMapWidthInMeters();
         float worldHeight = playableMap.getMapHeightInMeters();
         float halfVW = (WORLD_WIDTH / Main.PPM) / 2f;
         float halfVH = (WORLD_HEIGHT / Main.PPM) / 2f;
 
-        // Handle camera behavior if the player is dead[cite: 15]
+        // Handle camera behavior if the player is dead
         if (player.isDead) {
             cam.SetDeathTarget(worldWidth, worldHeight,
                 halfVW, halfVH,
                 player.spawnX, player.spawnY);
         }
 
-        // Apply standard camera follow and update map elements[cite: 18]
+        // Apply standard camera follow and update map elements
         if (currentCutscene == null) {
-            // Standard camera behavior following the player[cite: 24, 26]
+            // Standard camera behavior following the player
             cam.Update(worldWidth, worldHeight, halfVW, halfVH, player.GetXpos(), player.GetYpos());
         } else {
-            // Cutscene is manually moving cam.position.x; just update matrices[cite: 24, 25]
+            // Cutscene is manually moving cam.position.x; just update matrices
             cam.GetCam().update();
         }
         playableMap.UpdateMap(cam.GetCam(), delta, world, player);
@@ -194,6 +203,15 @@ public class PlayScreen implements Screen {
         if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.D)) {
             DebugOption = !DebugOption;
         }
+    }
+
+    // --- RE-ADDED: Helper method called by LoadScreen when the player confirms a load ---
+    public void executeLoad(String saveName) {
+        String playerSaveFile = "SavedFiles/" + saveName + ".json";
+        fileHandler.loadGameState(player, playableMap, playerSaveFile);
+
+        // Ensure future Quick Saves overwrite the newly loaded file!
+        EnterNameScreen.globalPlayerName = saveName;
     }
 
     @Override
@@ -208,10 +226,11 @@ public class PlayScreen implements Screen {
 
     @Override
     public void dispose() {
-        world.dispose();
-        debugRenderer.dispose();
-        player.dispose();
+        // --- RE-ADDED: Safe dispose order to prevent C++ EXCEPTION_ACCESS_VIOLATION crashes ---
         playableMap.dispose();
+        player.dispose();
+        if (debugRenderer != null) debugRenderer.dispose();
+        if (world != null) world.dispose();
     }
 
     public Player getPlayer() {

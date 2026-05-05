@@ -1,26 +1,16 @@
-//FileHandler.java
 package Game.GettingUnderYourNerve.Utilities;
 
 import Game.GettingUnderYourNerve.Map.PlayableMap;
 import Game.GettingUnderYourNerve.Player;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.Json;
 
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class FileHandler extends InputAdapter {
+public class FileHandler {
     private Json json;
-
-    private boolean isSavingMode = false;
-    private boolean isLoadingMode = false;
-    private StringBuilder typedName;
-
-    private Player currentPlayerRef;
-    private PlayableMap currentMapRef;
 
     public static class GameSaveData {
         public float x;
@@ -43,14 +33,12 @@ public class FileHandler extends InputAdapter {
 
         @Override
         public int compareTo(ScoreEntry o) {
-            return Integer.compare(o.score, this.score);
+            return Integer.compare(o.score, this.score); // Descending order
         }
     }
 
     public FileHandler() {
         json = new Json();
-        typedName = new StringBuilder();
-        Gdx.input.setInputProcessor(this);
     }
 
     public void saveGameState(Player player, PlayableMap map, String fileName) {
@@ -65,8 +53,9 @@ public class FileHandler extends InputAdapter {
 
         String saveString = json.toJson(data);
         FileHandle file = Gdx.files.local(fileName);
-        file.writeString(saveString, false);
-        System.out.println("Game Saved Successfully to " + fileName + "!");
+        file.writeString(saveString, false); // false = overwrite existing file
+
+        System.out.println("--- GAME SAVED SUCCESSFULLY TO: " + fileName + " ---");
     }
 
     public void loadGameState(Player player, PlayableMap map, String fileName) {
@@ -85,32 +74,9 @@ public class FileHandler extends InputAdapter {
             }
 
             map.applyLoadedCollectables(data.collectedCoins, data.collectedPotions);
-            System.out.println("Game Loaded Successfully from " + fileName + "!");
+            System.out.println("--- GAME LOADED SUCCESSFULLY FROM: " + fileName + " ---");
         } else {
-            System.out.println("No save file found with name: " + fileName);
-        }
-    }
-
-    public void GetFilInput(Player player, PlayableMap map) {
-        this.currentPlayerRef = player;
-        this.currentMapRef = map;
-
-        if (isSavingMode || isLoadingMode) return;
-
-        boolean isCtrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
-
-        if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.N)) {
-            isSavingMode = true;
-            isLoadingMode = false;
-            typedName.setLength(0);
-            System.out.println("\n--- SAVE MODE ACTIVATED ---");
-        }
-
-        if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.L)) {
-            isLoadingMode = true;
-            isSavingMode = false;
-            typedName.setLength(0);
-            System.out.println("\n--- LOAD MODE ACTIVATED ---");
+            System.out.println("--- NO SAVE FILE FOUND FOR: " + fileName + " ---");
         }
     }
 
@@ -139,32 +105,5 @@ public class FileHandler extends InputAdapter {
             }
         }
         return top10;
-    }
-
-    @Override
-    public boolean keyTyped(char character) {
-        if (isSavingMode || isLoadingMode) {
-            if (character == '\b' && typedName.length() > 0) {
-                typedName.setLength(typedName.length() - 1);
-                System.out.println("Current Name: " + typedName.toString());
-            } else if (character == '\r' || character == '\n') {
-                if (typedName.length() > 0) {
-                    String fileName = "SavedFiles/" + typedName.toString().trim() + ".json";
-                    if (isSavingMode) {
-                        saveGameState(currentPlayerRef, currentMapRef, fileName);
-                    } else if (isLoadingMode) {
-                        loadGameState(currentPlayerRef, currentMapRef, fileName);
-                    }
-                }
-                isSavingMode = false;
-                isLoadingMode = false;
-                typedName.setLength(0);
-            } else if (Character.isLetterOrDigit(character) || character == ' ' || character == '_') {
-                typedName.append(character);
-                System.out.println("Current Name: " + typedName.toString());
-            }
-            return true;
-        }
-        return false;
     }
 }
