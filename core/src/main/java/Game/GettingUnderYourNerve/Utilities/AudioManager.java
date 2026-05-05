@@ -1,3 +1,4 @@
+//AudioManager.java
 package Game.GettingUnderYourNerve.Utilities;
 
 import com.badlogic.gdx.Gdx;
@@ -11,6 +12,7 @@ public class AudioManager
     public static Sound crabChaseShout;
     public static Sound crabAttack;
     public static Sound crabPatrol;
+    public static Sound buttonSound;
     public static Music rickMusic;
     public static void load()
     {
@@ -20,6 +22,7 @@ public class AudioManager
         crabAttack = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Enemy/crabAttack.wav"));
         crabPatrol = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Enemy/crabPatrol.wav"));
         rickMusic = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/UI/rickRoll.mp3"));
+        buttonSound = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/UI/button_press.mp3"));
     }
 
     public static void dispose()
@@ -31,6 +34,7 @@ public class AudioManager
         crabAttack.dispose();
         crabPatrol.dispose();
         if (rickMusic != null) rickMusic.dispose();
+        if (buttonSound != null) buttonSound.dispose();
     }
 
 }

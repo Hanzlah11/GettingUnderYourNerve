@@ -1,3 +1,4 @@
+//FileHandler.java
 package Game.GettingUnderYourNerve.Utilities;
 
 import Game.GettingUnderYourNerve.Map.PlayableMap;
@@ -9,6 +10,7 @@ import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.utils.Json;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class FileHandler extends InputAdapter {
     private Json json;
@@ -18,7 +20,7 @@ public class FileHandler extends InputAdapter {
     private StringBuilder typedName;
 
     private Player currentPlayerRef;
-    private PlayableMap currentMapRef; // Added Map Reference
+    private PlayableMap currentMapRef;
 
     public static class GameSaveData {
         public float x;
@@ -26,10 +28,23 @@ public class FileHandler extends InputAdapter {
         public int score;
         public int health;
         public boolean isJumping;
-
-        // NEW: Track collectables
         public ArrayList<String> collectedCoins = new ArrayList<>();
         public ArrayList<String> collectedPotions = new ArrayList<>();
+    }
+
+    public static class ScoreEntry implements Comparable<ScoreEntry> {
+        public String name;
+        public int score;
+
+        public ScoreEntry(String name, int score) {
+            this.name = name;
+            this.score = score;
+        }
+
+        @Override
+        public int compareTo(ScoreEntry o) {
+            return Integer.compare(o.score, this.score);
+        }
     }
 
     public FileHandler() {
@@ -45,15 +60,12 @@ public class FileHandler extends InputAdapter {
         data.score = player.getScore();
         data.health = player.getHealth();
         data.isJumping = !player.isGrounded && player.getPlayerBody().getLinearVelocity().y > 0;
-
-        // Save the map's collected items
         data.collectedCoins = map.collectedCoinIds;
         data.collectedPotions = map.collectedPotionIds;
 
         String saveString = json.toJson(data);
         FileHandle file = Gdx.files.local(fileName);
         file.writeString(saveString, false);
-
         System.out.println("Game Saved Successfully to " + fileName + "!");
     }
 
@@ -72,16 +84,13 @@ public class FileHandler extends InputAdapter {
                 player.ApplyJump();
             }
 
-            // Tell the map which items are already gone
             map.applyLoadedCollectables(data.collectedCoins, data.collectedPotions);
-
             System.out.println("Game Loaded Successfully from " + fileName + "!");
         } else {
             System.out.println("No save file found with name: " + fileName);
         }
     }
 
-    // NOTE: Update this method signature in your main Game/PlayScreen loop!
     public void GetFilInput(Player player, PlayableMap map) {
         this.currentPlayerRef = player;
         this.currentMapRef = map;
@@ -105,6 +114,33 @@ public class FileHandler extends InputAdapter {
         }
     }
 
+    public static ArrayList<ScoreEntry> getTopScores() {
+        ArrayList<ScoreEntry> allScores = new ArrayList<>();
+        FileHandle dir = Gdx.files.local("SavedFiles");
+        Json jsonParser = new Json();
+
+        if (dir.exists() && dir.isDirectory()) {
+            for (FileHandle file : dir.list(".json")) {
+                try {
+                    GameSaveData data = jsonParser.fromJson(GameSaveData.class, file.readString());
+                    allScores.add(new ScoreEntry(file.nameWithoutExtension(), data.score));
+                } catch (Exception ignored) {}
+            }
+        }
+
+        Collections.sort(allScores);
+        ArrayList<ScoreEntry> top10 = new ArrayList<>();
+
+        for (int i = 0; i < 10; i++) {
+            if (i < allScores.size()) {
+                top10.add(allScores.get(i));
+            } else {
+                top10.add(new ScoreEntry("--", -1));
+            }
+        }
+        return top10;
+    }
+
     @Override
     public boolean keyTyped(char character) {
         if (isSavingMode || isLoadingMode) {
@@ -114,7 +150,6 @@ public class FileHandler extends InputAdapter {
             } else if (character == '\r' || character == '\n') {
                 if (typedName.length() > 0) {
                     String fileName = "SavedFiles/" + typedName.toString().trim() + ".json";
-
                     if (isSavingMode) {
                         saveGameState(currentPlayerRef, currentMapRef, fileName);
                     } else if (isLoadingMode) {

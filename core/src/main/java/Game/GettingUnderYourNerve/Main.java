@@ -1,6 +1,7 @@
 package Game.GettingUnderYourNerve;
 
-import Game.GettingUnderYourNerve.MainGame.PlayScreen;
+import Game.GettingUnderYourNerve.MainGame.TitleScreen;
+//import Game.GettingUnderYourNerve.MainGame.PlayScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Game;
@@ -44,7 +45,7 @@ public class Main extends Game {
         // ---------------------------------------------------------
         // Transfer control to your gameplay screen!
         // ---------------------------------------------------------
-        this.setScreen(new PlayScreen(this));
+        this.setScreen(new TitleScreen(this));
     }
 
     @Override
