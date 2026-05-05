@@ -59,7 +59,7 @@ public class TitleScreen implements Screen {
 
             if (playRect.contains(touchVec.x, touchVec.y)) {
                 AudioManager.buttonSound.play(); // PLAY SOUND
-                game.setScreen(new PlayScreen(game));
+                game.setScreen(new EnterNameScreen(game));
                 dispose();
             } else if (leaderboardRect.contains(touchVec.x, touchVec.y)) {
                 AudioManager.buttonSound.play(); // PLAY SOUND
