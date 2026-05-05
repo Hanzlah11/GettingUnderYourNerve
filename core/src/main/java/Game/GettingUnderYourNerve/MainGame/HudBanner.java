@@ -1,4 +1,4 @@
-package Game.GettingUnderYourNerve.UI;
+package Game.GettingUnderYourNerve.MainGame;
 
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;
@@ -10,19 +10,6 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Matrix4;
 
-/**
- * HudBanner — owned and managed entirely by PauseMenu.
- * Main.java never touches this class directly.
- *
- * Banner sprite layout (2 columns x 3 rows):
- *   TL | TR
- *   CL | CR
- *   BL | BR
- *
- * Displays "Stats" heading, player Health and Score.
- * Positioned by PauseMenu via attachToBoard() so it sits on the
- * top-left corner of the pause board with a small overlap.
- */
 public class HudBanner {
 
     // ---------------------------------------------------------------

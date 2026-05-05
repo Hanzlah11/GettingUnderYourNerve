@@ -1,6 +1,7 @@
 package Game.GettingUnderYourNerve.Map;
 
 import Game.GettingUnderYourNerve.*;
+import Game.GettingUnderYourNerve.Enemies.Batman;
 import Game.GettingUnderYourNerve.Trolls.*;
 import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Collectables.Potion;
@@ -466,6 +467,9 @@ public class PlayableMap {
                     String name = object.getName();
                     if ("Shell".equals(name)) enemies.add(new Shell(world, x, y, assets));
                     else if ("Crab".equals(name)) enemies.add(new Crab(world, x, y, assets));
+                    else if ("Batman".equals(name)) {
+                        enemies.add(new Batman(world, x, y, assets));
+                    }
                 }
             }
         }
@@ -719,6 +723,14 @@ public class PlayableMap {
         int mapHeight  = map.getProperties().get("height",     Integer.class);
         int tileHeight = map.getProperties().get("tileheight", Integer.class);
         return (mapHeight * tileHeight) / PPM;
+    }
+
+    // Inside PlayableMap.java
+    public Batman getBatman() {
+        for (Enemy e : enemies) {
+            if (e instanceof Batman) return (Batman) e;
+        }
+        return null;
     }
 
     public void dispose() {

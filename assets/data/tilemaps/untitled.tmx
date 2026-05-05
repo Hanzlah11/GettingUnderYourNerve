@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="100" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="16" nextobjectid="45">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="100" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="24" nextobjectid="73">
  <tileset firstgid="1" source="../tilesets/outside.tsx"/>
  <objectgroup id="15" name="EvilCoins">
   <object id="44" x="112" y="160" width="16" height="16">
@@ -101,6 +101,11 @@
  <objectgroup id="8" name="Water">
   <object id="18" name="water" x="464" y="384" width="320" height="144"/>
  </objectgroup>
+ <objectgroup id="23" name="CutsceneData">
+  <object id="67" name="pancam" x="110" y="222.667" width="19.3333" height="153.333"/>
+  <object id="69" name="cam_end" x="1490.67" y="250.667" width="39.3333" height="74.6667"/>
+  <object id="71" name="escapebatman" x="1564.67" y="204.667" width="27.3333" height="166"/>
+ </objectgroup>
  <objectgroup id="9" name="Crab">
   <object id="24" name="Crab" x="800" y="336" width="72" height="32"/>
  </objectgroup>
@@ -108,7 +113,10 @@
   <object id="27" name="Shell" type="Enemy" x="938.667" y="338.333" width="48" height="38"/>
  </objectgroup>
  <objectgroup id="3" name="Objects">
-  <object id="1" name="Player" type="PlayerStart" x="46.6667" y="322.667" width="32" height="32"/>
+  <object id="1" name="Player" type="PlayerStart" x="20.6667" y="332.667" width="32" height="32"/>
+ </objectgroup>
+ <objectgroup id="22" name="Batman">
+  <object id="64" name="Batman" x="1485.33" y="317.333" width="48" height="48"/>
  </objectgroup>
  <objectgroup id="5" name="Platforms" visible="0">
   <object id="3" name="HorizontalPlatform" x="288" y="320" width="64" height="16">

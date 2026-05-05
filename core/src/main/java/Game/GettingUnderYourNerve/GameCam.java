@@ -53,6 +53,12 @@ public class GameCam {
         camera.update();
     }
 
+    public void setPosition(float x, float y) {
+        this.position.set(x, y);
+        this.target.set(x, y);
+        this.camera.position.set(x, y, 0);
+        this.camera.update();
+    }
     /**
      * Call this on player death — sets the lerp target to spawn,
      * camera will glide there automatically on subsequent Update() calls.

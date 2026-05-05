@@ -178,7 +178,7 @@ public class Player {
     // ---------------------------------------------------
     // UPDATE PLAYER
     // ---------------------------------------------------
-    public void UpdatePlayer(float dt, World world) {
+    public void UpdatePlayer(float dt, World world, boolean isCutscene) {
 
         if (isDead) {
             Respawn();
@@ -251,48 +251,44 @@ public class Player {
         isTouchingWall = false;
         isSliding = false;
 
-        for (Contact contact : world.getContactList()) {
+        for (Contact contact : world.getContactList())
+        {
             if (!contact.isTouching()) continue;
-
             Fixture fixA = contact.getFixtureA();
             Fixture fixB = contact.getFixtureB();
-
             if (fixA.getBody() == playerBody || fixB.getBody() == playerBody) {
                 if (fixA.isSensor() || fixB.isSensor()) continue;
-
                 WorldManifold manifold = contact.getWorldManifold();
                 Vector2 normal = manifold.getNormal();
-
                 if (Math.abs(normal.x) > 0.8f) isTouchingWall = true;
-
                 if (fixA.getBody() == playerBody && normal.y <= -0.8f) isGrounded = true;
                 else if (fixB.getBody() == playerBody && normal.y >= 0.8f) isGrounded = true;
             }
         }
 
-        Vector2 vel = playerBody.getLinearVelocity();
-        float desiredVel = 0;
+        if (!isCutscene) {
+            Vector2 vel = playerBody.getLinearVelocity();
+            float desiredVel = 0;
 
-        boolean moveRight = Gdx.input.isKeyPressed(Input.Keys.RIGHT);
-        boolean moveLeft = Gdx.input.isKeyPressed(Input.Keys.LEFT);
+            boolean moveRight = Gdx.input.isKeyPressed(Input.Keys.RIGHT);
+            boolean moveLeft = Gdx.input.isKeyPressed(Input.Keys.LEFT);
 
-        // Lock movement if currently swinging sword
-        if (moveLeft && !isAttacking) desiredVel = -10f;
-        else if (moveRight && !isAttacking) desiredVel = 10f;
+            if (moveLeft && !isAttacking) desiredVel = -10f;
+            else if (moveRight && !isAttacking) desiredVel = 10f;
 
-        playerBody.setLinearVelocity(desiredVel, vel.y);
+            playerBody.setLinearVelocity(desiredVel, vel.y);
 
-        boolean pushingWall = (desiredVel < 0 && isTouchingWall) || (desiredVel > 0 && isTouchingWall);
-        boolean falling = vel.y < 0;
+            boolean pushingWall = (desiredVel < 0 && isTouchingWall) || (desiredVel > 0 && isTouchingWall);
+            boolean falling = vel.y < 0;
 
-        if (pushingWall && falling && !isGrounded) {
-            isSliding = true;
-            playerBody.setLinearVelocity(vel.x, Math.max(vel.y, -2f));
-        }
+            if (pushingWall && falling && !isGrounded) {
+                isSliding = true;
+                playerBody.setLinearVelocity(vel.x, Math.max(vel.y, -2f));
+            }
 
-        // Lock jump if currently swinging sword
-        if (Gdx.input.isKeyJustPressed(Input.Keys.UP) && isGrounded && !isAttacking) {
-            ApplyJump();
+            if (Gdx.input.isKeyJustPressed(Input.Keys.UP) && isGrounded && !isAttacking) {
+                ApplyJump();
+            }
         }
     }
 
