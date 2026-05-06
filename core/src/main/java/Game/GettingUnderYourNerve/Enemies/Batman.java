@@ -21,7 +21,7 @@ public class Batman extends Enemy {
     private Animation<TextureRegion> moveAnim;
     private Animation<TextureRegion> attackAnim;
 
-    private boolean facingRight = true;
+    public boolean facingRight = true;
     private GameAssetManager assets;
 
     public Batman(World world, float x, float y, GameAssetManager assets) {
@@ -50,16 +50,29 @@ public class Batman extends Enemy {
         b2body = world.createBody(bdef);
 
         PolygonShape shape = new PolygonShape();
-        // 2. MATCH HITBOX TO TILED: Half-extents of 32 are 16
-        // This creates a physical body that is exactly 32x32 pixels
-        float hitBoxHalfWidth = 24 / PPM;
-        float hitBoxHalfHeight = 24 / PPM;
-        shape.setAsBox(hitBoxHalfWidth, hitBoxHalfHeight);
+        float w = drawWidth / 2f;
+        float h = drawHeight / 2f;
+        float bevel = 2 / PPM;
+
+        Vector2[] vertices = new Vector2[8];
+        vertices[0] = new Vector2(-w + bevel, -h);
+        vertices[1] = new Vector2(w - bevel, -h);
+        vertices[2] = new Vector2(w, -h + bevel);
+        vertices[3] = new Vector2(w, h - bevel);
+        vertices[4] = new Vector2(w - bevel, h);
+        vertices[5] = new Vector2(-w + bevel, h);
+        vertices[6] = new Vector2(-w, h - bevel);
+        vertices[7] = new Vector2(-w, -h + bevel);
+
+        shape.set(vertices);
 
         FixtureDef fdef = new FixtureDef();
         fdef.shape = shape;
+        fdef.friction = 0f;
+        fdef.density = 1f;
+
         fdef.filter.categoryBits = Main.ENEMY_BIT;
-        fdef.filter.maskBits = Main.GROUND_BIT | Main.PLAYER_BIT | Main.SWORD_BIT;
+        fdef.filter.maskBits = Main.GROUND_BIT | Main.SWORD_BIT;
 
         b2body.createFixture(fdef).setUserData(this);
         b2body.setFixedRotation(true);
@@ -82,13 +95,22 @@ public class Batman extends Enemy {
             default: region = idleAnim.getKeyFrame(stateTime); break;
         }
 
-        if (b2body.getLinearVelocity().x > 0.1f && !region.isFlipX()) {
+        float velX = b2body.getLinearVelocity().x;
+        if (velX > 0.1f)      facingRight = true;
+        else if (velX < -0.1f) facingRight = false;
+
+        // --- FIXED SPRITE INCONSISTENCY ---
+        // If textures are drawn facing LEFT:
+        // facingRight = true  -> visuallyFacingRight = true (FLIP IT)
+        // facingRight = false -> visuallyFacingRight = false (ORIGINAL)
+        boolean visuallyFacingRight = facingRight;
+
+        if (visuallyFacingRight && !region.isFlipX()) {
             region.flip(true, false);
-            facingRight = true;
-        } else if (b2body.getLinearVelocity().x < -0.1f && region.isFlipX()) {
+        } else if (!visuallyFacingRight && region.isFlipX()) {
             region.flip(true, false);
-            facingRight = false;
         }
+        // ----------------------------------
 
         if (currentState != previousState) {
             stateTime = 0;

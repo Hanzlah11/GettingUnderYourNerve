@@ -40,6 +40,11 @@ public class IntroEncounter extends BaseCutscene {
                 break;
 
             case 2: // PAN TO BATMAN
+                // FIX: Set orientation here so he is looking LEFT during the pan
+                if (batman != null) {
+                    batman.facingRight = false;
+                }
+
                 cam.GetCam().position.x += (camEndPos.x - cam.GetCam().position.x) * 0.05f;
                 if (Math.abs(cam.GetCam().position.x - camEndPos.x) < 0.1f) {
                     state = 3;
@@ -48,9 +53,13 @@ public class IntroEncounter extends BaseCutscene {
                 break;
 
             case 3: // DIALOGUE WAIT
+                if (batman != null) {
+                    batman.setAction(Batman.State.IDLE);
+                    // Already set in Case 2, but safe to keep[cite: 21]
+                    batman.facingRight = false;
+                }
                 if (stateTimer > 3.0f) {
                     state = 4;
-                    if (batman != null) batman.setAction(Batman.State.MOVING);
                 }
                 break;
 
