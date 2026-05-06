@@ -3,8 +3,6 @@ package Game.GettingUnderYourNerve.Cutscenes;
 import Game.GettingUnderYourNerve.Enemies.Batman;
 import Game.GettingUnderYourNerve.MainGame.PlayScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.MathUtils;
 
@@ -41,25 +39,6 @@ public class PrologueCutscene extends BaseCutscene {
 
     @Override
     public void update(float dt) {
-        // --- SKIP CUTSCENE LOGIC ---
-        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
-            player.getPlayerBody().setLinearVelocity(0, 0); // Stop player
-
-            if (batman != null && !batman.destroyed) {
-                batman.setToDestroy = true; // Clean up Batman
-            }
-
-            // Stop any looping footsteps so they don't persist into the next level!
-            if (footstepId != -1) {
-                AudioManager.footsteps.stop(footstepId);
-                footstepId = -1;
-            }
-
-            finished = true; // Instantly jump to Level 1
-            return;
-        }
-        // --------------------------------
-
         stateTimer += dt;
         float lerp = 0.05f;
 
@@ -119,15 +98,12 @@ public class PrologueCutscene extends BaseCutscene {
                         AudioManager.batman_shout_stop.play(1.0f);
                         playedShout = true;
                     }
-                    if (stateTimer > 5.5f) {
-                        state = 4;
-                        stateTimer = 0;
-                    }
+                    if (stateTimer > 5.5f) { state = 4; stateTimer = 0; }
                 }
                 break;
 
             case 4: // PAN BACK TO PLAYER
-                float targetX4 = getClampedX(player.GetXpos()); // Pan to clamped target
+                float targetX4 = getClampedX(player.GetXpos()); // Pan to clamped target[cite: 19]
                 cam.GetCam().position.x += (targetX4 - cam.GetCam().position.x) * lerp;
                 player.facingRight = false;
 
@@ -150,17 +126,10 @@ public class PrologueCutscene extends BaseCutscene {
                     AudioManager.footsteps.stop(footstepId);
                     footstepId = -1;
                     batman.setAction(Batman.State.ATTACKING);
-
-                    if (!playedSwing) {
-                        AudioManager.batman_swing_fist.play(1.0f);
-                        playedSwing = true;
-                    }
+                    if (!playedSwing) { AudioManager.batman_swing_fist.play(1.0f); playedSwing = true; }
 
                     if (stateTimer > 0.7f) {
-                        if (!playedImpact) {
-                            AudioManager.punch_impact_heavy.play(1.0f);
-                            playedImpact = true;
-                        }
+                        if (!playedImpact) { AudioManager.punch_impact_heavy.play(1.0f); playedImpact = true; }
                         player.hit(0, batman.GetXpos());
                         state = 6;
                         stateTimer = 0;
@@ -168,64 +137,95 @@ public class PrologueCutscene extends BaseCutscene {
                 }
                 break;
 
-            case 6: // DIALOGUE SEQUENCE + BATMAN ESCAPE
+            case 6: // DIALOGUE SEQUENCE
                 if (player.isHit) {
                     player.getPlayerBody().setLinearVelocity(0, 0);
                     player.isHit = false;
                 }
 
-                // --- Dialogue Audio Logic ---
-                if (stateTimer > 1.0f && !playedProtest) {
-                    // TODO: Replace with actual player protest sound
-                    // AudioManager.player_protest.play(1.0f);
-                    playedProtest = true;
+                // PHASE 0: Dramatic Pause (Finish Whoosh + 1s Silence)
+                if (stateTimer < 1.3f) {
+                    batman.setAction(Batman.State.IDLE);
+                    batman.b2body.setLinearVelocity(0, 0);
+                    batman.facingRight = true;
                 }
-
-                if (stateTimer > 2.5f && !playedSorry) {
-                    // TODO: Replace with actual batman sorry sound
-                    // AudioManager.batman_sorry.play(1.0f);
-                    playedSorry = true;
+                // PHASE A: Player Protests (Starts at 1.3s, lasts 5s)
+                else if (stateTimer < 6.3f) {
+                    if (!playedProtest) {
+                        AudioManager.player_protest_wrong_guy.play(1.0f); // "I'm innocent! Wrong guy!"
+                        playedProtest = true;
+                    }
+                    batman.setAction(Batman.State.IDLE);
+                    batman.b2body.setLinearVelocity(0, 0);
                 }
-
-                // Batman escapes after the dialogue finishes
-                if (stateTimer > 4.0f) {
+                // PHASE B: Batman Apologizes (Starts at 6.3s, 6s Stillness)
+                else if (stateTimer < 12.3f) {
+                    if (!playedSorry) {
+                        AudioManager.batman_apology_sorry.play(1.0f);
+                        playedSorry = true;
+                    }
+                    batman.b2body.setLinearVelocity(0, 0); // Remain still for 75% of apology
+                    batman.setAction(Batman.State.IDLE);
+                }
+                // PHASE C: Walk Away (Starts at 12.3s, lasts 2s)[cite: 19]
+                else if (stateTimer < 14.3f) {
+                    batman.b2body.setLinearVelocity(4.0f, 0); // Awkward walk
+                    if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.3f);
+                    batman.setAction(Batman.State.MOVING);
+                }
+                // PHASE D: Escape[cite: 19]
+                else {
                     if (batman != null && !batman.destroyed) {
-                        batman.b2body.setLinearVelocity(8.0f, 0);
-                        batman.setAction(Batman.State.MOVING);
-
-                        if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.5f);
-
+                        batman.b2body.setLinearVelocity(10.0f, 0);
                         if (batman.GetXpos() > escapeBat.x - 1.0f) {
-                            batman.setToDestroy = true;
                             AudioManager.footsteps.stop(footstepId);
                             footstepId = -1;
+                            batman.setToDestroy = true;
                             state = 7;
-                            stateTimer = 0;
+                            stateTimer = 0; // Reset for the final chase
                         }
                     } else {
                         state = 7;
-                        stateTimer = 0;
                     }
                 }
                 break;
 
-            case 7: // PLAYER CHASE
+            case 7: // FINAL CHASE
                 if (!playedChaseVoice) {
-                    // TODO: Replace with actual chase shout sound
-                    // AudioManager.player_chase_shout.play(1.0f);
+                    AudioManager.player_shout_come_back.play(1.0f);
                     playedChaseVoice = true;
                 }
 
-                player.getPlayerBody().setLinearVelocity(8.0f, 0);
+                // Hold player for 4 seconds (half of 8s shout) before running
+                if (stateTimer < 4.0f) {
+                    player.getPlayerBody().setLinearVelocity(0, 0);
+                } else {
+                    player.getPlayerBody().setLinearVelocity(8.0f, 0);
+                    if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.6f);
+                }
 
-                if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.4f);
-
-                if (player.GetXpos() > escapePlay.x - 1.0f) {
+                if (player.GetXpos() > escapePlay.x - 1.0f && stateTimer > 8.0f) {
                     AudioManager.footsteps.stop(footstepId);
-                    footstepId = -1;
                     finished = true;
                 }
                 break;
         }
+    }
+
+    @Override
+    public void skip() {
+        super.skip(); // Sets finished = true[cite: 16]
+
+        // Stop all possible cutscene sounds immediately
+        if (footstepId != -1) {
+            AudioManager.footsteps.stop(footstepId);
+            footstepId = -1;
+        }
+
+        // Optionally stop dialogue sounds to prevent overlap if skipped mid-sentence
+        AudioManager.batman_shout_stop.stop();
+        AudioManager.batman_apology_sorry.stop();
+        AudioManager.player_protest_wrong_guy.stop();
+        AudioManager.player_shout_come_back.stop();
     }
 }

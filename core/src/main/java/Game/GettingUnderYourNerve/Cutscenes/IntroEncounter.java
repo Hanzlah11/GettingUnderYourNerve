@@ -3,8 +3,6 @@ package Game.GettingUnderYourNerve.Cutscenes;
 import Game.GettingUnderYourNerve.Enemies.Batman;
 import Game.GettingUnderYourNerve.MainGame.PlayScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 
 public class IntroEncounter extends BaseCutscene {
@@ -46,14 +44,6 @@ public class IntroEncounter extends BaseCutscene {
 
     @Override
     public void update(float dt) {
-        // --- MERGED: SKIP CUTSCENE LOGIC ---
-        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
-            player.getPlayerBody().setLinearVelocity(0, 0); // Stop player momentum
-            skip(); // Call the custom skip method below to clean up audio & Batman
-            return;
-        }
-        // -----------------------------------
-
         stateTimer += dt;
         int level = screen.getPlayableMap().getLevelNumber(); // Detect current level
 
@@ -134,8 +124,7 @@ public class IntroEncounter extends BaseCutscene {
 
     @Override
     public void skip() {
-        super.skip(); // Assuming BaseCutscene sets finished = true
-        finished = true; // Hard-set just to be safe so the PlayScreen gives control back
+        super.skip(); // Sets finished = true[cite: 15]
 
         // 1. Identify current level to stop the correct dialogue
         int level = screen.getPlayableMap().getLevelNumber();
