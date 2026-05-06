@@ -33,6 +33,9 @@ public class Crab extends Enemy {
     private float stateTime = 0f;
     private float shoutCooldown = 0f;
 
+    // --- NEW: Cooldown to prevent hyper-fast flipping glitches ---
+    private float turnCooldown = 0f;
+
     private long patrolSoundId = -1;
 
     private GameAssetManager assets;
@@ -77,7 +80,6 @@ public class Crab extends Enemy {
     @Override
     protected void defineEnemy() {
         BodyDef bdef = new BodyDef();
-        // Keep spawn position but ensure the body is dynamic
         bdef.position.set(spawnPosition.x / PPM, spawnPosition.y / PPM);
         bdef.type = BodyDef.BodyType.DynamicBody;
 
@@ -85,14 +87,10 @@ public class Crab extends Enemy {
 
         PolygonShape shape = new PolygonShape();
 
-        // REDUCED HITBOX SIZE:
-        // Original was drawWidth/2 (36px). Now it's ~22px wide (half-width of 11px).
-        // Original was drawHeight/2 (16px). Now it's ~20px high (half-height of 10px).
         float w = (drawWidth / 3.2f);
         float h = (drawHeight / 3.2f);
         float bevel = 2 / PPM;
 
-        // Build the beveled octagon so it slides over tile gaps
         Vector2[] vertices = new Vector2[8];
         vertices[0] = new Vector2(-w + bevel, -h);
         vertices[1] = new Vector2(w - bevel, -h);
@@ -108,45 +106,34 @@ public class Crab extends Enemy {
         FixtureDef fdef = new FixtureDef();
         fdef.shape = shape;
 
-        // Collision filtering for Ground and Player[cite: 11]
         fdef.filter.categoryBits = Main.ENEMY_BIT;
         fdef.filter.maskBits = Main.GROUND_BIT | Main.PLAYER_BIT | Main.SWORD_BIT;
 
-        fdef.friction = 0f;    // Keeps movement snappy[cite: 11]
-        fdef.density = 1000f;  // Heavy mass[cite: 11]
+        fdef.friction = 0f;
+        fdef.density = 1000f;
 
         b2body.createFixture(fdef).setUserData(this);
-        b2body.setFixedRotation(true); // Prevent the crab from rolling[cite: 11]
+        b2body.setFixedRotation(true);
 
         shape.dispose();
     }
 
-    /**
-     * Checks if there is a gap in the floor between the Crab and the Player.
-     */
-
     @Override
     public void updateEnemy(float dt, Player player) {
-        // --- 1. HANDLE DEATH ---
-        if (isDead) {
-            return; // Stop the AI from thinking if it's dead!
-        }
+        if (isDead) return;
+        if (hitTimer > 0) return;
 
-        // --- 2. HANDLE STUN (Let the physics engine push them!) ---
-        if (hitTimer > 0) {
-            // We let the physics knockback happen, and skip the AI logic this frame
-            return;
-        }
         float dx = player.GetXpos() - GetXpos();
         float dy = player.GetYpos() - GetYpos();
         float distance = abs(dx);
 
         if (shoutCooldown > 0) shoutCooldown -= dt;
+        if (turnCooldown > 0) turnCooldown -= dt; // Tick down the anti-glitch cooldown
 
-        // 1. State Logic: Detect Player + Check for Gaps
+        // 1. State Logic
         if (currentState != State.ATTACK) {
-            // Only Chase if: Close enough AND on same height AND ground is continuous
-            if (distance <= 6f && abs(dy) < 1.5f && isFloorContinuous(player)) {
+            // ONLY allow chase if we aren't recovering from hitting an edge/wall
+            if (turnCooldown <= 0 && distance <= 6f && abs(dy) < 1.5f && isFloorContinuous(player)) {
                 changeState(State.CHASE);
             } else {
                 changeState(State.PATROL);
@@ -164,10 +151,13 @@ public class Crab extends Enemy {
             }
         }
 
-        // 3. Safety Edge Detection (Prevents falling during patrol or chase)
-        if (currentState != State.ATTACK && isEdgeAhead()) {
+        // 3. Safety Edge & Wall Detection
+        // Prevent checking for edges if we just turned, avoids getting stuck in corners
+        if (currentState != State.ATTACK && turnCooldown <= 0 && (isEdgeAhead() || isWallAhead())) {
             facingRight = !facingRight;
             patrolTimer = 0f;
+            turnCooldown = 0.5f; // FORCES crab to walk away for 0.5s before thinking about the player again!
+
             if (currentState == State.CHASE) {
                 changeState(State.PATROL);
             }
@@ -201,63 +191,76 @@ public class Crab extends Enemy {
         );
     }
 
-    // Inside Crab.java
     private boolean isEdgeAhead() {
-        // Don't check for edges if we are currently jumping or falling
         if (Math.abs(b2body.getLinearVelocity().y) > 0.01f) return false;
 
         final boolean[] groundBelow = {false};
 
-        // Determine where to look: slightly in front of the Crab's side
         float lookOffset = facingRight ? (drawWidth / 2.1f) : -(drawWidth / 2.1f);
         float checkX = b2body.getPosition().x + lookOffset;
 
-        // Start at center Y, end just below the feet
         Vector2 rayStart = new Vector2(checkX, b2body.getPosition().y);
         Vector2 rayEnd = new Vector2(checkX, b2body.getPosition().y - (drawHeight / 2f + 4 / PPM));
 
         world.rayCast((fixture, point, normal, fraction) -> {
             if (fixture.getFilterData().categoryBits == Main.GROUND_BIT) {
                 groundBelow[0] = true;
-                return 0; // Found ground, stop the ray
+                return 0;
             }
-            return -1; // Ignore other fixtures (like player or sensors)
+            return -1;
         }, rayStart, rayEnd);
 
-        return !groundBelow[0]; // If no ground was found, there is an edge
+        return !groundBelow[0];
+    }
+
+    private boolean isWallAhead() {
+        final boolean[] wallInFront = {false};
+
+        float checkY = b2body.getPosition().y + (2 / PPM);
+        float checkX = b2body.getPosition().x;
+        float lookDistance = (drawWidth / 2.5f);
+
+        Vector2 rayStart = new Vector2(checkX, checkY);
+        Vector2 rayEnd = new Vector2(
+            facingRight ? checkX + lookDistance : checkX - lookDistance,
+            checkY
+        );
+
+        world.rayCast((fixture, point, normal, fraction) -> {
+            if (fixture.getFilterData().categoryBits == Main.GROUND_BIT) {
+                wallInFront[0] = true;
+                return 0;
+            }
+            return -1;
+        }, rayStart, rayEnd);
+
+        return wallInFront[0];
     }
 
     private boolean isFloorContinuous(Player player) {
         float startX = b2body.getPosition().x;
         float endX = player.getPlayerBody().getPosition().x;
 
-        // Check a point halfway between them
-        float midX = (startX + endX) / 2f;
-
-        // Check a point 3/4 of the way toward the player
+        // --- NEW: Better gap detection checks 3 points instead of 2
+        float qX = startX + (endX - startX) * 0.25f;
+        float midX = startX + (endX - startX) * 0.50f;
         float farX = startX + (endX - startX) * 0.75f;
 
-        // If either the midpoint or the far point is over a hole, don't chase
-        return !isHoleAt(midX) && !isHoleAt(farX);
+        return !isHoleAt(qX) && !isHoleAt(midX) && !isHoleAt(farX);
     }
 
-    /**
-     * Optimized hole check that looks specifically for GROUND_BIT
-     */
     private boolean isHoleAt(float x) {
         final boolean[] groundFound = {false};
 
-        // Start ray slightly above the crab's feet level
         float rayStartY = b2body.getPosition().y - (drawHeight / 4f);
-        // End ray well below the floor level
         float rayEndY = b2body.getPosition().y - (drawHeight);
 
         world.rayCast((fixture, point, normal, fraction) -> {
             if (fixture.getFilterData().categoryBits == Main.GROUND_BIT) {
                 groundFound[0] = true;
-                return 0; // Stop ray, ground exists
+                return 0;
             }
-            return -1; // Ignore everything else
+            return -1;
         }, new Vector2(x, rayStartY), new Vector2(x, rayEndY));
 
         return !groundFound[0];
@@ -340,20 +343,10 @@ public class Crab extends Enemy {
 
     @Override
     public void dispose() {
-        // 1. Stop looping audio immediately
-        // If you don't stop this, the crab's patrol sound will play forever
-        // even after the crab is deleted from the world.
         AudioManager.crabPatrol.stop(patrolSoundId);
 
-        // 2. Clear local animation references
-        // While the AssetManager holds the textures, clearing these helps
-        // the Garbage Collector reclaim this specific Crab instance.
         idleAnim = null;
         runAnim = null;
         attackAnim = null;
-
-        // 3. AssetManager safety
-        // We do NOT dispose of 'assets' here because Main owns the vault.
     }
-
 }

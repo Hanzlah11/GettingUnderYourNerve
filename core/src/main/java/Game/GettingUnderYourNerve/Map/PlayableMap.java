@@ -41,6 +41,7 @@ public class PlayableMap {
     // Platforms
     private Array<HorizontalPlatform> horizontalPlatforms;
     private Array<VerticalPlatform>   verticalPlatforms;
+    private Array<DevilPlatform> devilPlatforms;
 
     // Collectables
     private Array<Coin>   coins;
@@ -56,11 +57,10 @@ public class PlayableMap {
     // Traps
     public Array<Trap> mapTraps;
 
-    // Boxes
+    // Boxes & Trolls
     private Array<Box> boxes;
-
-    // Evil Coins
     private Array<EvilCoin> evilCoins;
+    private Array<GhostBlock> ghostBlocks; // --- NEW: GHOST BLOCKS ---
 
     // ---------------------------------------------------------------
     // Trigger system
@@ -94,6 +94,7 @@ public class PlayableMap {
 
         horizontalPlatforms   = new Array<>();
         verticalPlatforms     = new Array<>();
+        devilPlatforms        = new Array<>();
         coins                 = new Array<>();
         potions               = new Array<>();
         waterPools            = new Array<>();
@@ -101,6 +102,7 @@ public class PlayableMap {
         mapTraps              = new Array<>();
         boxes                 = new Array<>();
         evilCoins             = new Array<>();
+        ghostBlocks           = new Array<>(); // --- NEW ---
 
         trollTiles            = new Array<>();
         deactivatedTrollTiles = new Array<>();
@@ -175,7 +177,8 @@ public class PlayableMap {
         createEnemiesFromMap(world, currentLevel);
         createTrapsFromMap(world);
         createBoxesFromMap(world);
-        createEvilCoinsFromMap(world);  // ← Evil Coins
+        createEvilCoinsFromMap(world);
+        createGhostBlocksFromMap(world); // --- NEW ---
     }
 
     // ===============================================================
@@ -252,11 +255,6 @@ public class PlayableMap {
                     shape.dispose();
 
                     trollTiles.add(new TrollTile(triggerId, body, tileLayer, col, row));
-
-                    System.out.println("TrollZone id=" + triggerId +
-                        " cols=" + colStart + "-" + colEnd +
-                        " rows=" + rowStart + "-" + rowEnd);
-                    System.out.println("  → TrollTile added at col=" + col + " row=" + row);
                 }
             }
         }
@@ -304,6 +302,19 @@ public class PlayableMap {
 
             triggerZones.add(zone);
             shape.dispose();
+        }
+    }
+
+    // ===============================================================
+    // createGhostBlocksFromMap (NEW)
+    // ===============================================================
+    private void createGhostBlocksFromMap(World world) {
+        MapLayer layer = map.getLayers().get("GhostBlocks");
+        if (layer == null) return;
+
+        for (MapObject object : layer.getObjects()) {
+            if (!(object instanceof RectangleMapObject)) continue;
+            ghostBlocks.add(new GhostBlock(world, object, assets));
         }
     }
 
@@ -398,6 +409,11 @@ public class PlayableMap {
             zone.fired = false;
         }
 
+        // --- NEW: Reset all ghost blocks so they become invisible again ---
+        for (GhostBlock gb : ghostBlocks) {
+            gb.reset();
+        }
+
         Iterator<TrollTile> iter = deactivatedTrollTiles.iterator();
         while (iter.hasNext()) {
             TrollTile troll = iter.next();
@@ -440,14 +456,14 @@ public class PlayableMap {
     public void UpdateMap(OrthographicCamera camera, float dt,
                           World world, Player player) {
         updateTriggers(world);
-        updatePlatforms(dt);
+        updatePlatforms(dt, player);
         updateCoins(dt, world);
         updatePotions(dt, world);
         updatewaters(dt);
         updateEnemies(dt, player, world);
         updateTraps(dt);
         updateBoxes(dt);
-        updateEvilCoins(dt, player, world);  // ← Evil Coins
+        updateEvilCoins(dt, player, world);
     }
 
     // ===============================================================
@@ -583,6 +599,12 @@ public class PlayableMap {
                 float moveDistance = tiledStartY - tiledEndY;
                 float endY        = startY + moveDistance;
                 verticalPlatforms.add(new VerticalPlatform(world, rect, startY, endY, speed, assets));
+            } else if (name.equals("DevilPlatform")) { // --- NEW ---
+                float startX      = rect.x;
+                float tiledStartX = props.containsKey("startX") ? props.get("startX", Float.class) : rect.x;
+                float tiledEndX   = props.containsKey("endX")   ? props.get("endX",   Float.class) : rect.x;
+                float endX        = startX + (tiledEndX - tiledStartX);
+                devilPlatforms.add(new DevilPlatform(world, rect, startX, endX, speed, assets));
             }
         }
     }
@@ -643,9 +665,10 @@ public class PlayableMap {
         }
     }
 
-    public void updatePlatforms(float dt) {
+    public void updatePlatforms(float dt, Player player) {
         for (HorizontalPlatform hp : horizontalPlatforms) hp.update(dt);
         for (VerticalPlatform   vp : verticalPlatforms)   vp.update(dt);
+        for (DevilPlatform      dp : devilPlatforms)      dp.update(dt, player);
     }
 
     public void updateEnemies(float dt, Player player, World world) {
@@ -695,22 +718,25 @@ public class PlayableMap {
     public void drawPlatforms(SpriteBatch batch)  {
         for (HorizontalPlatform hp : horizontalPlatforms) hp.draw(batch);
         for (VerticalPlatform   vp : verticalPlatforms)   vp.draw(batch);
+        for (DevilPlatform      dp : devilPlatforms)      dp.draw(batch);
     }
     public void drawWater(SpriteBatch batch)             { for (Water w : waterPools) w.render(batch); }
     public void drawEnemies(SpriteBatch batch, float dt) { for (Enemy e : enemies)    e.render(dt, batch); }
     public void drawTraps(SpriteBatch batch, float dt)   { for (Trap t : mapTraps)    t.render(batch, dt); }
     public void drawBoxes(SpriteBatch batch)             { for (Box b : boxes)        b.render(batch); }
     public void drawEvilCoins(SpriteBatch batch, float dt) { for (EvilCoin ec : evilCoins) ec.render(batch, dt); }
+    public void drawGhostBlocks(SpriteBatch batch)       { for (GhostBlock gb : ghostBlocks) gb.render(batch); } // --- NEW ---
 
     public void DrawElements(SpriteBatch batch, float dt) {
         drawPlatforms(batch);
         drawBoxes(batch);
+        drawGhostBlocks(batch); // --- NEW ---
         drawCoins(batch);
         drawPotions(batch);
         drawWater(batch);
         drawEnemies(batch, dt);
         drawTraps(batch, dt);
-        drawEvilCoins(batch, dt);   // ← Evil Coins
+        drawEvilCoins(batch, dt);
     }
 
     public void DrawBackGround(SpriteBatch batch, GameCam camera,
@@ -759,6 +785,7 @@ public class PlayableMap {
         deactivatedTrollTiles.clear();
         triggerZones.clear();
         boxes.clear();
-        evilCoins.clear();  // ← Evil Coins
+        evilCoins.clear();
+        ghostBlocks.clear(); // --- NEW ---
     }
 }

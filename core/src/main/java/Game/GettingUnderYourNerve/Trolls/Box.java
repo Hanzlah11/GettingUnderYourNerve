@@ -1,6 +1,7 @@
 package Game.GettingUnderYourNerve.Trolls;
 
 import Game.GettingUnderYourNerve.Main;
+import Game.GettingUnderYourNerve.Player;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -84,7 +85,7 @@ public abstract class Box {
     // playerX — the player's X position, used by RotatingBox to decide
     //            which direction to rotate toward.
     // ---------------------------------------------------------------
-    public abstract void onPlayerLand(float playerX);
+    public abstract void onPlayerLand(float playerX, Player player);
 
     // ---------------------------------------------------------------
     // render() — draws the box sprite, rotated to match the body angle.

@@ -149,7 +149,7 @@ public class PlayScreen implements Screen {
                     cam.GetCam().position.y, halfVH, worldHeight - halfVH);
             }
             if (currentCutscene.isFinished()) {
-                // If the prologue just finished, shift to Level 1![cite: 21]
+                // If the prologue just finished, shift to Level 1!
                 if (levelNumber == 0) {
                     game.setScreen(new PlayScreen(game, 1));
                     this.dispose(); // CRITICAL: prevent memory leaks
@@ -177,11 +177,11 @@ public class PlayScreen implements Screen {
         }
 
         // --- 1. CAPTURE STATE BEFORE PHYSICS STEP ---
-        boolean wasDead = player.isDead;
         int healthBefore = player.getHealth();
 
         // Perform physics and player updates
         world.step(1 / 60f, 6, 2);
+        boolean wasDead = player.isDead;
         player.UpdatePlayer(delta, world, inCutscene);
 
         // --- 2. RESPAWN DETECTION ---

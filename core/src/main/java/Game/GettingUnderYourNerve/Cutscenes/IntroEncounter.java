@@ -2,6 +2,8 @@ package Game.GettingUnderYourNerve.Cutscenes;
 
 import Game.GettingUnderYourNerve.Enemies.Batman;
 import Game.GettingUnderYourNerve.MainGame.PlayScreen;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.math.Vector2;
 
 public class IntroEncounter extends BaseCutscene {
@@ -16,6 +18,17 @@ public class IntroEncounter extends BaseCutscene {
 
     @Override
     public void update(float dt) {
+        // --- NEW: SKIP CUTSCENE LOGIC ---
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            player.getPlayerBody().setLinearVelocity(0, 0); // Stop player
+            if (batman != null && !batman.destroyed) {
+                batman.setToDestroy = true; // Clean up Batman
+            }
+            finished = true; // Give control back to the player
+            return;
+        }
+        // --------------------------------
+
         stateTimer += dt;
 
         switch (state) {
@@ -40,7 +53,6 @@ public class IntroEncounter extends BaseCutscene {
                 break;
 
             case 2: // PAN TO BATMAN
-                // FIX: Set orientation here so he is looking LEFT during the pan
                 if (batman != null) {
                     batman.facingRight = false;
                 }
@@ -55,7 +67,6 @@ public class IntroEncounter extends BaseCutscene {
             case 3: // DIALOGUE WAIT
                 if (batman != null) {
                     batman.setAction(Batman.State.IDLE);
-                    // Already set in Case 2, but safe to keep[cite: 21]
                     batman.facingRight = false;
                 }
                 if (stateTimer > 3.0f) {
@@ -66,8 +77,6 @@ public class IntroEncounter extends BaseCutscene {
             case 4: // BATMAN ESCAPE
                 if (batman != null && !batman.setToDestroy) {
                     batman.b2body.setLinearVelocity(5.0f, 0);
-
-                    // This is now safe to call, but only really needs to be called once[cite: 26]
                     batman.setAction(Batman.State.MOVING);
 
                     if (batman.GetXpos() >= escapePos.x - 1.5f) {
@@ -81,7 +90,6 @@ public class IntroEncounter extends BaseCutscene {
             case 5: // PAN BACK TO PLAYER
                 cam.GetCam().position.x += (player.GetXpos() - cam.GetCam().position.x) * 0.05f;
                 if (Math.abs(cam.GetCam().position.x - player.GetXpos()) < 0.1f) {
-                    // This successfully triggers the PlayScreen to set currentCutscene to null!
                     finished = true;
                 }
                 break;

@@ -1,9 +1,11 @@
 package Game.GettingUnderYourNerve.Trolls;
 
+import Game.GettingUnderYourNerve.Player;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.MapProperties;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.World;
 
@@ -52,18 +54,27 @@ public class RotatingBox extends Box {
     // onPlayerLand — decides rotation direction from player position.
     // Called by WorldContactListener.
     // ---------------------------------------------------------------
-    @Override
-    public void onPlayerLand(float playerX) {
-        if (state != State.FLAT) return; // already rotating, ignore
+    public void onPlayerLand(float playerX, Player player) {
+        if (state != State.FLAT) return;
 
         float boxCenterX = body.getPosition().x;
 
         if (playerX < boxCenterX) {
-            // Player on LEFT side → tilt LEFT (counter-clockwise = positive angle)
             targetAngle = TILT_ANGLE_DEG;
+            // Nudge player LEFT (same direction as tilt)
+            player.getPlayerBody().applyLinearImpulse(
+                new Vector2(-60f, 0f),
+                player.getPlayerBody().getWorldCenter(),
+                true
+            );
         } else {
-            // Player on RIGHT side → tilt RIGHT (clockwise = negative angle)
             targetAngle = -TILT_ANGLE_DEG;
+            // Nudge player RIGHT (same direction as tilt)
+            player.getPlayerBody().applyLinearImpulse(
+                new Vector2(60f, 0f),
+                player.getPlayerBody().getWorldCenter(),
+                true
+            );
         }
 
         state = State.ROTATING_DOWN;
