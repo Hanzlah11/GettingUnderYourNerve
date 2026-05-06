@@ -26,6 +26,10 @@ public abstract class BaseCutscene {
         this.cam = screen.getCam();
     }
 
+    public void skip() {
+        this.finished = true;
+    }
+
     // Helper to find rectangles in your "CutsceneData" layer[cite: 23, 25]
     protected Vector2 getObjectPos(String name) {
         for (MapObject object : screen.getPlayableMap().map.getLayers().get("CutsceneData").getObjects()) {

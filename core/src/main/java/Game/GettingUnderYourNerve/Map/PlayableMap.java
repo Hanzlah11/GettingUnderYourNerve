@@ -599,7 +599,7 @@ public class PlayableMap {
                 float moveDistance = tiledStartY - tiledEndY;
                 float endY        = startY + moveDistance;
                 verticalPlatforms.add(new VerticalPlatform(world, rect, startY, endY, speed, assets));
-            } else if (name.equals("DevilPlatform")) { // --- NEW ---
+            } else if (name.equals("DevilPlatform")) {
                 float startX      = rect.x;
                 float tiledStartX = props.containsKey("startX") ? props.get("startX", Float.class) : rect.x;
                 float tiledEndX   = props.containsKey("endX")   ? props.get("endX",   Float.class) : rect.x;
@@ -725,12 +725,12 @@ public class PlayableMap {
     public void drawTraps(SpriteBatch batch, float dt)   { for (Trap t : mapTraps)    t.render(batch, dt); }
     public void drawBoxes(SpriteBatch batch)             { for (Box b : boxes)        b.render(batch); }
     public void drawEvilCoins(SpriteBatch batch, float dt) { for (EvilCoin ec : evilCoins) ec.render(batch, dt); }
-    public void drawGhostBlocks(SpriteBatch batch)       { for (GhostBlock gb : ghostBlocks) gb.render(batch); } // --- NEW ---
+    public void drawGhostBlocks(SpriteBatch batch)       { for (GhostBlock gb : ghostBlocks) gb.render(batch); }
 
     public void DrawElements(SpriteBatch batch, float dt) {
         drawPlatforms(batch);
         drawBoxes(batch);
-        drawGhostBlocks(batch); // --- NEW ---
+        drawGhostBlocks(batch);
         drawCoins(batch);
         drawPotions(batch);
         drawWater(batch);
@@ -786,6 +786,11 @@ public class PlayableMap {
         triggerZones.clear();
         boxes.clear();
         evilCoins.clear();
-        ghostBlocks.clear(); // --- NEW ---
+        ghostBlocks.clear();
+    }
+
+    // --- RE-ADDED ---
+    public int getLevelNumber() {
+        return currentLevel;
     }
 }
