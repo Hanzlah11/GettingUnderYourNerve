@@ -170,7 +170,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
             globalPlayerName = playerName.toString().trim();
         }
         Gdx.input.setInputProcessor(null); // CRITICAL: Stop listening to keys before switching screens
-        game.setScreen(new PlayScreen(game));
+        game.setScreen(new PlayScreen(game, 0));
         dispose();
     }
 

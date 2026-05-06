@@ -63,7 +63,7 @@ public class Player {
     private TextureRegion SlideTexture;
 
     private float stateTime = 0f;
-    private boolean facingRight = true;
+    public boolean facingRight = true;
 
     // ---------------- DRAW SIZE ----------------
     public float drawWidth;

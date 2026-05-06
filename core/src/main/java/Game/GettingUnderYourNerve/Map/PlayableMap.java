@@ -81,10 +81,15 @@ public class PlayableMap {
     public java.util.ArrayList<String> collectedPotionIds = new java.util.ArrayList<>();
     public java.util.ArrayList<String> pendingDestroyPotionIds = new java.util.ArrayList<>();
 
-    public PlayableMap(GameAssetManager assets) {
+    private int currentLevel;
+
+    public PlayableMap(GameAssetManager assets, int level) {
         this.assets = assets;
 
-        map         = new TmxMapLoader().load("data/tilemaps/untitled.tmx");
+        String mapPath = (level == 0) ? "data/tilemaps/prologue.tmx" : "data/tilemaps/untitled.tmx";
+        this.currentLevel = level;
+
+        map = new TmxMapLoader().load(mapPath);
         mapRenderer = new OrthogonalTiledMapRenderer(map, 1f / PPM);
 
         horizontalPlatforms   = new Array<>();
@@ -167,7 +172,7 @@ public class PlayableMap {
         createCoinsFromMap(world);
         createPotionsFromMap(world);
         createWaterFromMap(world);
-        createEnemiesFromMap(world);
+        createEnemiesFromMap(world, currentLevel);
         createTrapsFromMap(world);
         createBoxesFromMap(world);
         createEvilCoinsFromMap(world);  // ← Evil Coins
@@ -457,7 +462,7 @@ public class PlayableMap {
     // Creation methods
     // ===============================================================
 
-    public void createEnemiesFromMap(World world) {
+    public void createEnemiesFromMap(World world, int level) {
         for (MapLayer layer : map.getLayers()) {
             if (layer instanceof TiledMapTileLayer) continue;
             for (MapObject object : layer.getObjects()) {
@@ -465,14 +470,20 @@ public class PlayableMap {
                     float  x    = object.getProperties().get("x", Float.class);
                     float  y    = object.getProperties().get("y", Float.class);
                     String name = object.getName();
+
+                    if ("Batman".equals(name) && level == 0) continue;
                     if ("Shell".equals(name)) enemies.add(new Shell(world, x, y, assets));
                     else if ("Crab".equals(name)) enemies.add(new Crab(world, x, y, assets));
-                    else if ("Batman".equals(name)) {
-                        enemies.add(new Batman(world, x, y, assets));
-                    }
+                    else if ("Batman".equals(name)) enemies.add(new Batman(world, x, y, assets));
                 }
             }
         }
+    }
+
+    public Batman spawnBatman(World world, float pixelX, float pixelY) {
+        Batman b = new Batman(world, pixelX, pixelY, assets);
+        enemies.add(b);
+        return b;
     }
 
     public void createTrapsFromMap(World world) {

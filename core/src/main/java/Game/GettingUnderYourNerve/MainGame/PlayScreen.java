@@ -2,6 +2,7 @@ package Game.GettingUnderYourNerve.MainGame;
 
 import Game.GettingUnderYourNerve.Cutscenes.BaseCutscene;
 import Game.GettingUnderYourNerve.Cutscenes.IntroEncounter;
+import Game.GettingUnderYourNerve.Cutscenes.PrologueCutscene;
 import Game.GettingUnderYourNerve.GameCam;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Map.PlayableMap;
@@ -37,15 +38,20 @@ public class PlayScreen implements Screen {
 
     private boolean DebugOption = true;
 
-    private final float WORLD_WIDTH  = 800;
-    private final float WORLD_HEIGHT = 480;
+    private float WORLD_WIDTH;
+    private float WORLD_HEIGHT;
 
     private BaseCutscene currentCutscene;
+    private int levelNumber;
 
-    public PlayScreen(Main game) {
+    public PlayScreen(Main game, int levelNumber) {
         this.game = game;
-
+        this.levelNumber = levelNumber;
         // Physics World
+
+        this.WORLD_WIDTH  = (levelNumber == 0) ? 400 : 800;
+        this.WORLD_HEIGHT = (levelNumber == 0) ? 240 : 480;
+
         world = new World(new Vector2(0, -40f), true);
 
         WorldContactListener contactListener = new WorldContactListener();
@@ -56,12 +62,12 @@ public class PlayScreen implements Screen {
 
         // Create Player + Map
         player      = new Player(20, game.assets);
-        playableMap = new PlayableMap(game.assets);
+        playableMap = new PlayableMap(game.assets, levelNumber);
 
         // Camera Setup
         cam        = new GameCam();
         viewport   = new FitViewport(WORLD_WIDTH / Main.PPM, WORLD_HEIGHT / Main.PPM, cam.GetCam());
-        uiViewport = new FitViewport(WORLD_WIDTH, WORLD_HEIGHT);
+        uiViewport = new FitViewport(800, 480);
 
         // Map Physics initialization
         playableMap.createPhysicsFromMap(world);
@@ -70,12 +76,17 @@ public class PlayScreen implements Screen {
 
         // Spawn Player
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
-        currentCutscene = new IntroEncounter(this, playableMap.getBatman());
+        if (this.levelNumber == 0) {
+            currentCutscene = new PrologueCutscene(this);
+        }
+        else
+            currentCutscene = new IntroEncounter(this, playableMap.getBatman());
     }
 
     @Override
     public void show() { }
 
+    public World getWorld() { return world; }
     // 1. Rename your rendering block to a public method
     public void drawWorld(float delta) {
         ScreenUtils.clear(0.1f, 0.1f, 0.2f, 1);
@@ -106,28 +117,48 @@ public class PlayScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        // 2. Standard Input handling
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             game.setScreen(new PauseScreen(game, this, player.getHealth(), player.getScore()));
             return;
         }
 
-        // 3. Logic Updates (Only runs while playing)
-        updateLogic(delta);
+        // CRITICAL FIX: If updateLogic returns false, the map was deleted. Abort drawing![cite: 16]
+        if (!updateLogic(delta)) {
+            return;
+        }
 
-        // 4. Draw the world
         drawWorld(delta);
     }
 
-    private void updateLogic(float delta) {
+    private boolean updateLogic(float delta) {
         boolean inCutscene = (currentCutscene != null);
+
+        // --- 4. CAMERA UPDATES ---
+        float worldWidth = playableMap.getMapWidthInMeters();
+        float worldHeight = playableMap.getMapHeightInMeters();
+        float halfVW = (WORLD_WIDTH / Main.PPM) / 2f;
+        float halfVH = (WORLD_HEIGHT / Main.PPM) / 2f;
 
         if (inCutscene) {
             currentCutscene.update(delta);
+            if (levelNumber == 0) {
+                cam.GetCam().position.x = com.badlogic.gdx.math.MathUtils.clamp(
+                    cam.GetCam().position.x, halfVW, worldWidth - halfVW);
+
+                cam.GetCam().position.y = com.badlogic.gdx.math.MathUtils.clamp(
+                    cam.GetCam().position.y, halfVH, worldHeight - halfVH);
+            }
             if (currentCutscene.isFinished()) {
+                // If the prologue just finished, shift to Level 1![cite: 21]
+                if (levelNumber == 0) {
+                    game.setScreen(new PlayScreen(game, 1));
+                    this.dispose(); // CRITICAL: prevent memory leaks
+                    return false;
+                }
+
                 cam.setPosition(cam.GetCam().position.x, cam.GetCam().position.y);
                 currentCutscene = null;
-                inCutscene = false; // Reset for the update call below
+                inCutscene = false;
             }
         } else {
             // --- RE-ADDED: QUICK SAVE & QUICK LOAD HOTKEYS ---
@@ -140,7 +171,7 @@ public class PlayScreen implements Screen {
 
             if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.L)) {
                 game.setScreen(new LoadScreen(game, this));
-                return; // Stop updating for this frame while we switch to the Load menu
+                return false; // Stop updating for this frame while we switch to the Load menu
             }
             // -------------------------------------------------
         }
@@ -173,11 +204,7 @@ public class PlayScreen implements Screen {
             }
         }
 
-        // --- 4. CAMERA UPDATES ---
-        float worldWidth = playableMap.getMapWidthInMeters();
-        float worldHeight = playableMap.getMapHeightInMeters();
-        float halfVW = (WORLD_WIDTH / Main.PPM) / 2f;
-        float halfVH = (WORLD_HEIGHT / Main.PPM) / 2f;
+
 
         // Handle camera behavior if the player is dead
         if (player.isDead) {
@@ -195,6 +222,7 @@ public class PlayScreen implements Screen {
             cam.GetCam().update();
         }
         playableMap.UpdateMap(cam.GetCam(), delta, world, player);
+        return true;
     }
 
     private void handleDebugInput() {
