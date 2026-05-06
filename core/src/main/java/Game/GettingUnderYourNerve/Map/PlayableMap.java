@@ -761,4 +761,8 @@ public class PlayableMap {
         boxes.clear();
         evilCoins.clear();  // ← Evil Coins
     }
+
+    public int getLevelNumber() {
+        return currentLevel;
+    }
 }
