@@ -140,7 +140,12 @@ public class PlayScreen implements Screen {
         float halfVH = (WORLD_HEIGHT / Main.PPM) / 2f;
 
         if (inCutscene) {
-            currentCutscene.update(delta);
+            if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+                currentCutscene.skip();
+            }
+            if (!currentCutscene.isFinished()) {
+                currentCutscene.update(delta);
+            }
             if (levelNumber == 0) {
                 cam.GetCam().position.x = com.badlogic.gdx.math.MathUtils.clamp(
                     cam.GetCam().position.x, halfVW, worldWidth - halfVW);
