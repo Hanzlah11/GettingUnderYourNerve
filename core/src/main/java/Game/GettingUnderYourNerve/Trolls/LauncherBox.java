@@ -49,9 +49,8 @@ public class LauncherBox extends Box {
     // which direction they came from, then launches them opposite.
     // ---------------------------------------------------------------
     @Override
-    public void onPlayerLand(float playerX) {
-        // Direction is handled in the overloaded version below
-        // This signature is required by Box but unused for LauncherBox
+    public void onPlayerLand(float playerX, Player player) {
+        onPlayerLand(player); // delegate to existing method
     }
 
     /**

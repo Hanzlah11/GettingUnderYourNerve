@@ -3,6 +3,7 @@ package Game.GettingUnderYourNerve.Utilities;
 import Game.GettingUnderYourNerve.Trolls.EvilCoin;
 import Game.GettingUnderYourNerve.Trolls.LauncherBox;
 import Game.GettingUnderYourNerve.Trolls.RotatingBox;
+import Game.GettingUnderYourNerve.Trolls.GhostBlock; // --- NEW ---
 import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Collectables.Potion;
 import Game.GettingUnderYourNerve.Enemies.Crab;
@@ -116,9 +117,11 @@ public class WorldContactListener implements ContactListener {
                     if (p.getPlayerBody().getLinearVelocity().y <= 0) {
 
                         if (groundData instanceof RotatingBox) {
-                            ((RotatingBox) groundData).onPlayerLand(p.GetXpos());
+                            ((RotatingBox) groundData).onPlayerLand(p.GetXpos(), p);
                         } else if (groundData instanceof LauncherBox) {
                             ((LauncherBox) groundData).onPlayerLand(p);
+                        } else if (groundData instanceof GhostBlock) { // --- NEW: GHOST BLOCK REVEAL ---
+                            ((GhostBlock) groundData).reveal();
                         }
                     }
                 }

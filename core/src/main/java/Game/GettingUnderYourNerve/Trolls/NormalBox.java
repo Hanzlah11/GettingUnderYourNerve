@@ -1,5 +1,6 @@
 package Game.GettingUnderYourNerve.Trolls;
 
+import Game.GettingUnderYourNerve.Player;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.physics.box2d.BodyDef;
@@ -27,7 +28,5 @@ public class NormalBox extends Box {
     }
 
     @Override
-    public void onPlayerLand(float playerX) {
-        // Normal box does not react to the player landing
-    }
+    public void onPlayerLand(float playerX, Player player) { }
 }
