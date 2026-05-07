@@ -2,6 +2,8 @@ package Game.GettingUnderYourNerve.Map;
 
 import Game.GettingUnderYourNerve.*;
 import Game.GettingUnderYourNerve.Enemies.Batman;
+import Game.GettingUnderYourNerve.Platforms.HorizontalPlatform;
+import Game.GettingUnderYourNerve.Platforms.VerticalPlatform;
 import Game.GettingUnderYourNerve.Trolls.*;
 import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Collectables.Potion;
@@ -12,6 +14,7 @@ import Game.GettingUnderYourNerve.Trap.Spike;
 import Game.GettingUnderYourNerve.Trap.SpikedBall;
 import Game.GettingUnderYourNerve.Trap.Trap;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
+import Game.GettingUnderYourNerve.Utilities.GameCam;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.MapLayer;
