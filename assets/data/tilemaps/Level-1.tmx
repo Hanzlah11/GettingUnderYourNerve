@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="300" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="25" nextobjectid="147">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="300" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="26" nextobjectid="167">
  <tileset firstgid="1" source="../tilesets/outside.tsx"/>
  <objectgroup id="15" name="EvilCoins">
   <object id="44" x="1344" y="272" width="16" height="16">
@@ -52,6 +52,31 @@
     <property name="lifetime" type="float" value="3"/>
    </properties>
   </object>
+  <object id="160" x="4688" y="192" width="16" height="16">
+   <properties>
+    <property name="lifetime" type="float" value="3"/>
+   </properties>
+  </object>
+  <object id="161" x="4688" y="224" width="16" height="16">
+   <properties>
+    <property name="lifetime" type="float" value="3"/>
+   </properties>
+  </object>
+  <object id="162" x="4656" y="192" width="16" height="16">
+   <properties>
+    <property name="lifetime" type="float" value="3"/>
+   </properties>
+  </object>
+  <object id="163" x="4656" y="224" width="16" height="16">
+   <properties>
+    <property name="lifetime" type="float" value="3"/>
+   </properties>
+  </object>
+  <object id="164" x="4688" y="256" width="16" height="16">
+   <properties>
+    <property name="lifetime" type="float" value="3"/>
+   </properties>
+  </object>
   <object id="143" x="4656" y="256" width="16" height="16">
    <properties>
     <property name="lifetime" type="float" value="3"/>
@@ -79,6 +104,14 @@
   <object id="112" x="1952" y="224" width="16" height="16"/>
   <object id="124" x="2912" y="352" width="16" height="16"/>
   <object id="125" x="2928" y="352" width="16" height="16"/>
+  <object id="153" x="4256" y="384" width="16" height="16"/>
+  <object id="154" x="4336" y="304" width="16" height="16"/>
+  <object id="165" x="3792" y="208" width="16" height="16"/>
+  <object id="159" x="4480" y="304" width="16" height="16"/>
+  <object id="155" x="4352" y="304" width="16" height="16"/>
+  <object id="158" x="4496" y="304" width="16" height="16"/>
+  <object id="156" x="4368" y="304" width="16" height="16"/>
+  <object id="157" x="4512" y="304" width="16" height="16"/>
   <object id="126" x="4048" y="640" width="16" height="16"/>
   <object id="115" x="1888" y="96" width="16" height="16"/>
   <object id="85" x="768" y="256" width="16" height="16"/>
@@ -220,6 +253,9 @@
  <objectgroup id="8" name="Water">
   <object id="18" name="water" x="400" y="672" width="912" height="128"/>
   <object id="81" name="water" x="2864" y="672" width="144" height="128"/>
+  <object id="150" name="water" x="3200" y="672" width="608" height="128"/>
+  <object id="151" name="water" x="4000" y="672" width="64" height="128"/>
+  <object id="152" name="water" x="4256" y="672" width="544" height="128"/>
   <object id="82" name="water" x="2720" y="672" width="80" height="128"/>
   <object id="83" name="water" x="1696" y="672" width="960" height="128"/>
  </objectgroup>
@@ -242,7 +278,7 @@
   <object id="100" name="Shell" type="Enemy" x="480" y="432" width="48" height="38"/>
  </objectgroup>
  <objectgroup id="3" name="Objects">
-  <object id="1" name="Player" type="PlayerStart" x="16" y="384" width="32" height="32"/>
+  <object id="166" name="Player" type="PlayerStart" x="19.8333" y="383.727" width="32" height="32"/>
  </objectgroup>
  <objectgroup id="22" name="Batman">
   <object id="64" name="Batman" x="3024" y="272" width="48" height="48"/>
@@ -348,6 +384,9 @@
     <property name="type" value="Coin"/>
    </properties>
   </object>
+ </objectgroup>
+ <objectgroup id="25" name="Flag">
+  <object id="147" x="4736" y="224" width="48" height="128"/>
  </objectgroup>
  <objectgroup id="11" name="Traps">
   <object id="28" name="spike" x="352" y="432" width="32" height="32"/>

@@ -1,5 +1,6 @@
-package Game.GettingUnderYourNerve;
+package Game.GettingUnderYourNerve.Platforms;
 
+import Game.GettingUnderYourNerve.Player;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.math.Rectangle;

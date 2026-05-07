@@ -26,7 +26,8 @@ public class DevilPlatform {
     private boolean movingRight = true;
 
     // Troll Mechanics
-    private float detectionRadius = 3.5f; // Tiles away before it triggers
+    private float detectionRadiusX = 3.0f; // Max 3 tiles away horizontally
+    private float detectionRadiusY = 3.0f; // Max 3 tiles away vertically
     private boolean isEvading = false;
 
     public DevilPlatform(World world, Rectangle rect, float startX, float endX, float speed, GameAssetManager assets) {
@@ -45,8 +46,6 @@ public class DevilPlatform {
         this.height = rect.height / Main.PPM;
 
         // --- ANIMATION SETUP ---
-        // TODO: Replace this exact line with the animation fetching logic you use in HorizontalPlatform!
-        // Example: this.animation = assets.getAnimation(GameAssetManager.PLATFORM_PREFIX, 4, 0.15f, Animation.PlayMode.LOOP, "%02d");
         this.animation = assets.getAnimation(GameAssetManager.PLATFORM_HELI_PREFIX, 4, 0.1f, Animation.PlayMode.LOOP, "%02d");
 
         BodyDef bdef = new BodyDef();
@@ -78,8 +77,10 @@ public class DevilPlatform {
         float playerX = player.GetXpos();
         float playerY = player.GetYpos();
 
-        // 1. Check if the player is dangerously close AND above the platform
-        boolean playerIsNear = Math.abs(playerX - platX) < detectionRadius && (playerY > platY);
+        // 1. Check if the player is within the 3x3 block radius AND above the platform
+        boolean playerIsNear = Math.abs(playerX - platX) <= detectionRadiusX &&
+            Math.abs(playerY - platY) <= detectionRadiusY &&
+            (playerY > platY);
 
         if (playerIsNear) {
             isEvading = true;

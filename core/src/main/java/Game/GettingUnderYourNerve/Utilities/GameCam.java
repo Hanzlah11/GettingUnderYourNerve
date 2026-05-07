@@ -1,4 +1,4 @@
-package Game.GettingUnderYourNerve;
+package Game.GettingUnderYourNerve.Utilities;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;

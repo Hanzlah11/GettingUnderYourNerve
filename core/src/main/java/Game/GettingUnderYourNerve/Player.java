@@ -1,5 +1,6 @@
 package Game.GettingUnderYourNerve;
 
+import Game.GettingUnderYourNerve.MainGame.DifficultyScreen;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -49,6 +50,10 @@ public class Player {
     private boolean isLaunched = false;
     private float   launchTimer = 0f;
     private static final float LAUNCH_DURATION = 0.4f;
+
+    // --- NIGHTMARE MODE VARIABLES ---
+    private float invertTimer = 0f;
+    public boolean controlsInverted = false;
 
     public State currentState = State.IDLE;
     public State previousState = State.IDLE;
@@ -226,7 +231,7 @@ public class Player {
             filter.maskBits = Main.ENEMY_BIT;
             swordFixture.setFilterData(filter);
 
-            System.out.println("Swung sword! Uses left: " + swordUses);
+
         }
 
         // --- SWORD ATTACK FINISH ---
@@ -267,11 +272,36 @@ public class Player {
         }
 
         if (!isCutscene) {
+
+            // --- NIGHTMARE LOGIC (0.5% chance per frame) ---
+            if (DifficultyScreen.isNightmareMode && !isDead) {
+                if (controlsInverted) {
+                    invertTimer -= dt;
+                    if (invertTimer <= 0) {
+                        controlsInverted = false;
+                    }
+                } else {
+                    // Roll the dice! (0.5% chance)
+                    if (com.badlogic.gdx.math.MathUtils.random(0f, 100f) <= 0.10f) {
+                        controlsInverted = true;
+                        invertTimer = 8f; // Invert for 5 seconds!
+
+                    }
+                }
+            }
+
             Vector2 vel = playerBody.getLinearVelocity();
             float desiredVel = 0;
 
             boolean moveRight = Gdx.input.isKeyPressed(Input.Keys.RIGHT);
             boolean moveLeft = Gdx.input.isKeyPressed(Input.Keys.LEFT);
+
+            // --- INVERT THE CONTROLS IF CURSED ---
+            if (controlsInverted) {
+                boolean temp = moveRight;
+                moveRight = moveLeft;
+                moveLeft = temp;
+            }
 
             if (moveLeft && !isAttacking) desiredVel = -10f;
             else if (moveRight && !isAttacking) desiredVel = 10f;
@@ -378,15 +408,12 @@ public class Player {
 
     public void addScore(int points) {
         score += points;
-        System.out.println("Score is now: " + score);
     }
 
     public void addHp(int hp) {
         Hp = Math.min(Hp + hp, 100);
-        System.out.println("HP is now: " + Hp);
 
         if(this.Hp <= 0 && !isDead) {
-            System.out.println("CAPTAIN CLOWN NOSE HAS DIED!");
             isDead = true;
         }
     }
@@ -405,7 +432,8 @@ public class Player {
         playerBody.setLinearVelocity(0, 0);
         playerBody.applyLinearImpulse(new Vector2(pushDirection * 10f, 10f), playerBody.getWorldCenter(), true);
 
-        System.out.println("OUCH! Player was knocked back!");
+
+
     }
 
     public int getScore(){ return score; }
@@ -425,10 +453,14 @@ public class Player {
         this.swordUses = 10;
         this.attackCooldown = 0f;
 
+        // --- RESET NIGHTMARE STATE SO YOU DON'T RESPAWN CURSED ---
+        this.controlsInverted = false;
+        this.invertTimer = 0f;
+
         playerBody.setTransform(spawnX, spawnY, 0);
         playerBody.setLinearVelocity(0, 0);
 
-        System.out.println("RESPAWNED!");
+
     }
 
     public void launch(float horizontalForce, float verticalForce) {

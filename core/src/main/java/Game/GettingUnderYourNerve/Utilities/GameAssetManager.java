@@ -94,6 +94,8 @@ public class GameAssetManager {
 
     //---UI---
     public static final String TITLE_BG = "Treasure Hunters/Title UI/title_bg.png";
+    public static final String TITLE_SIMPLE_BG =
+        "Treasure Hunters/Title UI/title_simple_bg.png";
     public static final String BOARD_TL =
         "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Board/1.png";
     public static final String BOARD_TC =
@@ -140,12 +142,18 @@ public class GameAssetManager {
     public static final String PIKACHU_SPRITE = "Treasure Hunters/Pokemon/pikachu.png";
     public static final String CHARIZARD_SPRITE = "Treasure Hunters/Pokemon/charizard.png";
 
+    //---FLAG---
+    public static final String FLAG_PREFIX =
+        "Treasure Hunters/Palm Tree Island/Sprites/flag/";
+
     public void loadAllAssets() {
 
         manager.load(SKY_BASE, Texture.class);
         manager.load(WATER_DEEP, Texture.class);
         manager.load(RICK_SHEET, Texture.class);
         manager.load(TITLE_BG, Texture.class);
+        manager.load(TITLE_SIMPLE_BG, Texture.class);
+
         // PLAYER
         loadFrames(PLAYER_IDLE_PREFIX, 5, "%02d");
         loadFrames(PLAYER_RUN_PREFIX, 6, "%02d");
@@ -215,8 +223,12 @@ public class GameAssetManager {
         //--TRAPS---
         manager.load(BOX_TEXTURE, Texture.class);
 
+        //--POKEMON--
         manager.load(PIKACHU_SPRITE, Texture.class);
         manager.load(CHARIZARD_SPRITE, Texture.class);
+
+        //--FLAG--
+        loadFrames(FLAG_PREFIX, 9, "%d");
     }
 
     private void loadFrames(String prefix, int frameCount, String format) {

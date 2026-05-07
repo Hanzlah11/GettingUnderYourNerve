@@ -54,7 +54,7 @@ public class LoadScreen implements Screen, InputProcessor {
         // If the player already has a name, default to it
         saveName.append(EnterNameScreen.globalPlayerName);
 
-        background = game.assets.manager.get(GameAssetManager.TITLE_BG, Texture.class);
+        background = game.assets.manager.get(GameAssetManager.TITLE_SIMPLE_BG, Texture.class);
 
         boardTL = game.assets.manager.get(GameAssetManager.BOARD_TL, Texture.class);
         boardTC = game.assets.manager.get(GameAssetManager.BOARD_TC, Texture.class);

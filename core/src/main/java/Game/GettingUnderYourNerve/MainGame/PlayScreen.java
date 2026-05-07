@@ -1,7 +1,7 @@
 package Game.GettingUnderYourNerve.MainGame;
 
 import Game.GettingUnderYourNerve.Cutscenes.*;
-import Game.GettingUnderYourNerve.GameCam;
+import Game.GettingUnderYourNerve.Utilities.GameCam;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Map.PlayableMap;
 import Game.GettingUnderYourNerve.Player;
@@ -35,14 +35,17 @@ public class PlayScreen implements Screen {
     private Viewport uiViewport;
 
     private boolean DebugOption = true;
-
     private float WORLD_WIDTH;
     private float WORLD_HEIGHT;
 
+    // --- Cutscene & Level State ---
     private BaseCutscene currentCutscene;
     private int levelNumber;
     private boolean isPostBattle = false;
-    private boolean batmanFightStarted = false;
+
+    // --- Save Limiter (From Version 2) ---
+    private int quickSavesUsed = 0;
+    private final int MAX_SAVES = 3;
 
     public PlayScreen(Main game, int levelNumber) {
         this(game, levelNumber, false);
@@ -53,6 +56,7 @@ public class PlayScreen implements Screen {
         this.levelNumber = levelNumber;
         this.isPostBattle = isPostBattle;
 
+        // Dynamic world sizing based on level
         this.WORLD_WIDTH  = (levelNumber == 0) ? 400 : 800;
         this.WORLD_HEIGHT = (levelNumber == 0) ? 240 : 480;
 
@@ -76,30 +80,23 @@ public class PlayScreen implements Screen {
 
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
 
-        // --- LEVEL TRIGGER FIX ---
+        // --- LEVEL TRIGGER LOGIC ---
         if (this.levelNumber == 0) {
             currentCutscene = new PrologueCutscene(this);
         } else if (this.levelNumber == 3 && !this.isPostBattle) {
             currentCutscene = new BossCutscene(this, playableMap.getBatman());
         } else if (this.levelNumber == 3 && this.isPostBattle) {
-            currentCutscene = new AvengersCutscene(this, playableMap.getBatman()); // THE NEW PHASE
+            currentCutscene = new AvengersCutscene(this, playableMap.getBatman()); // Contingency Phase
         } else {
             currentCutscene = new IntroEncounter(this, playableMap.getBatman());
         }
     }
 
-    // --- EXPOSED MAIN GAME REFERENCE ---
-    public Main getGame() {
-        return game;
-    }
+    public Main getGame() { return game; }
 
-    // --- TRANSITION HELPER ---
     public void startPokemonBattle() {
         game.setScreen(new PokemonBattleScreen(game));
     }
-
-    @Override
-    public void show() { }
 
     public World getWorld() { return world; }
 
@@ -107,27 +104,23 @@ public class PlayScreen implements Screen {
         ScreenUtils.clear(0.1f, 0.1f, 0.2f, 1);
         viewport.apply();
 
-        // --- Layer 1: Background ---
         game.batch.setProjectionMatrix(cam.GetCam().combined);
         game.batch.begin();
         playableMap.DrawBackGround(game.batch, cam, viewport, delta);
         game.batch.end();
 
-        // --- Layer 2: Tilemap ---
         playableMap.RenderTileMap(cam.GetCam());
 
-        // --- Layer 3: Entities ---
         game.batch.setProjectionMatrix(cam.GetCam().combined);
         game.batch.begin();
         player.Render(game.batch, delta);
         playableMap.DrawElements(game.batch, delta);
 
-        // --- ADDED: RENDER CUTSCENE EFFECTS (Pokeballs) ---
+        // Renders Pokeballs or other cutscene overlays
         if (currentCutscene != null) currentCutscene.render(game.batch);
 
         game.batch.end();
 
-        // Optional: Draw debug if enabled
         handleDebugInput();
         if (DebugOption) {
             debugRenderer.render(world, cam.GetCam().combined);
@@ -141,9 +134,7 @@ public class PlayScreen implements Screen {
             return;
         }
 
-        if (!updateLogic(delta)) {
-            return;
-        }
+        if (!updateLogic(delta)) return;
 
         drawWorld(delta);
     }
@@ -163,16 +154,19 @@ public class PlayScreen implements Screen {
             if (!currentCutscene.isFinished()) {
                 currentCutscene.update(delta);
             }
+
+            // Camera clamping for Prologue
             if (levelNumber == 0) {
                 cam.GetCam().position.x = com.badlogic.gdx.math.MathUtils.clamp(
                     cam.GetCam().position.x, halfVW, worldWidth - halfVW);
-
                 cam.GetCam().position.y = com.badlogic.gdx.math.MathUtils.clamp(
                     cam.GetCam().position.y, halfVH, worldHeight - halfVH);
             }
+
             if (currentCutscene.isFinished()) {
+                // If the prologue just finished, go to Level 1
                 if (levelNumber == 0) {
-                    game.setScreen(new PlayScreen(game, 3));
+                    game.setScreen(new PlayScreen(game, 1));
                     this.dispose();
                     return false;
                 }
@@ -182,11 +176,15 @@ public class PlayScreen implements Screen {
                 inCutscene = false;
             }
         } else {
+            // INPUT HANDLING
             boolean isCtrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
 
             if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.S)) {
-                String playerSaveFile = "SavedFiles/" + EnterNameScreen.globalPlayerName + ".json";
-                fileHandler.saveGameState(player, playableMap, playerSaveFile);
+                if (quickSavesUsed < MAX_SAVES) {
+                    String playerSaveFile = "SavedFiles/" + EnterNameScreen.globalPlayerName + ".json";
+                    fileHandler.saveGameState(player, playableMap, playerSaveFile);
+                    quickSavesUsed++;
+                }
             }
 
             if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.L)) {
@@ -195,12 +193,12 @@ public class PlayScreen implements Screen {
             }
         }
 
-        boolean wasDead = player.isDead;
         int healthBefore = player.getHealth();
+        boolean wasDead = player.isDead;
 
         world.step(1 / 60f, 6, 2);
 
-        // --- FIX 1: Intercept death from Water BEFORE Player.java can respawn! ---
+        // --- LEVEL 3 TERMINATION (Contingency Ending) ---
         if (player.isDead && levelNumber == 3 && isPostBattle) {
             System.out.println("GAME OVER. BATMAN WINS.");
             Gdx.app.exit();
@@ -209,30 +207,26 @@ public class PlayScreen implements Screen {
 
         player.UpdatePlayer(delta, world, inCutscene);
 
-        // --- FIX 2: Intercept death from Abyss (Y < 0) AFTER UpdatePlayer runs ---
-        if (player.isDead && levelNumber == 3 && isPostBattle) {
-            System.out.println("GAME OVER. BATMAN WINS.");
-            Gdx.app.exit();
+        // --- FLAG TRANSITION ---
+        if (!inCutscene && playableMap.isFlagReached()) {
+            game.setScreen(new PlayScreen(game, levelNumber + 1));
+            this.dispose();
             return false;
         }
 
+        // Standard Respawns
         if (wasDead && !player.isDead) {
             playableMap.resetTriggers(world);
         }
 
+        // Damage Effects
         if (!player.isDead && player.getHealth() < healthBefore) {
             int damageTaken = healthBefore - player.getHealth();
-            if (damageTaken >= 25) {
-                cam.startShake(0.4f, 0.6f);
-            } else {
-                cam.startShake(0.2f, 0.4f);
-            }
+            cam.startShake(damageTaken >= 25 ? 0.4f : 0.2f, damageTaken >= 25 ? 0.6f : 0.4f);
         }
 
         if (player.isDead) {
-            cam.SetDeathTarget(worldWidth, worldHeight,
-                halfVW, halfVH,
-                player.spawnX, player.spawnY);
+            cam.SetDeathTarget(worldWidth, worldHeight, halfVW, halfVH, player.spawnX, player.spawnY);
         }
 
         if (currentCutscene == null) {
@@ -240,14 +234,14 @@ public class PlayScreen implements Screen {
         } else {
             cam.GetCam().update();
         }
+
         playableMap.UpdateMap(cam.GetCam(), delta, world, player);
         return true;
     }
 
     private void handleDebugInput() {
-        boolean isCtrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT) ||
-            Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT);
-        if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.D)) {
+        if ((Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT))
+            && Gdx.input.isKeyJustPressed(Input.Keys.D)) {
             DebugOption = !DebugOption;
         }
     }
@@ -267,6 +261,8 @@ public class PlayScreen implements Screen {
     @Override public void pause()  { }
     @Override public void resume() { }
     @Override public void hide()   { }
+    @Override
+    public void show() {}
 
     @Override
     public void dispose() {
@@ -276,13 +272,7 @@ public class PlayScreen implements Screen {
         if (world != null) world.dispose();
     }
 
-    public Player getPlayer() {
-        return player;
-    }
-
+    public Player getPlayer() { return player; }
     public GameCam getCam() { return cam; }
-
-    public PlayableMap getPlayableMap() {
-        return playableMap;
-    }
+    public PlayableMap getPlayableMap() { return playableMap; }
 }
