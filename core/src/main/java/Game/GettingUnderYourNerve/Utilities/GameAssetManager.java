@@ -136,6 +136,10 @@ public class GameAssetManager {
     public static final String BOX_TEXTURE =
         "Treasure Hunters/Merchant Ship/Sprites/Box/Idle/1.png";
 
+    // --- POKEMON ---
+    public static final String PIKACHU_SPRITE = "Treasure Hunters/Pokemon/pikachu.png";
+    public static final String CHARIZARD_SPRITE = "Treasure Hunters/Pokemon/charizard.png";
+
     public void loadAllAssets() {
 
         manager.load(SKY_BASE, Texture.class);
@@ -210,6 +214,9 @@ public class GameAssetManager {
 
         //--TRAPS---
         manager.load(BOX_TEXTURE, Texture.class);
+
+        manager.load(PIKACHU_SPRITE, Texture.class);
+        manager.load(CHARIZARD_SPRITE, Texture.class);
     }
 
     private void loadFrames(String prefix, int frameCount, String format) {

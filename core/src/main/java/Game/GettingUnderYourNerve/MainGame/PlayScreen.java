@@ -1,8 +1,6 @@
 package Game.GettingUnderYourNerve.MainGame;
 
-import Game.GettingUnderYourNerve.Cutscenes.BaseCutscene;
-import Game.GettingUnderYourNerve.Cutscenes.IntroEncounter;
-import Game.GettingUnderYourNerve.Cutscenes.PrologueCutscene;
+import Game.GettingUnderYourNerve.Cutscenes.*;
 import Game.GettingUnderYourNerve.GameCam;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Map.PlayableMap;
@@ -43,11 +41,17 @@ public class PlayScreen implements Screen {
 
     private BaseCutscene currentCutscene;
     private int levelNumber;
+    private boolean isPostBattle = false;
+    private boolean batmanFightStarted = false;
 
     public PlayScreen(Main game, int levelNumber) {
+        this(game, levelNumber, false);
+    }
+
+    public PlayScreen(Main game, int levelNumber, boolean isPostBattle) {
         this.game = game;
         this.levelNumber = levelNumber;
-        // Physics World
+        this.isPostBattle = isPostBattle;
 
         this.WORLD_WIDTH  = (levelNumber == 0) ? 400 : 800;
         this.WORLD_HEIGHT = (levelNumber == 0) ? 240 : 480;
@@ -60,34 +64,45 @@ public class PlayScreen implements Screen {
         debugRenderer = new Box2DDebugRenderer();
         fileHandler = new FileHandler();
 
-        // Create Player + Map
         player      = new Player(20, game.assets);
         playableMap = new PlayableMap(game.assets, levelNumber);
 
-        // Camera Setup
         cam        = new GameCam();
         viewport   = new FitViewport(WORLD_WIDTH / Main.PPM, WORLD_HEIGHT / Main.PPM, cam.GetCam());
         uiViewport = new FitViewport(800, 480);
 
-        // Map Physics initialization
         playableMap.createPhysicsFromMap(world);
-
         contactListener.setPlayableMap(playableMap);
 
-        // Spawn Player
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
+
+        // --- LEVEL TRIGGER FIX ---
         if (this.levelNumber == 0) {
             currentCutscene = new PrologueCutscene(this);
-        }
-        else
+        } else if (this.levelNumber == 3 && !this.isPostBattle) {
+            currentCutscene = new BossCutscene(this, playableMap.getBatman());
+        } else if (this.levelNumber == 3 && this.isPostBattle) {
+            currentCutscene = new AvengersCutscene(this, playableMap.getBatman()); // THE NEW PHASE
+        } else {
             currentCutscene = new IntroEncounter(this, playableMap.getBatman());
+        }
+    }
+
+    // --- EXPOSED MAIN GAME REFERENCE ---
+    public Main getGame() {
+        return game;
+    }
+
+    // --- TRANSITION HELPER ---
+    public void startPokemonBattle() {
+        game.setScreen(new PokemonBattleScreen(game));
     }
 
     @Override
     public void show() { }
 
     public World getWorld() { return world; }
-    // 1. Rename your rendering block to a public method
+
     public void drawWorld(float delta) {
         ScreenUtils.clear(0.1f, 0.1f, 0.2f, 1);
         viewport.apply();
@@ -106,6 +121,10 @@ public class PlayScreen implements Screen {
         game.batch.begin();
         player.Render(game.batch, delta);
         playableMap.DrawElements(game.batch, delta);
+
+        // --- ADDED: RENDER CUTSCENE EFFECTS (Pokeballs) ---
+        if (currentCutscene != null) currentCutscene.render(game.batch);
+
         game.batch.end();
 
         // Optional: Draw debug if enabled
@@ -122,7 +141,6 @@ public class PlayScreen implements Screen {
             return;
         }
 
-        // CRITICAL FIX: If updateLogic returns false, the map was deleted. Abort drawing![cite: 16]
         if (!updateLogic(delta)) {
             return;
         }
@@ -133,7 +151,6 @@ public class PlayScreen implements Screen {
     private boolean updateLogic(float delta) {
         boolean inCutscene = (currentCutscene != null);
 
-        // --- 4. CAMERA UPDATES ---
         float worldWidth = playableMap.getMapWidthInMeters();
         float worldHeight = playableMap.getMapHeightInMeters();
         float halfVW = (WORLD_WIDTH / Main.PPM) / 2f;
@@ -154,10 +171,9 @@ public class PlayScreen implements Screen {
                     cam.GetCam().position.y, halfVH, worldHeight - halfVH);
             }
             if (currentCutscene.isFinished()) {
-                // If the prologue just finished, shift to Level 1![cite: 21]
                 if (levelNumber == 0) {
-                    game.setScreen(new PlayScreen(game, 1));
-                    this.dispose(); // CRITICAL: prevent memory leaks
+                    game.setScreen(new PlayScreen(game, 3));
+                    this.dispose();
                     return false;
                 }
 
@@ -166,7 +182,6 @@ public class PlayScreen implements Screen {
                 inCutscene = false;
             }
         } else {
-            // --- RE-ADDED: QUICK SAVE & QUICK LOAD HOTKEYS ---
             boolean isCtrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
 
             if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.S)) {
@@ -176,54 +191,53 @@ public class PlayScreen implements Screen {
 
             if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.L)) {
                 game.setScreen(new LoadScreen(game, this));
-                return false; // Stop updating for this frame while we switch to the Load menu
+                return false;
             }
-            // -------------------------------------------------
         }
 
-        // --- 1. CAPTURE STATE BEFORE PHYSICS STEP ---
         boolean wasDead = player.isDead;
         int healthBefore = player.getHealth();
 
-        // Perform physics and player updates
         world.step(1 / 60f, 6, 2);
+
+        // --- FIX 1: Intercept death from Water BEFORE Player.java can respawn! ---
+        if (player.isDead && levelNumber == 3 && isPostBattle) {
+            System.out.println("GAME OVER. BATMAN WINS.");
+            Gdx.app.exit();
+            return false;
+        }
+
         player.UpdatePlayer(delta, world, inCutscene);
 
-        // --- 2. RESPAWN DETECTION ---
-        // If the player was dead but is now alive, reset map triggers
+        // --- FIX 2: Intercept death from Abyss (Y < 0) AFTER UpdatePlayer runs ---
+        if (player.isDead && levelNumber == 3 && isPostBattle) {
+            System.out.println("GAME OVER. BATMAN WINS.");
+            Gdx.app.exit();
+            return false;
+        }
+
         if (wasDead && !player.isDead) {
             playableMap.resetTriggers(world);
         }
 
-        // --- 3. SCREEN SHAKE LOGIC ---
-        // Only shake if the player is still alive but took damage
         if (!player.isDead && player.getHealth() < healthBefore) {
             int damageTaken = healthBefore - player.getHealth();
-
             if (damageTaken >= 25) {
-                // Heavy hit (e.g., spike, heavy enemy attack)
                 cam.startShake(0.4f, 0.6f);
             } else {
-                // Light hit (e.g., minor projectile or graze)
                 cam.startShake(0.2f, 0.4f);
             }
         }
 
-
-
-        // Handle camera behavior if the player is dead
         if (player.isDead) {
             cam.SetDeathTarget(worldWidth, worldHeight,
                 halfVW, halfVH,
                 player.spawnX, player.spawnY);
         }
 
-        // Apply standard camera follow and update map elements
         if (currentCutscene == null) {
-            // Standard camera behavior following the player
             cam.Update(worldWidth, worldHeight, halfVW, halfVH, player.GetXpos(), player.GetYpos());
         } else {
-            // Cutscene is manually moving cam.position.x; just update matrices
             cam.GetCam().update();
         }
         playableMap.UpdateMap(cam.GetCam(), delta, world, player);
@@ -238,12 +252,9 @@ public class PlayScreen implements Screen {
         }
     }
 
-    // --- RE-ADDED: Helper method called by LoadScreen when the player confirms a load ---
     public void executeLoad(String saveName) {
         String playerSaveFile = "SavedFiles/" + saveName + ".json";
         fileHandler.loadGameState(player, playableMap, playerSaveFile);
-
-        // Ensure future Quick Saves overwrite the newly loaded file!
         EnterNameScreen.globalPlayerName = saveName;
     }
 
@@ -259,7 +270,6 @@ public class PlayScreen implements Screen {
 
     @Override
     public void dispose() {
-        // --- RE-ADDED: Safe dispose order to prevent C++ EXCEPTION_ACCESS_VIOLATION crashes ---
         playableMap.dispose();
         player.dispose();
         if (debugRenderer != null) debugRenderer.dispose();

@@ -23,6 +23,7 @@ import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -86,7 +87,14 @@ public class PlayableMap {
     public PlayableMap(GameAssetManager assets, int level) {
         this.assets = assets;
 
-        String mapPath = (level == 0) ? "data/tilemaps/prologue.tmx" : "data/tilemaps/untitled.tmx";
+        String mapPath;
+        if (level == 0) {
+            mapPath = "data/tilemaps/prologue.tmx";
+        } else if (level == 3) {
+            mapPath = "data/tilemaps/bossLevel.tmx"; // Loads your new Boss Arena!
+        } else {
+            mapPath = "data/tilemaps/untitled.tmx"; // Default for levels 1 & 2
+        }
         this.currentLevel = level;
 
         map = new TmxMapLoader().load(mapPath);
@@ -368,6 +376,24 @@ public class PlayableMap {
         }
     }
 
+    public int getEnemiesCount() {
+        return enemies.size;
+    }
+
+    public void makeBatmanVulnerable() {
+        Batman batman = getBatman();
+        if (batman != null) {
+            Filter filter = batman.b2body.getFixtureList().first().getFilterData();
+            // If he is currently invulnerable (only colliding with ground), restore sword collision
+            if (filter.maskBits == Main.GROUND_BIT) {
+                filter.maskBits = Main.GROUND_BIT | Main.SWORD_BIT;
+                batman.b2body.getFixtureList().first().setFilterData(filter);
+                System.out.println("BATMAN IS VULNERABLE!");
+            }
+        }
+    }
+
+
     // ===============================================================
     // updateTriggers — called every frame from UpdateMap()
     // ===============================================================
@@ -482,9 +508,11 @@ public class PlayableMap {
         for (MapLayer layer : map.getLayers()) {
             if (layer instanceof TiledMapTileLayer) continue;
             for (MapObject object : layer.getObjects()) {
-                if (object.getProperties().containsKey("x")) {
-                    float  x    = object.getProperties().get("x", Float.class);
-                    float  y    = object.getProperties().get("y", Float.class);
+                // Fix: Standard objects might not have "x" in properties map; use rectangle instead
+                if (object instanceof RectangleMapObject) {
+                    Rectangle rect = ((RectangleMapObject) object).getRectangle();
+                    float x = rect.x;
+                    float y = rect.y;
                     String name = object.getName();
 
                     if ("Batman".equals(name) && level == 0) continue;
@@ -770,6 +798,34 @@ public class PlayableMap {
         return null;
     }
 
+    // --- ADD THIS NEAR THE BOTTOM OF PLAYABLEMAP.JAVA ---
+    public void dropBossFloor(World world) {
+        java.util.Iterator<TrollTile> iter = trollTiles.iterator();
+        while (iter.hasNext()) {
+            TrollTile troll = iter.next();
+            if (!troll.activated) {
+                troll.activated = true;
+
+                // 1. Destroy the physical floor
+                if (troll.body != null) {
+                    world.destroyBody(troll.body);
+                    troll.body = null;
+                }
+
+                // 2. Erase the visual tile
+                if (troll.layer != null) {
+                    troll.layer.setCell(troll.col, troll.row, null);
+                }
+
+                // 3. Queue it for reset
+                deactivatedTrollTiles.add(troll);
+                iter.remove();
+            }
+        }
+        System.out.println("CONTINGENCY ACTIVATED: TROLL FLOOR DROPPED!");
+    }
+
+
     public void dispose() {
         map.dispose();
         mapRenderer.dispose();
@@ -794,7 +850,4 @@ public class PlayableMap {
         return currentLevel;
     }
 
-    public int getLevelNumber() {
-        return currentLevel;
-    }
 }

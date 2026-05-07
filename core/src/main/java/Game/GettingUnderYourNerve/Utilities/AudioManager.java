@@ -31,6 +31,16 @@ public class AudioManager
     public static Sound player_lvl1, player_lvl2, player_lvl3;
     public static Sound batman_lvl1, batman_lvl2, batman_lvl3;
 
+    // --- BOSS ---
+    public static Sound batman_boss1, batman_boss2, player_boss1;
+
+    // --- Ending ---
+    public static Sound ending_player1, ending_batman1;
+
+    // Pokemon
+    public static Music pokemonFightMusic;
+    public static Sound pokemonPlayerAttack, pokemonPlayerDamage;
+
 
     public static void load()
     {
@@ -64,6 +74,19 @@ public class AudioManager
         batman_lvl2 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Levels/batman_lvl2.wav"));
         batman_lvl3 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Levels/batman_lvl3.wav"));
 
+        // --- Boss
+        batman_boss1 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Boss/batman1.wav")); // 10s
+        batman_boss2 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Boss/batman2.wav")); // 12s
+        player_boss1 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Boss/player1.wav")); // 8s
+
+        // --- Ending
+        ending_player1 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Ending/player1.wav")); // 10s
+        ending_batman1 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Ending/batman1.wav")); // 20s
+
+        // -- Pokemon
+        pokemonFightMusic = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/Pokemon/fightMusic.mp3"));
+        pokemonPlayerAttack = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Pokemon/playerAttack.wav"));
+        pokemonPlayerDamage = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Pokemon/playerDamage.wav"));
     }
 
     public static void dispose()
@@ -89,6 +112,15 @@ public class AudioManager
 
         player_lvl1.dispose(); player_lvl2.dispose(); player_lvl3.dispose();
         batman_lvl1.dispose(); batman_lvl2.dispose(); batman_lvl3.dispose();
+
+        if (batman_boss1 != null) batman_boss1.dispose();
+        if (batman_boss2 != null) batman_boss2.dispose();
+        if (player_boss1 != null) player_boss1.dispose();
+        if (ending_player1 != null) ending_player1.dispose();
+        if (ending_batman1 != null) ending_batman1.dispose();
+        if (pokemonFightMusic != null) pokemonFightMusic.dispose();
+        if (pokemonPlayerAttack != null) pokemonPlayerAttack.dispose();
+        if (pokemonPlayerDamage != null) pokemonPlayerDamage.dispose();
     }
 
 }

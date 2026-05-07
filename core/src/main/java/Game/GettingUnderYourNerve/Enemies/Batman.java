@@ -24,16 +24,22 @@ public class Batman extends Enemy {
     public boolean facingRight = true;
     private GameAssetManager assets;
 
+    // --- ADD THESE VARIABLES TO FIX THE "NOT DEFINED" ERROR ---
+    public boolean activateAI = false;
+    private float attackTimer = 0f;
+    public boolean isHit = false;       // Track if Batman was just struck
+    private float hitTimer = 0f;        // Timer to clear the hit state
+    // ---------------------------------------------------------
+
     public Batman(World world, float x, float y, GameAssetManager assets) {
         super(world, x, y);
         this.assets = assets;
 
-        // 1. MATCH VISUALS TO TILED: Set both dimensions to 32 pixels
         this.drawWidth = 48 / PPM;
         this.drawHeight = 48 / PPM;
 
-        this.maxHealth = 10;
-        this.currentHealth = 10;
+        this.maxHealth = 100; // Increased for a boss fight
+        this.currentHealth = 100;
 
         idleAnim = assets.getAnimation(GameAssetManager.BATMAN_IDLE_PREFIX, 3, 0.2f, Animation.PlayMode.LOOP, "%d");
         moveAnim = assets.getAnimation(GameAssetManager.BATMAN_MOVE_PREFIX, 3, 0.15f, Animation.PlayMode.LOOP, "%d");
@@ -68,11 +74,11 @@ public class Batman extends Enemy {
 
         FixtureDef fdef = new FixtureDef();
         fdef.shape = shape;
-        fdef.friction = 0f;
-        fdef.density = 1f;
+        fdef.friction = 1.0f; // Bosses have high friction to prevent sliding
+        fdef.density = 5.0f;
 
         fdef.filter.categoryBits = Main.ENEMY_BIT;
-        fdef.filter.maskBits = Main.GROUND_BIT | Main.SWORD_BIT;
+        fdef.filter.maskBits = Main.GROUND_BIT | Main.SWORD_BIT | Main.PLAYER_BIT;
 
         b2body.createFixture(fdef).setUserData(this);
         b2body.setFixedRotation(true);
@@ -80,10 +86,66 @@ public class Batman extends Enemy {
         shape.dispose();
     }
 
+    // REMOVED @Override since it's missing in your base Enemy class
+    public void hit(int damage, float sourceX) {
+        if (isDead || isHit) return;
+
+        this.currentHealth -= damage;
+        this.isHit = true;
+        this.hitTimer = 0f;
+        this.stateTime = 0;
+
+        // Minimal knockback for Batman, he is a boss!
+        float pushDir = GetXpos() < sourceX ? -1f : 1f;
+        b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
+        b2body.applyLinearImpulse(new Vector2(pushDir * 2f, 2f), b2body.getWorldCenter(), true);
+
+        if (currentHealth <= 0) {
+            isDead = true;
+            setToDestroy = true;
+        }
+    }
+
     @Override
     public void updateEnemy(float dt, Player player) {
         if (isDead) return;
         stateTime += dt;
+
+        // Update hit stun timer
+        if (isHit) {
+            hitTimer += dt;
+            if (hitTimer >= 0.4f) isHit = false;
+        }
+
+        if (!activateAI) return;
+
+        float distanceX = player.GetXpos() - GetXpos();
+        float absDistX = Math.abs(distanceX);
+
+        if (attackTimer > 0) attackTimer -= dt;
+
+        if (Math.abs(b2body.getLinearVelocity().y) > 0.1f) {
+            setAction(State.MOVING);
+            return;
+        }
+
+        if (absDistX < 2.0f && Math.abs(player.GetYpos() - GetYpos()) < 2.0f) {
+            b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
+
+            if (attackTimer <= 0) {
+                setAction(State.ATTACKING);
+                attackTimer = 1.5f;
+                player.hit(15, GetXpos());
+            } else if (currentState != State.ATTACKING || attackAnim.isAnimationFinished(stateTime)) {
+                setAction(State.IDLE);
+            }
+        } else {
+            if (currentState != State.ATTACKING || attackAnim.isAnimationFinished(stateTime)) {
+                setAction(State.MOVING);
+                float speed = 3.5f;
+                b2body.setLinearVelocity(distanceX > 0 ? speed : -speed, b2body.getLinearVelocity().y);
+            }
+        }
     }
 
     @Override
@@ -99,18 +161,12 @@ public class Batman extends Enemy {
         if (velX > 0.1f)      facingRight = true;
         else if (velX < -0.1f) facingRight = false;
 
-        // --- FIXED SPRITE INCONSISTENCY ---
-        // If textures are drawn facing LEFT:
-        // facingRight = true  -> visuallyFacingRight = true (FLIP IT)
-        // facingRight = false -> visuallyFacingRight = false (ORIGINAL)
         boolean visuallyFacingRight = facingRight;
-
         if (visuallyFacingRight && !region.isFlipX()) {
             region.flip(true, false);
         } else if (!visuallyFacingRight && region.isFlipX()) {
             region.flip(true, false);
         }
-        // ----------------------------------
 
         if (currentState != previousState) {
             stateTime = 0;
@@ -124,8 +180,6 @@ public class Batman extends Enemy {
         TextureRegion frame = GetCurrentFrame(dt);
         applyDamageTint(batch, dt);
 
-        // 3. FIX RENDERING OFFSET: Lower the sprite so feet stay on ground
-        // Since the hitbox height is 32, we subtract 16 (half-height) to find the floor
         batch.draw(
             frame,
             GetXpos() - drawWidth / 2f,
@@ -138,7 +192,6 @@ public class Batman extends Enemy {
     }
 
     public void setAction(State newState) {
-        // Only reset the timer if we are actually switching to a different state
         if (this.currentState != newState) {
             this.currentState = newState;
             this.stateTime = 0;

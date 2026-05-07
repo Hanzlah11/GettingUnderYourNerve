@@ -4,6 +4,7 @@ import Game.GettingUnderYourNerve.MainGame.PlayScreen;
 import Game.GettingUnderYourNerve.Player;
 import Game.GettingUnderYourNerve.Enemies.Batman;
 import Game.GettingUnderYourNerve.GameCam;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch; // Make sure to add this import!
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.math.Rectangle;
@@ -30,12 +31,19 @@ public abstract class BaseCutscene {
         this.finished = true;
     }
 
-    // Helper to find rectangles in your "CutsceneData" layer[cite: 23, 25]
+    // Helper to find rectangles in your "CutsceneData" layer
     protected Vector2 getObjectPos(String name) {
-        for (MapObject object : screen.getPlayableMap().map.getLayers().get("CutsceneData").getObjects()) {
+        com.badlogic.gdx.maps.MapLayer layer = screen.getPlayableMap().map.getLayers().get("CutsceneData");
+
+        // Safety check to prevent NullPointerException
+        if (layer == null) {
+            System.out.println("ERROR: 'CutsceneData' layer missing in Tiled!");
+            return new Vector2(0, 0);
+        }
+
+        for (MapObject object : layer.getObjects()) {
             if (object instanceof RectangleMapObject && name.equals(object.getName())) {
                 Rectangle rect = ((RectangleMapObject) object).getRectangle();
-                // Return the center of the rectangle in Meters[cite: 23]
                 return new Vector2((rect.x + rect.width / 2f) / 32f, (rect.y + rect.height / 2f) / 32f);
             }
         }
@@ -44,4 +52,10 @@ public abstract class BaseCutscene {
 
     public abstract void update(float dt);
     public boolean isFinished() { return finished; }
+
+    // --- ADD THIS METHOD SO SUBCLASSES CAN OVERRIDE IT ---
+    public void render(SpriteBatch batch) {
+        // Default cutscenes don't draw anything extra, so this is empty.
+        // BossCutscene will override this to draw the Pokeballs!
+    }
 }
