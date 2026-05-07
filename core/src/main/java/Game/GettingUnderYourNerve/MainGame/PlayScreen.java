@@ -1,6 +1,7 @@
 package Game.GettingUnderYourNerve.MainGame;
 
 import Game.GettingUnderYourNerve.Cutscenes.*;
+import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameCam;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Map.PlayableMap;
@@ -10,6 +11,7 @@ import Game.GettingUnderYourNerve.Utilities.WorldContactListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
@@ -47,14 +49,18 @@ public class PlayScreen implements Screen {
     private int quickSavesUsed = 0;
     private final int MAX_SAVES = 3;
 
-    public PlayScreen(Main game, int levelNumber) {
+    public PlayScreen(Main game, int levelNumber)
+    {
         this(game, levelNumber, false);
+        startLevelMusic();
     }
 
     public PlayScreen(Main game, int levelNumber, boolean isPostBattle) {
         this.game = game;
         this.levelNumber = levelNumber;
         this.isPostBattle = isPostBattle;
+
+        startLevelMusic();
 
         // Dynamic world sizing based on level
         this.WORLD_WIDTH  = (levelNumber == 0) ? 400 : 800;
@@ -95,6 +101,11 @@ public class PlayScreen implements Screen {
     public Main getGame() { return game; }
 
     public void startPokemonBattle() {
+        AudioManager.elevatorMusic.pause();
+        AudioManager.level1Music.pause();
+        AudioManager.level2Music.pause();
+        AudioManager.bossArenaMusic.pause();
+
         game.setScreen(new PokemonBattleScreen(game));
     }
 
@@ -250,6 +261,31 @@ public class PlayScreen implements Screen {
         String playerSaveFile = "SavedFiles/" + saveName + ".json";
         fileHandler.loadGameState(player, playableMap, playerSaveFile);
         EnterNameScreen.globalPlayerName = saveName;
+    }
+
+    private void startLevelMusic() {
+        Music currentTrack;
+
+        switch (levelNumber) {
+            case 0:  currentTrack = AudioManager.elevatorMusic; break;
+            case 1:  currentTrack = AudioManager.level1Music;   break;
+            case 2:  currentTrack = AudioManager.level2Music;   break;
+            case 3:  currentTrack = AudioManager.bossArenaMusic; break;
+            default: currentTrack = AudioManager.level1Music;   break;
+        }
+
+        if (currentTrack != AudioManager.elevatorMusic) AudioManager.elevatorMusic.stop();
+        if (currentTrack != AudioManager.level1Music) AudioManager.level1Music.stop();
+        if (currentTrack != AudioManager.level2Music) AudioManager.level2Music.stop();
+        if (currentTrack != AudioManager.bossArenaMusic) AudioManager.bossArenaMusic.stop();
+
+        currentTrack.setLooping(true);
+        if(levelNumber == 0 || levelNumber == 3)
+            currentTrack.setVolume(0.05f);
+        else
+            currentTrack.setVolume(0.15f);
+
+        currentTrack.play();
     }
 
     @Override

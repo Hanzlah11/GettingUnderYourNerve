@@ -175,7 +175,7 @@ public class Shell extends Enemy
 
         switch (currentState) {
             case BITING:
-                region = bitingAnimation.getKeyFrame(stateTime); // Use bite texture[cite: 5]
+                region = bitingAnimation.getKeyFrame(stateTime);
                 break;
             case SHOOTING:
                 region = shootingAnimation.getKeyFrame(stateTime);
@@ -200,8 +200,8 @@ public class Shell extends Enemy
     public void bite() {
         if (currentState != State.BITING) {
             currentState = State.BITING;
-            stateTime = 0; // Start animation from frame 0[cite: 5]
-            shooting = false; // Stop shooting if we start biting[cite: 2]
+            stateTime = 0;
+            shooting = false;
             AudioManager.shellShoot.play(0.8f);
         }
     }
@@ -212,8 +212,8 @@ public class Shell extends Enemy
     }
 
     private State getState() {
-        if (currentState == State.BITING) return State.BITING; // Priority 1[cite: 5]
-        if (shooting) return State.SHOOTING; // Priority 2[cite: 2]
+        if (currentState == State.BITING) return State.BITING;
+        if (shooting) return State.SHOOTING;
         return State.IDLE;
     }
 

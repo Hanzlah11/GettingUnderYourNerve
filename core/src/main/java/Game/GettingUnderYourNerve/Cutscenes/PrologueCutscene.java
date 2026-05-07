@@ -103,7 +103,7 @@ public class PrologueCutscene extends BaseCutscene {
                 break;
 
             case 4: // PAN BACK TO PLAYER
-                float targetX4 = getClampedX(player.GetXpos()); // Pan to clamped target[cite: 19]
+                float targetX4 = getClampedX(player.GetXpos()); // Pan to clamped target
                 cam.GetCam().position.x += (targetX4 - cam.GetCam().position.x) * lerp;
                 player.facingRight = false;
 
@@ -167,13 +167,13 @@ public class PrologueCutscene extends BaseCutscene {
                     batman.b2body.setLinearVelocity(0, 0); // Remain still for 75% of apology
                     batman.setAction(Batman.State.IDLE);
                 }
-                // PHASE C: Walk Away (Starts at 12.3s, lasts 2s)[cite: 19]
+                // PHASE C: Walk Away (Starts at 12.3s, lasts 2s)
                 else if (stateTimer < 14.3f) {
                     batman.b2body.setLinearVelocity(4.0f, 0); // Awkward walk
                     if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.3f);
                     batman.setAction(Batman.State.MOVING);
                 }
-                // PHASE D: Escape[cite: 19]
+                // PHASE D: Escape
                 else {
                     if (batman != null && !batman.destroyed) {
                         batman.b2body.setLinearVelocity(10.0f, 0);
@@ -214,7 +214,7 @@ public class PrologueCutscene extends BaseCutscene {
 
     @Override
     public void skip() {
-        super.skip(); // Sets finished = true[cite: 16]
+        super.skip(); // Sets finished = true
 
         // Stop all possible cutscene sounds immediately
         if (footstepId != -1) {

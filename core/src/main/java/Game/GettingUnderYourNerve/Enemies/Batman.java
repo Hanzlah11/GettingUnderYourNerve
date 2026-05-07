@@ -76,7 +76,7 @@ public class Batman extends Enemy {
         fdef.density = 5.0f;
 
         fdef.filter.categoryBits = Main.ENEMY_BIT;
-        fdef.filter.maskBits = Main.GROUND_BIT | Main.SWORD_BIT | Main.PLAYER_BIT;
+        fdef.filter.maskBits = Main.GROUND_BIT;
 
         b2body.createFixture(fdef).setUserData(this);
         b2body.setFixedRotation(true);

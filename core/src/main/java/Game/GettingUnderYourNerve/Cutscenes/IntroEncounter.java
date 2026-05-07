@@ -124,7 +124,7 @@ public class IntroEncounter extends BaseCutscene {
 
     @Override
     public void skip() {
-        super.skip(); // Sets finished = true[cite: 15]
+        super.skip();
 
         // 1. Identify current level to stop the correct dialogue
         int level = screen.getPlayableMap().getLevelNumber();

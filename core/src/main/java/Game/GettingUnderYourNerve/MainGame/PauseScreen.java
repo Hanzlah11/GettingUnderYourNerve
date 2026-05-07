@@ -109,7 +109,6 @@ public class PauseScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        // 1. Input & World Rendering (Keep as is)[cite: 14]
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             resumeGame();
             return;
@@ -148,7 +147,6 @@ public class PauseScreen implements Screen {
         }
 
         // --- STEP C: Draw the Wooden Frame ON TOP of the video ---
-        // This act as a physical "window" that hides the video overflow[cite: 13]
         drawTex(game.batch, boardTL, bx,                              by + BOARD_HEIGHT - BOARD_CORNER, BOARD_CORNER, BOARD_CORNER);
         drawTex(game.batch, boardTC, bx + BOARD_CORNER,               by + BOARD_HEIGHT - BOARD_EDGE_H,  innerW,       BOARD_EDGE_H);
         drawTex(game.batch, boardTR, bx + BOARD_WIDTH - BOARD_CORNER, by + BOARD_HEIGHT - BOARD_CORNER, BOARD_CORNER, BOARD_CORNER);
@@ -161,7 +159,6 @@ public class PauseScreen implements Screen {
         game.batch.end();
 
         // --- STEP D: Fixed HUD Visibility ---
-        // Remove the !isRickrolling check so the HUD always renders[cite: 13]
         hudBanner.attachToBoard(bx - 180, by + 25, BOARD_HEIGHT);
         hudBanner.render(game.batch, health, score, uiViewport.getCamera().combined);
     }
@@ -169,7 +166,7 @@ public class PauseScreen implements Screen {
     private void resumeGame() {
         stopRickroll();
         resumeWorldAudio();
-        game.setScreen(playScreen); // Swap back to the existing play state[cite: 15]
+        game.setScreen(playScreen);
     }
 
     private void stopRickroll() {
@@ -265,11 +262,8 @@ public class PauseScreen implements Screen {
     @Override public void show() { }
     @Override
     public void resize(int width, int height) {
-        // 1. Update the UI viewport (centers the wooden board)
         uiViewport.update(width, height, true);
 
-        // 2. CRITICAL: Update the world viewport in the background screen!
-        // This calls PlayScreen.resize(), which handles viewport.update(width, height, false);[cite: 12, 13]
         playScreen.resize(width, height);
     }
     @Override public void pause() { }
