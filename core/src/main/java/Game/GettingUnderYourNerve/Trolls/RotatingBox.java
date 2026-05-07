@@ -9,24 +9,8 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.World;
 
-/**
- * RotatingBox — a box that tilts toward whichever side the player lands on,
- * causing them to slide off, then slowly resets back to flat.
- *
- * Direction logic:
- *   Player lands on the LEFT  half → box rotates COUNTER-CLOCKWISE (positive angle)
- *   Player lands on the RIGHT half → box rotates CLOCKWISE         (negative angle)
- *
- * Tiled setup:
- *   Object Layer : "Boxes"
- *   Name         : "RotatingBox"
- *   Rectangle    : any size
- *   Optional property:
- *     Speed (float) — rotation speed in degrees/sec (default 120)
- */
 public class RotatingBox extends Box {
 
-    // --- Tuning constants ---
     private static final float TILT_ANGLE_DEG = 90f;   // how far it tilts
     private static final float RESET_DELAY    = 0.5f;    // seconds before rotating back
 
@@ -34,14 +18,13 @@ public class RotatingBox extends Box {
     public enum State { FLAT, ROTATING_DOWN, TILTED, ROTATING_BACK }
     private State state = State.FLAT;
 
-    // --- Runtime vars ---
     private float rotateSpeed  = 120f;  // degrees per second
     private float currentAngle = 0f;    // degrees (positive = CCW, negative = CW)
     private float targetAngle  = 0f;    // degrees — set when player lands
     private float resetTimer   = 0f;
 
     public RotatingBox(World world, MapObject object, GameAssetManager assets) {
-        // Kinematic body — we control its transform directly each frame
+
         super(world, object, assets, BodyDef.BodyType.KinematicBody);
 
         MapProperties props = object.getProperties();
@@ -50,10 +33,6 @@ public class RotatingBox extends Box {
         }
     }
 
-    // ---------------------------------------------------------------
-    // onPlayerLand — decides rotation direction from player position.
-    // Called by WorldContactListener.
-    // ---------------------------------------------------------------
     public void onPlayerLand(float playerX, Player player) {
         if (state != State.FLAT) return;
 
@@ -80,9 +59,6 @@ public class RotatingBox extends Box {
         state = State.ROTATING_DOWN;
     }
 
-    // ---------------------------------------------------------------
-    // update — drives the state machine each frame.
-    // ---------------------------------------------------------------
     @Override
     public void update(float dt) {
         switch (state) {
@@ -92,9 +68,7 @@ public class RotatingBox extends Box {
                 break;
 
             case ROTATING_DOWN:
-                // Move currentAngle toward targetAngle
                 if (targetAngle > 0) {
-                    // Tilting counter-clockwise
                     currentAngle += rotateSpeed * dt;
                     if (currentAngle >= targetAngle) {
                         currentAngle = targetAngle;
@@ -102,7 +76,6 @@ public class RotatingBox extends Box {
                         resetTimer   = 0f;
                     }
                 } else {
-                    // Tilting clockwise
                     currentAngle -= rotateSpeed * dt;
                     if (currentAngle <= targetAngle) {
                         currentAngle = targetAngle;
@@ -140,10 +113,6 @@ public class RotatingBox extends Box {
                 break;
         }
     }
-
-    // ---------------------------------------------------------------
-    // applyAngle — pushes the current angle into the Box2D body.
-    // ---------------------------------------------------------------
     private void applyAngle() {
         body.setTransform(
             body.getPosition(),

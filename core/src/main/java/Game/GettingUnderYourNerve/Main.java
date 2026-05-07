@@ -13,10 +13,8 @@ public class Main extends Game {
     public SpriteBatch batch;
     public GameAssetManager assets;
 
-    // --- Box2D & Scaling (Kept here so other classes don't break) ---
     public static final float PPM = 32f;
 
-    // --- Collision Bits (Kept here so other classes don't break) ---
     public static final short BIT_NONE       = 0;
     public static final short GROUND_BIT     = 1;
     public static final short PLAYER_BIT     = 2;
@@ -31,26 +29,19 @@ public class Main extends Game {
 
     @Override
     public void create() {
-        // Initialize Global Graphics
         batch = new SpriteBatch();
 
-        // Initialize Global Audio
         AudioManager.load();
 
-        // Initialize Global Assets
         assets = new GameAssetManager();
         assets.loadAllAssets();
         assets.manager.finishLoading();
 
-        // ---------------------------------------------------------
-        // Transfer control to your gameplay screen!
-        // ---------------------------------------------------------
         this.setScreen(new TitleScreen(this));
     }
 
     @Override
     public void render() {
-        // CRITICAL: This passes the render loop to whatever screen is currently active
         super.render();
     }
 

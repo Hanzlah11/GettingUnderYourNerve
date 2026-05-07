@@ -24,12 +24,10 @@ public class Batman extends Enemy {
     public boolean facingRight = true;
     private GameAssetManager assets;
 
-    // --- ADD THESE VARIABLES TO FIX THE "NOT DEFINED" ERROR ---
     public boolean activateAI = false;
     private float attackTimer = 0f;
-    public boolean isHit = false;       // Track if Batman was just struck
-    private float hitTimer = 0f;        // Timer to clear the hit state
-    // ---------------------------------------------------------
+    public boolean isHit = false;
+    private float hitTimer = 0f;
 
     public Batman(World world, float x, float y, GameAssetManager assets) {
         super(world, x, y);
@@ -38,7 +36,7 @@ public class Batman extends Enemy {
         this.drawWidth = 48 / PPM;
         this.drawHeight = 48 / PPM;
 
-        this.maxHealth = 100; // Increased for a boss fight
+        this.maxHealth = 100;
         this.currentHealth = 100;
 
         idleAnim = assets.getAnimation(GameAssetManager.BATMAN_IDLE_PREFIX, 3, 0.2f, Animation.PlayMode.LOOP, "%d");
@@ -74,7 +72,7 @@ public class Batman extends Enemy {
 
         FixtureDef fdef = new FixtureDef();
         fdef.shape = shape;
-        fdef.friction = 1.0f; // Bosses have high friction to prevent sliding
+        fdef.friction = 1.0f;
         fdef.density = 5.0f;
 
         fdef.filter.categoryBits = Main.ENEMY_BIT;
@@ -86,7 +84,6 @@ public class Batman extends Enemy {
         shape.dispose();
     }
 
-    // REMOVED @Override since it's missing in your base Enemy class
     public void hit(int damage, float sourceX) {
         if (isDead || isHit) return;
 

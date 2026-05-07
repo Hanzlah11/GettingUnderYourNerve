@@ -123,7 +123,7 @@ public class Crab extends Enemy {
         if (isDead) {
             if (patrolSoundId != -1) {
                 AudioManager.crabPatrol.stop(patrolSoundId);
-                patrolSoundId = -1; // Reset so we don't try to stop it every frame
+                patrolSoundId = -1;
             }
             return;
         }
@@ -134,12 +134,10 @@ public class Crab extends Enemy {
         float distance = abs(dx);
 
         if (shoutCooldown > 0) shoutCooldown -= dt;
-        if (turnCooldown > 0) turnCooldown -= dt; // Tick down the anti-glitch cooldown
+        if (turnCooldown > 0) turnCooldown -= dt;
 
-        // 1. State Logic
         if (currentState != State.ATTACK) {
-            // --- FIX: Tighten Height Check ---
-            // Crab can fall down to chase (dy > -1.5f) but cannot jump UP (dy > 0.5f)
+
             boolean playerIsTooHigh = (dy > 0.5f);
 
             if (turnCooldown <= 0 && distance <= 6f && !playerIsTooHigh && dy > -1.5f && isFloorContinuous(player)) {
@@ -160,12 +158,10 @@ public class Crab extends Enemy {
             }
         }
 
-        // 3. Safety Edge & Wall Detection
-        // Prevent checking for edges if we just turned, avoids getting stuck in corners
         if (currentState != State.ATTACK && turnCooldown <= 0 && (isEdgeAhead() || isWallAhead())) {
             facingRight = !facingRight;
             patrolTimer = 0f;
-            turnCooldown = 0.5f; // FORCES crab to walk away for 0.5s before thinking about the player again!
+            turnCooldown = 0.5f;
 
             if (currentState == State.CHASE) {
                 changeState(State.PATROL);
@@ -251,18 +247,15 @@ public class Crab extends Enemy {
         float endX = player.getPlayerBody().getPosition().x;
         float distance = Math.abs(endX - startX);
 
-        // --- IMPROVED: Path Scanning ---
-        // Instead of 3 points, we check the floor every 0.4 meters (approx. half a tile).
-        // This ensures the Crab detects even small gaps between itself and the player.
         int steps = (int) (distance / 0.4f);
-        if (steps < 2) steps = 2; // Minimum of 2 checks for very close distances
+        if (steps < 2) steps = 2;
 
         for (int i = 1; i <= steps; i++) {
             float alpha = (float) i / (steps + 1);
             float checkX = startX + (endX - startX) * alpha;
 
             if (isHoleAt(checkX)) {
-                return false; // Found a drop! Stop chasing and continue patrolling.
+                return false;
             }
         }
 
@@ -272,21 +265,18 @@ public class Crab extends Enemy {
     private boolean isHoleAt(float x) {
         final boolean[] groundFound = {false};
 
-        // --- IMPROVED: Deeper Raycast ---
-        // We start the ray at the Crab's center and cast down 1.5x its height
-        // to ensure we reliably hit the ground fixture.
         float rayStartY = b2body.getPosition().y;
         float rayEndY = b2body.getPosition().y - (drawHeight * 1.5f);
 
         world.rayCast((fixture, point, normal, fraction) -> {
             if (fixture.getFilterData().categoryBits == Main.GROUND_BIT) {
                 groundFound[0] = true;
-                return 0; // Stop raycast, ground exists here
+                return 0;
             }
-            return -1; // Continue raycast
+            return -1;
         }, new Vector2(x, rayStartY), new Vector2(x, rayEndY));
 
-        return !groundFound[0]; // If no ground was found, it's a hole.
+        return !groundFound[0];
     }
 
     public void changeState(State newState) {

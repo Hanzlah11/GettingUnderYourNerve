@@ -13,19 +13,19 @@ public class DevilPlatform {
 
     public Body body;
 
-    // --- Animation Variables ---
+
     private Animation<TextureRegion> animation;
     private float stateTime = 0f;
 
     private float width, height;
 
-    // Normal Patrol Bounds
+
     private float startX, endX;
     private float normalSpeed;
     private float evadeSpeed;
     private boolean movingRight = true;
 
-    // Troll Mechanics
+
     private float detectionRadiusX = 3.0f; // Max 3 tiles away horizontally
     private float detectionRadiusY = 3.0f; // Max 3 tiles away vertically
     private boolean isEvading = false;
@@ -34,7 +34,7 @@ public class DevilPlatform {
         this.startX = startX / Main.PPM;
         this.endX = endX / Main.PPM;
 
-        // Safety checks to ensure it NEVER stays stationary!
+
         this.normalSpeed = (speed == 0) ? 2f : speed;
         if (Math.abs(this.startX - this.endX) < 0.1f) {
             this.endX = this.startX + (3f * 32f / Main.PPM); // Force 3-tile movement range if missing
@@ -45,7 +45,7 @@ public class DevilPlatform {
         this.width = rect.width / Main.PPM;
         this.height = rect.height / Main.PPM;
 
-        // --- ANIMATION SETUP ---
+
         this.animation = assets.getAnimation(GameAssetManager.PLATFORM_HELI_PREFIX, 4, 0.1f, Animation.PlayMode.LOOP, "%02d");
 
         BodyDef bdef = new BodyDef();
@@ -53,7 +53,7 @@ public class DevilPlatform {
         bdef.position.set((rect.x + rect.width / 2f) / Main.PPM, (rect.y + rect.height / 2f) / Main.PPM);
         body = world.createBody(bdef);
 
-        // Kickstart velocity immediately so it doesn't wait
+
         body.setLinearVelocity(normalSpeed, 0);
 
         PolygonShape shape = new PolygonShape();
@@ -77,7 +77,7 @@ public class DevilPlatform {
         float playerX = player.GetXpos();
         float playerY = player.GetYpos();
 
-        // 1. Check if the player is within the 3x3 block radius AND above the platform
+
         boolean playerIsNear = Math.abs(playerX - platX) <= detectionRadiusX &&
             Math.abs(playerY - platY) <= detectionRadiusY &&
             (playerY > platY);
@@ -90,7 +90,7 @@ public class DevilPlatform {
         } else {
             isEvading = false;
 
-            // 2. Return to the normal patrol zone if it ran off the tracks
+
             if (platX < startX) {
                 body.setLinearVelocity(normalSpeed, 0);
                 movingRight = true;
@@ -98,7 +98,7 @@ public class DevilPlatform {
                 body.setLinearVelocity(-normalSpeed, 0);
                 movingRight = false;
             }
-            // 3. Do normal patrol routine
+
             else {
                 if (movingRight) {
                     body.setLinearVelocity(normalSpeed, 0);

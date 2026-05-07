@@ -24,12 +24,12 @@ public class EnterNameScreen implements Screen, InputProcessor {
     private Viewport viewport;
     private Texture background;
 
-    // Board Textures
+
     private Texture boardTL, boardTC, boardTR;
     private Texture boardCL, boardCC, boardCR;
     private Texture boardBL, boardBC, boardBR;
 
-    // Button Textures
+
     private Texture btnL, btnC, btnR;
 
     private BitmapFont font;
@@ -40,9 +40,9 @@ public class EnterNameScreen implements Screen, InputProcessor {
     private Rectangle startRect;
     private Vector3 touchVec;
 
-    // Name Entry Logic
+
     private StringBuilder playerName;
-    public static String globalPlayerName = "Player"; // Accessible globally by your FileHandler later
+    public static String globalPlayerName = "Player";
 
     public EnterNameScreen(Main game) {
         this.game = game;
@@ -78,7 +78,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
 
     @Override
     public void show() {
-        // Set this screen to capture keyboard input
+
         Gdx.input.setInputProcessor(this);
     }
 
@@ -128,25 +128,20 @@ public class EnterNameScreen implements Screen, InputProcessor {
         game.batch.draw(boardBC, bx + BOARD_CORNER, by, innerW, BOARD_CORNER);
         game.batch.draw(boardBR, bx + BOARD_WIDTH - BOARD_CORNER, by, BOARD_CORNER, BOARD_CORNER);
 
-        // 3. Text & Name Display
+
         layout.setText(titleFont, "ENTER YOUR NAME");
         titleFont.draw(game.batch, "ENTER YOUR NAME", (800 - layout.width) / 2f, 340);
 
-        // --- NEW NON-JITTERY CURSOR LOGIC ---
-        // Measure ONLY the player's name to find the true center
         layout.setText(font, playerName.toString());
         float nameWidth = layout.width;
         float startX = (800 - nameWidth) / 2f;
 
-        // Draw the actual name perfectly centered
         font.draw(game.batch, playerName.toString(), startX, 260);
 
-        // Draw the blinking cursor right at the end of the name
         if (System.currentTimeMillis() / 500 % 2 == 0) {
             font.draw(game.batch, "_", startX + nameWidth, 260);
         }
 
-        // 4. Buttons
         drawButton(backRect, "BACK");
         drawButton(startRect, "START");
 
@@ -173,8 +168,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
             dispose();
         }
     }
-
-    // --- InputProcessor Methods for Typing ---
+    
     @Override
     public boolean keyTyped(char character) {
         // Backspace

@@ -39,14 +39,13 @@ public abstract class Enemy {
     public abstract void render(float dt, SpriteBatch batch);
 
     public void takeDamage(int damage, float knockbackDir) {
-        if (isDead) return; // Don't beat a dead enemy!
+        if (isDead) return;
 
         currentHealth -= damage;
         hitTimer = 0.2f;
 
         b2body.setLinearVelocity(0, 0);
 
-        // Multiply the push by the enemy's mass so it ALWAYS works!
         float mass = b2body.getMass();
         b2body.applyLinearImpulse(new Vector2(knockbackDir * mass * 2f, mass * 6f), b2body.getWorldCenter(), true);
 

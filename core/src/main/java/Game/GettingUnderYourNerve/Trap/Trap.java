@@ -19,7 +19,6 @@ public abstract class Trap {
     public float drawWidth;
     public float drawHeight;
 
-    // CHANGED: Now takes MapObject to read Tiled Properties!
     public Trap(World world, MapObject object) {
         this.world = world;
 

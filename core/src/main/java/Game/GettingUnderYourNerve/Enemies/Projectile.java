@@ -153,7 +153,7 @@ public class Projectile
     public float GetYpos() { return b2body.getPosition().y; }
 
     public void dispose() {
-        // 1. Safety check: If the projectile is still in the world, destroy it
+
         if (!destroyed && b2body != null) {
             world.destroyBody(b2body);
             destroyed = true;

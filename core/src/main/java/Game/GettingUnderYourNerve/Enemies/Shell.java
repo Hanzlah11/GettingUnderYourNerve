@@ -35,7 +35,6 @@ public class Shell extends Enemy
 
     private Array<Projectile> activeProjectiles;
 
-    // We hold onto the vault here so we can spawn projectiles mid-game
     private GameAssetManager assets;
 
     public Shell(World world, float x, float y, GameAssetManager assets)
@@ -86,14 +85,11 @@ public class Shell extends Enemy
     @Override
     public void updateEnemy(float dt, Player player)
     {
-        // --- 1. HANDLE DEATH ---
         if (isDead) {
-            return; // Stop the AI from thinking if it's dead!
+            return;
         }
 
-        // --- 2. HANDLE STUN (Let the physics engine push them!) ---
         if (hitTimer > 0) {
-            // We let the physics knockback happen, and skip the AI logic this frame
             return;
         }
 
@@ -109,7 +105,7 @@ public class Shell extends Enemy
             if (bitingAnimation.isAnimationFinished(stateTime)) {
                 currentState = State.IDLE;
             }
-            return; // Don't do other logic while biting[cite: 5]
+            return;
         }
         else if (shooting) {
             if(shootingAnimation.getKeyFrameIndex(stateTime) == 4 && !hasPlayedSound) {
@@ -223,7 +219,6 @@ public class Shell extends Enemy
 
     @Override
     public void dispose() {
-        // 1. Dispose of all flying projectiles managed by this shell
         for (Projectile p : activeProjectiles) {
             p.dispose();
         }
@@ -234,7 +229,5 @@ public class Shell extends Enemy
         shootingAnimation = null;
         bitingAnimation = null;
 
-        // 3. Stop any associated audio if necessary
-        // (shellShoot is a one-shot play() usually, so no stop needed)
     }
 }

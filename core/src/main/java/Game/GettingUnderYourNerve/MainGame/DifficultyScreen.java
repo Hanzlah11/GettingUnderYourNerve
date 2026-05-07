@@ -23,7 +23,7 @@ public class DifficultyScreen implements Screen {
     private Viewport viewport;
     private Texture background;
 
-    // UI Textures
+
     private Texture boardTL, boardTC, boardTR, boardCL, boardCC, boardCR, boardBL, boardBC, boardBR;
     private Texture btnL, btnC, btnR;
 
@@ -35,7 +35,7 @@ public class DifficultyScreen implements Screen {
     private Rectangle nightmareRect;
     private Vector3 touchVec;
 
-    // --- GLOBAL DIFFICULTY FLAG ---
+
     public static boolean isNightmareMode = false;
 
     public DifficultyScreen(Main game) {
@@ -63,7 +63,7 @@ public class DifficultyScreen implements Screen {
         font = loadFont("ui/runescape_uf.ttf", 24);
         titleFont = loadFont("ui/runescape_uf.ttf", 36);
 
-        // Positioned side-by-side
+
         classicRect = new Rectangle(200, 150, 180, 40);
         nightmareRect = new Rectangle(420, 150, 180, 40);
     }
@@ -114,14 +114,14 @@ public class DifficultyScreen implements Screen {
         game.batch.draw(boardBC, bx + BOARD_CORNER, by, innerW, BOARD_CORNER);
         game.batch.draw(boardBR, bx + BOARD_WIDTH - BOARD_CORNER, by, BOARD_CORNER, BOARD_CORNER);
 
-        // Title
+
         layout.setText(titleFont, "CHOOSE DIFFICULTY");
         titleFont.draw(game.batch, "CHOOSE DIFFICULTY", (800 - layout.width) / 2f, 280);
 
-        // Buttons
+
         drawButton(classicRect, "CLASSIC");
 
-        // Make nightmare red for aesthetics!
+
         font.setColor(Color.RED);
         drawButton(nightmareRect, "NIGHTMARE");
         font.setColor(Color.WHITE);

@@ -453,7 +453,6 @@ public class Player {
         this.swordUses = 10;
         this.attackCooldown = 0f;
 
-        // --- RESET NIGHTMARE STATE SO YOU DON'T RESPAWN CURSED ---
         this.controlsInverted = false;
         this.invertTimer = 0f;
 
