@@ -179,10 +179,7 @@ public class PlayScreen implements Screen {
                     String playerSaveFile = "SavedFiles/" + EnterNameScreen.globalPlayerName + ".json";
                     fileHandler.saveGameState(player, playableMap, playerSaveFile);
                     quickSavesUsed++;
-                    System.out.println("Game Saved! (" + quickSavesUsed + "/" + MAX_SAVES + " saves used this level)");
-                } else {
-                    System.out.println("SAVE FAILED: You have already used your 3 saves for this level!");
-                    // Optional: You could play an error sound effect here to let them know it failed!
+
                 }
             }
 
@@ -204,7 +201,7 @@ public class PlayScreen implements Screen {
         // --- NEW: LEVEL TRANSITION VIA FLAG ---
         // If the player hits the flag, dispose of this map and jump to the next level!
         if (playableMap.isFlagReached()) {
-            System.out.println("Flag reached! Loading Level " + (levelNumber + 1));
+
             game.setScreen(new PlayScreen(game, levelNumber + 1));
             this.dispose();
             return false; // Stop updating for this frame

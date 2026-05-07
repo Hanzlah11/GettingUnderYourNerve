@@ -231,7 +231,7 @@ public class Player {
             filter.maskBits = Main.ENEMY_BIT;
             swordFixture.setFilterData(filter);
 
-            System.out.println("Swung sword! Uses left: " + swordUses);
+
         }
 
         // --- SWORD ATTACK FINISH ---
@@ -285,7 +285,7 @@ public class Player {
                     if (com.badlogic.gdx.math.MathUtils.random(0f, 100f) <= 0.10f) {
                         controlsInverted = true;
                         invertTimer = 8f; // Invert for 5 seconds!
-                        System.out.println("NIGHTMARE: CONTROLS INVERTED!");
+
                     }
                 }
             }
@@ -408,15 +408,12 @@ public class Player {
 
     public void addScore(int points) {
         score += points;
-        System.out.println("Score is now: " + score);
     }
 
     public void addHp(int hp) {
         Hp = Math.min(Hp + hp, 100);
-        System.out.println("HP is now: " + Hp);
 
         if(this.Hp <= 0 && !isDead) {
-            System.out.println("CAPTAIN CLOWN NOSE HAS DIED!");
             isDead = true;
         }
     }
@@ -435,7 +432,8 @@ public class Player {
         playerBody.setLinearVelocity(0, 0);
         playerBody.applyLinearImpulse(new Vector2(pushDirection * 10f, 10f), playerBody.getWorldCenter(), true);
 
-        System.out.println("OUCH! Player was knocked back!");
+
+
     }
 
     public int getScore(){ return score; }
@@ -462,7 +460,7 @@ public class Player {
         playerBody.setTransform(spawnX, spawnY, 0);
         playerBody.setLinearVelocity(0, 0);
 
-        System.out.println("RESPAWNED!");
+
     }
 
     public void launch(float horizontalForce, float verticalForce) {
