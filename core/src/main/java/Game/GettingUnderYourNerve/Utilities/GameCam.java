@@ -57,7 +57,7 @@ public class GameCam {
         this.camera.update();
     }
 
-    void SetDeathTarget(float ww, float wh, float hvw, float hvh, float spawnX, float spawnY) {
+    public void SetDeathTarget(float ww, float wh, float hvw, float hvh, float spawnX, float spawnY) {
         target.x = MathUtils.clamp(spawnX, hvw, ww - hvw);
         target.y = MathUtils.clamp(spawnY, hvh, wh - hvh);
     }
