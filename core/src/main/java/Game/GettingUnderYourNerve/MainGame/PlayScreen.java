@@ -122,7 +122,7 @@ public class PlayScreen implements Screen {
             return;
         }
 
-        // CRITICAL FIX: If updateLogic returns false, the map was deleted. Abort drawing![cite: 16]
+        // CRITICAL FIX: If updateLogic returns false, the map was deleted. Abort drawing!
         if (!updateLogic(delta)) {
             return;
         }
@@ -154,7 +154,7 @@ public class PlayScreen implements Screen {
                     cam.GetCam().position.y, halfVH, worldHeight - halfVH);
             }
             if (currentCutscene.isFinished()) {
-                // If the prologue just finished, shift to Level 1![cite: 21]
+                // If the prologue just finished, shift to Level 1!
                 if (levelNumber == 0) {
                     game.setScreen(new PlayScreen(game, 1));
                     this.dispose(); // CRITICAL: prevent memory leaks
@@ -182,12 +182,21 @@ public class PlayScreen implements Screen {
         }
 
         // --- 1. CAPTURE STATE BEFORE PHYSICS STEP ---
-        boolean wasDead = player.isDead;
         int healthBefore = player.getHealth();
 
         // Perform physics and player updates
         world.step(1 / 60f, 6, 2);
+        boolean wasDead = player.isDead;
         player.UpdatePlayer(delta, world, inCutscene);
+
+        // --- NEW: LEVEL TRANSITION VIA FLAG ---
+        // If the player hits the flag, dispose of this map and jump to the next level!
+        if (playableMap.isFlagReached()) {
+            System.out.println("Flag reached! Loading Level " + (levelNumber + 1));
+            game.setScreen(new PlayScreen(game, levelNumber + 1));
+            this.dispose();
+            return false; // Stop updating for this frame
+        }
 
         // --- 2. RESPAWN DETECTION ---
         // If the player was dead but is now alive, reset map triggers
@@ -208,8 +217,6 @@ public class PlayScreen implements Screen {
                 cam.startShake(0.2f, 0.4f);
             }
         }
-
-
 
         // Handle camera behavior if the player is dead
         if (player.isDead) {
@@ -259,7 +266,6 @@ public class PlayScreen implements Screen {
 
     @Override
     public void dispose() {
-        // --- RE-ADDED: Safe dispose order to prevent C++ EXCEPTION_ACCESS_VIOLATION crashes ---
         playableMap.dispose();
         player.dispose();
         if (debugRenderer != null) debugRenderer.dispose();

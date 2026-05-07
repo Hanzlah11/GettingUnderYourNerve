@@ -94,6 +94,8 @@ public class GameAssetManager {
 
     //---UI---
     public static final String TITLE_BG = "Treasure Hunters/Title UI/title_bg.png";
+    public static final String TITLE_SIMPLE_BG =
+        "Treasure Hunters/Title UI/title_simple_bg.png";
     public static final String BOARD_TL =
         "Treasure Hunters/Wood and Paper UI/Sprites/Yellow Board/1.png";
     public static final String BOARD_TC =
@@ -136,12 +138,15 @@ public class GameAssetManager {
     public static final String BOX_TEXTURE =
         "Treasure Hunters/Merchant Ship/Sprites/Box/Idle/1.png";
 
+    //---FLAG---
+    public static final String FLAG_PREFIX =
+        "Treasure Hunters/Palm Tree Island/Sprites/flag/";
+
     public void loadAllAssets() {
 
         manager.load(SKY_BASE, Texture.class);
         manager.load(WATER_DEEP, Texture.class);
         manager.load(RICK_SHEET, Texture.class);
-        manager.load(TITLE_BG, Texture.class);
         // PLAYER
         loadFrames(PLAYER_IDLE_PREFIX, 5, "%02d");
         loadFrames(PLAYER_RUN_PREFIX, 6, "%02d");
@@ -189,6 +194,8 @@ public class GameAssetManager {
         manager.load(CHAIN_LINK, Texture.class);
 
         //UI
+        manager.load(TITLE_BG, Texture.class);
+        manager.load(TITLE_SIMPLE_BG, Texture.class);
         manager.load(BOARD_TL,  Texture.class);
         manager.load(BOARD_TC,  Texture.class);
         manager.load(BOARD_TR,  Texture.class);
@@ -208,8 +215,11 @@ public class GameAssetManager {
         manager.load(BANNER_BL,  Texture.class);
         manager.load(BANNER_BR,  Texture.class);
 
-        //--TRAPS---
+        //--TRAPS--
         manager.load(BOX_TEXTURE, Texture.class);
+
+        //--FLAG--
+        loadFrames(FLAG_PREFIX, 9, "%d");
     }
 
     private void loadFrames(String prefix, int frameCount, String format) {

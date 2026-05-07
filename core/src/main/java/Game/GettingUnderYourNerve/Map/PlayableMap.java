@@ -60,7 +60,7 @@ public class PlayableMap {
     // Boxes & Trolls
     private Array<Box> boxes;
     private Array<EvilCoin> evilCoins;
-    private Array<GhostBlock> ghostBlocks; // --- NEW: GHOST BLOCKS ---
+    private Array<GhostBlock> ghostBlocks;
 
     // ---------------------------------------------------------------
     // Trigger system
@@ -68,6 +68,8 @@ public class PlayableMap {
     private Array<TrollTile>   trollTiles;
     private Array<TrollTile>   deactivatedTrollTiles;
     private Array<TriggerZone> triggerZones;
+
+    private VictoryFlag victoryFlag;
 
     // Pending trigger activations — collected during contact callback,
     // applied safely outside the Box2D step in updateTriggers()
@@ -86,7 +88,13 @@ public class PlayableMap {
     public PlayableMap(GameAssetManager assets, int level) {
         this.assets = assets;
 
-        String mapPath = (level == 0) ? "data/tilemaps/prologue.tmx" : "data/tilemaps/untitled.tmx";
+        String mapPath;
+        if(level == 0){
+            mapPath = "data/tilemaps/prologue.tmx";
+        }
+        else {
+            mapPath = "data/tilemaps/Level-" + level + ".tmx";
+        }
         this.currentLevel = level;
 
         map = new TmxMapLoader().load(mapPath);
@@ -102,7 +110,7 @@ public class PlayableMap {
         mapTraps              = new Array<>();
         boxes                 = new Array<>();
         evilCoins             = new Array<>();
-        ghostBlocks           = new Array<>(); // --- NEW ---
+        ghostBlocks           = new Array<>();
 
         trollTiles            = new Array<>();
         deactivatedTrollTiles = new Array<>();
@@ -122,6 +130,18 @@ public class PlayableMap {
         if (loadedPotions != null) {
             this.collectedPotionIds = loadedPotions;
             this.pendingDestroyPotionIds.addAll(loadedPotions);
+        }
+    }
+
+    private void createFlagFromMap(World world) {
+        MapLayer layer = map.getLayers().get("Flag");
+        if (layer == null) return;
+
+        for (MapObject object : layer.getObjects()) {
+            if (!(object instanceof RectangleMapObject)) continue;
+            Rectangle rect = ((RectangleMapObject) object).getRectangle();
+            victoryFlag = new VictoryFlag(world, rect, assets);
+            break; // We only need one flag!
         }
     }
 
@@ -146,8 +166,6 @@ public class PlayableMap {
 
                 if (tileProps.containsKey("Solid")) {
 
-                    // Skip tiles covered by a TrollZone — they get their
-                    // own dedicated body created in createTrollTilesFromMap()
                     if (isCoveredByTrollZone(col, row)) continue;
 
                     bdef.type = BodyDef.BodyType.StaticBody;
@@ -178,7 +196,16 @@ public class PlayableMap {
         createTrapsFromMap(world);
         createBoxesFromMap(world);
         createEvilCoinsFromMap(world);
-        createGhostBlocksFromMap(world); // --- NEW ---
+        createGhostBlocksFromMap(world);
+        createFlagFromMap(world);
+    }
+
+    public void updateFlag(float dt){
+        if (victoryFlag != null) victoryFlag.update(dt);
+    }
+
+    public void drawFlag(SpriteBatch batch) {
+        if (victoryFlag != null) victoryFlag.render(batch);
     }
 
     // ===============================================================
@@ -306,7 +333,7 @@ public class PlayableMap {
     }
 
     // ===============================================================
-    // createGhostBlocksFromMap (NEW)
+    // createGhostBlocksFromMap
     // ===============================================================
     private void createGhostBlocksFromMap(World world) {
         MapLayer layer = map.getLayers().get("GhostBlocks");
@@ -409,7 +436,6 @@ public class PlayableMap {
             zone.fired = false;
         }
 
-        // --- NEW: Reset all ghost blocks so they become invisible again ---
         for (GhostBlock gb : ghostBlocks) {
             gb.reset();
         }
@@ -464,6 +490,7 @@ public class PlayableMap {
         updateTraps(dt);
         updateBoxes(dt);
         updateEvilCoins(dt, player, world);
+        updateFlag(dt);
     }
 
     // ===============================================================
@@ -737,6 +764,7 @@ public class PlayableMap {
         drawEnemies(batch, dt);
         drawTraps(batch, dt);
         drawEvilCoins(batch, dt);
+        drawFlag(batch);
     }
 
     public void DrawBackGround(SpriteBatch batch, GameCam camera,
@@ -762,7 +790,6 @@ public class PlayableMap {
         return (mapHeight * tileHeight) / PPM;
     }
 
-    // Inside PlayableMap.java
     public Batman getBatman() {
         for (Enemy e : enemies) {
             if (e instanceof Batman) return (Batman) e;
@@ -789,8 +816,12 @@ public class PlayableMap {
         ghostBlocks.clear();
     }
 
-    // --- RE-ADDED ---
     public int getLevelNumber() {
         return currentLevel;
+    }
+
+    // --- NEW: Helper method to check level completion! ---
+    public boolean isFlagReached() {
+        return victoryFlag != null && victoryFlag.isReached;
     }
 }

@@ -1,5 +1,6 @@
 package Game.GettingUnderYourNerve.Utilities;
 
+import Game.GettingUnderYourNerve.Map.VictoryFlag;
 import Game.GettingUnderYourNerve.Trolls.EvilCoin;
 import Game.GettingUnderYourNerve.Trolls.LauncherBox;
 import Game.GettingUnderYourNerve.Trolls.RotatingBox;
@@ -48,6 +49,16 @@ public class WorldContactListener implements ContactListener {
             TriggerZone zone = (TriggerZone) objA;
             if (!zone.fired && playableMap != null)
                 playableMap.activateTrigger(zone.id);
+            return;
+        }
+
+        // ---- Victory Flag ----
+        if (objA instanceof Player && objB instanceof VictoryFlag) {
+            ((VictoryFlag) objB).onPlayerReach();
+            return;
+        }
+        if (objB instanceof Player && objA instanceof VictoryFlag) {
+            ((VictoryFlag) objA).onPlayerReach();
             return;
         }
 
