@@ -44,6 +44,10 @@ public class PlayScreen implements Screen {
     private BaseCutscene currentCutscene;
     private int levelNumber;
 
+    // --- NEW: SAVE LIMITER ---
+    private int quickSavesUsed = 0;
+    private final int MAX_SAVES = 3;
+
     public PlayScreen(Main game, int levelNumber) {
         this.game = game;
         this.levelNumber = levelNumber;
@@ -170,8 +174,16 @@ public class PlayScreen implements Screen {
             boolean isCtrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
 
             if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.S)) {
-                String playerSaveFile = "SavedFiles/" + EnterNameScreen.globalPlayerName + ".json";
-                fileHandler.saveGameState(player, playableMap, playerSaveFile);
+                // --- NEW: Check if they have saves remaining! ---
+                if (quickSavesUsed < MAX_SAVES) {
+                    String playerSaveFile = "SavedFiles/" + EnterNameScreen.globalPlayerName + ".json";
+                    fileHandler.saveGameState(player, playableMap, playerSaveFile);
+                    quickSavesUsed++;
+                    System.out.println("Game Saved! (" + quickSavesUsed + "/" + MAX_SAVES + " saves used this level)");
+                } else {
+                    System.out.println("SAVE FAILED: You have already used your 3 saves for this level!");
+                    // Optional: You could play an error sound effect here to let them know it failed!
+                }
             }
 
             if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.L)) {

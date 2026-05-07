@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="300" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="26" nextobjectid="165">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="300" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="26" nextobjectid="166">
  <tileset firstgid="1" source="../tilesets/outside.tsx"/>
  <objectgroup id="15" name="EvilCoins">
   <object id="44" x="1344" y="272" width="16" height="16">
@@ -106,6 +106,7 @@
   <object id="125" x="2928" y="352" width="16" height="16"/>
   <object id="153" x="4256" y="384" width="16" height="16"/>
   <object id="154" x="4336" y="304" width="16" height="16"/>
+  <object id="165" x="3792" y="208" width="16" height="16"/>
   <object id="159" x="4480" y="304" width="16" height="16"/>
   <object id="155" x="4352" y="304" width="16" height="16"/>
   <object id="158" x="4496" y="304" width="16" height="16"/>
