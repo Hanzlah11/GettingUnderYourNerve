@@ -31,9 +31,6 @@ public class GameCam {
         return camera;
     }
 
-    /**
-     * Normal gameplay update — target follows player, camera lerps to target.
-     */
     public void Update(float ww, float wh, float hvw, float hvh, float px, float py) {
         target.x = MathUtils.clamp(px, hvw, ww - hvw);
         target.y = MathUtils.clamp(py, hvh, wh - hvh);
@@ -59,11 +56,8 @@ public class GameCam {
         this.camera.position.set(x, y, 0);
         this.camera.update();
     }
-    /**
-     * Call this on player death — sets the lerp target to spawn,
-     * camera will glide there automatically on subsequent Update() calls.
-     */
-    public void SetDeathTarget(float ww, float wh, float hvw, float hvh, float spawnX, float spawnY) {
+
+    void SetDeathTarget(float ww, float wh, float hvw, float hvh, float spawnX, float spawnY) {
         target.x = MathUtils.clamp(spawnX, hvw, ww - hvw);
         target.y = MathUtils.clamp(spawnY, hvh, wh - hvh);
     }

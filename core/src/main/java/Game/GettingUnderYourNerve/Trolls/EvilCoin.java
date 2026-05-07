@@ -118,7 +118,6 @@ public class EvilCoin {
         setToDestroy = true;
     }
 
-    // dt added so stateTime always advances — animation plays whether dormant or chasing
     public void render(SpriteBatch batch, float dt) {
         if (destroyed) return;
 

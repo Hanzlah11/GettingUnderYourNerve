@@ -19,7 +19,7 @@ public class SpikedBall extends Trap {
     private Array<Body> chainLinks;
 
     private float ballRadius;
-    private float linkHeight = 16f / Main.PPM; // Adjust based on your chain image height
+    private float linkHeight = 16f / Main.PPM;// Adjust based on your chain image height
     private float linkWidth = 16f / Main.PPM;
 
     public SpikedBall(World world, MapObject object, GameAssetManager assets) {
@@ -41,29 +41,26 @@ public class SpikedBall extends Trap {
         Body anchorBody = world.createBody(anchorDef);
         Body prevBody = anchorBody;
 
-        // 3. THE CHAIN LINKS (Flexible dynamic bodies)
         for (int i = 0; i < chainLength; i++) {
             BodyDef linkDef = new BodyDef();
             linkDef.type = BodyDef.BodyType.DynamicBody;
 
-            // Spawn each link slightly lower than the last
             float linkY = startY - ((i * linkHeight) + (linkHeight / 2f));
             linkDef.position.set(startX, linkY);
             Body linkBody = world.createBody(linkDef);
 
             PolygonShape linkShape = new PolygonShape();
-            linkShape.setAsBox(linkWidth / 4f, linkHeight / 2f); // Thin hitbox
+            linkShape.setAsBox(linkWidth / 4f, linkHeight / 2f);
 
             FixtureDef linkFix = new FixtureDef();
             linkFix.shape = linkShape;
-            linkFix.density = 0.5f; // Light chains
-            linkFix.isSensor = true; // Chains shouldn't hit the player, only the ball should!
+            linkFix.density = 0.5f;
+            linkFix.isSensor = true;
             linkBody.createFixture(linkFix);
             linkShape.dispose();
 
             chainLinks.add(linkBody);
 
-            // Create a hinge joint connecting to the previous body
             RevoluteJointDef rjd = new RevoluteJointDef();
             Vector2 jointPos = new Vector2(startX, startY - (i * linkHeight));
             rjd.initialize(prevBody, linkBody, jointPos);
@@ -72,22 +69,20 @@ public class SpikedBall extends Trap {
             prevBody = linkBody;
         }
 
-        // 4. THE SPIKED BALL (Heavy dynamic body)
         BodyDef ballDef = new BodyDef();
         ballDef.type = BodyDef.BodyType.DynamicBody;
         float ballY = startY - (chainLength * linkHeight) - ballRadius;
         ballDef.position.set(startX, ballY);
 
-        // Save it to the parent Trap's 'body' variable so WorldContactListener detects it!
         this.body = world.createBody(ballDef);
 
         CircleShape ballShape = new CircleShape();
-        ballShape.setRadius(ballRadius * 0.9f); // Slightly forgiving hitbox
+        ballShape.setRadius(ballRadius * 0.9f);
 
         FixtureDef ballFix = new FixtureDef();
         ballFix.shape = ballShape;
-        ballFix.density = 0.25f;     // EXTREMELY HEAVY so it swings wildly
-        ballFix.restitution = 0.6f;  // Bouncy so it bounces off the player
+        ballFix.density = 0.25f;
+        ballFix.restitution = 0.6f;
         ballFix.friction = 0.5f;
         ballFix.filter.categoryBits = Main.TRAP_BIT;
         ballFix.filter.maskBits = (short) (Main.PLAYER_BIT | Main.GROUND_BIT);
@@ -95,7 +90,6 @@ public class SpikedBall extends Trap {
         this.body.createFixture(ballFix).setUserData(this);
         ballShape.dispose();
 
-        // Connect Ball to the final chain link
         RevoluteJointDef ballJoint = new RevoluteJointDef();
         Vector2 finalJointPos = new Vector2(startX, startY - (chainLength * linkHeight));
         ballJoint.initialize(prevBody, this.body, finalJointPos);
@@ -109,21 +103,19 @@ public class SpikedBall extends Trap {
 
     @Override
     public void render(SpriteBatch batch, float dt) {
-        // Draw all the chain links rotated dynamically
         for (Body link : chainLinks) {
             batch.draw(
                 chainTex,
                 link.getPosition().x - (linkWidth / 2f),
                 link.getPosition().y - (linkHeight / 2f),
-                linkWidth / 2f, linkHeight / 2f, // Origin for rotation
+                linkWidth / 2f, linkHeight / 2f,
                 linkWidth, linkHeight,
                 1f, 1f,
-                link.getAngle() * MathUtils.radiansToDegrees, // Rotate based on physics
+                link.getAngle() * MathUtils.radiansToDegrees,
                 0, 0, chainTex.getWidth(), chainTex.getHeight(), false, false
             );
         }
 
-        // Draw the massive ball at the end
         float renderRadius = ballRadius * 2f;
         batch.draw(
             ballTex,

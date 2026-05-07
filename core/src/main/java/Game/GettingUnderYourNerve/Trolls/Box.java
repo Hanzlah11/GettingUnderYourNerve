@@ -67,29 +67,14 @@ public abstract class Box {
         body.createFixture(fdef).setUserData(this);
         shape.dispose();
 
-        // Texture — load from asset manager
-        // Replace BOX_TEXTURE path with your real texture later
         Texture tex = assets.manager.get(GameAssetManager.BOX_TEXTURE, Texture.class);
         texture = new TextureRegion(tex);
     }
 
-    // ---------------------------------------------------------------
-    // update() — called every frame from PlayableMap.
-    // NormalBox does nothing; RotatingBox drives its state machine.
-    // ---------------------------------------------------------------
     public abstract void update(float dt);
 
-    // ---------------------------------------------------------------
-    // onPlayerLand() — called by WorldContactListener when the player
-    // contacts this box from above.
-    // playerX — the player's X position, used by RotatingBox to decide
-    //            which direction to rotate toward.
-    // ---------------------------------------------------------------
     public abstract void onPlayerLand(float playerX, Player player);
 
-    // ---------------------------------------------------------------
-    // render() — draws the box sprite, rotated to match the body angle.
-    // ---------------------------------------------------------------
     public void render(SpriteBatch batch) {
         float angleDeg = body.getAngle() * (180f / (float) Math.PI);
         float x        = body.getPosition().x - width  / 2f;

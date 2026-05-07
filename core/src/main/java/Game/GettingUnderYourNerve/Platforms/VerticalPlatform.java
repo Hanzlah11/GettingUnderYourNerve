@@ -37,13 +37,13 @@ public class VerticalPlatform extends Platform {
         body.createFixture(fdef).setUserData(this);
         shape.dispose();
 
-        // Fetch the Animation from the Vault (Using the "%02d" string format)
+
         animation = assets.getAnimation(GameAssetManager.PLATFORM_HELI_PREFIX, 4, 0.05f, Animation.PlayMode.LOOP, "%02d");
     }
 
     @Override
     public void update(float dt) {
-        stateTime += dt; // Tick the animation clock
+        stateTime += dt;
 
         Vector2 pos = body.getPosition();
         if (Math.abs(pos.y - currentTargetY) < 0.05f) {

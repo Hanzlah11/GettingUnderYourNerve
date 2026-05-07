@@ -18,7 +18,6 @@ public class GhostBlock {
     public GhostBlock(World world, MapObject object, GameAssetManager assets) {
         this.bounds = ((RectangleMapObject) object).getRectangle();
 
-        // Placeholder texture until you assign your real one
         this.texture = assets.manager.get(GameAssetManager.BOARD_TC, Texture.class);
 
         BodyDef bdef = new BodyDef();

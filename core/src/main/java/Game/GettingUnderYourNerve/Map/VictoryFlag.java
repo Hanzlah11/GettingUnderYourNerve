@@ -15,14 +15,12 @@ public class VictoryFlag {
     private float stateTime;
     private Rectangle bounds;
 
-    // Prevent "Victory" from printing 60 times a second
     public boolean isReached = false;
 
     public VictoryFlag(World world, Rectangle rect, GameAssetManager assets) {
         this.bounds = rect;
         this.stateTime = 0f;
 
-        // Load the animation (Update the frame count if your flag has more/less than 4 frames!)
         flagAnim = assets.getAnimation(GameAssetManager.FLAG_PREFIX, 9, 0.15f, Animation.PlayMode.LOOP, "%d");
 
         BodyDef bdef = new BodyDef();
@@ -51,7 +49,6 @@ public class VictoryFlag {
     public void render(SpriteBatch batch) {
         if (flagAnim != null) {
             TextureRegion currentFrame = flagAnim.getKeyFrame(stateTime);
-            // Draw it perfectly inside the rectangle you drew in Tiled
             batch.draw(currentFrame, bounds.x / Main.PPM, bounds.y / Main.PPM, bounds.width / Main.PPM, bounds.height / Main.PPM);
         }
     }
@@ -60,7 +57,7 @@ public class VictoryFlag {
         if (!isReached) {
             isReached = true;
             System.out.println("Victory");
-            // You can trigger your level transition or victory screen here later!
+
         }
     }
 }

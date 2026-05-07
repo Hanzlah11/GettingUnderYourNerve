@@ -12,7 +12,7 @@ public abstract class Platform {
     public float drawWidth;
     public float drawHeight;
 
-    // --- ANIMATION VARIABLES ---
+
     protected Animation<TextureRegion> animation;
     protected float stateTime = 0f;
 
@@ -22,10 +22,10 @@ public abstract class Platform {
         this.speed = speed;
     }
 
-    // Every child class MUST implement this method to handle its unique movement
+
     public abstract void update(float dt);
 
-    // --- UNIVERSAL DRAW METHOD ---
+
     public void draw(SpriteBatch batch) {
         if (animation != null) {
             TextureRegion currentFrame = animation.getKeyFrame(stateTime);

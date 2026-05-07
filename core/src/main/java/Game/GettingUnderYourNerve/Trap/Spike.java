@@ -21,8 +21,7 @@ public class Spike extends Trap {
     public Spike(World world, MapObject object, GameAssetManager assets) {
         super(world, object);
 
-        // Load the animation (Make sure to add SPIKE_ANIM_PREFIX to GameAssetManager!)
-        // Adjust the frame count and duration based on your actual files
+
         spikeAnimation = assets.getAnimation(GameAssetManager.SPIKE_ANIM_PREFIX, 4, 0.15f, Animation.PlayMode.LOOP, "%d");
 
         // --- Box2D Setup ---
@@ -33,14 +32,14 @@ public class Spike extends Trap {
 
         PolygonShape shape = new PolygonShape();
 
-        // We make the hitbox slightly smaller than the drawing size to be fair to the player
+
         float hitBoxW = (drawWidth / 2f) * 0.8f;
         float hitBoxH = (drawHeight / 2f) * 0.8f;
         shape.setAsBox(hitBoxW, hitBoxH);
 
         FixtureDef fdef = new FixtureDef();
         fdef.shape = shape;
-        fdef.isSensor = true; // Spikes are sensors so you walk "into" them to take damage
+        fdef.isSensor = true;
         fdef.filter.categoryBits = Main.TRAP_BIT;
 
         body.createFixture(fdef).setUserData(this);
@@ -72,7 +71,5 @@ public class Spike extends Trap {
 
     @Override
     public void onHit(Player p) {
-        // Do nothing! It's a static spike.
-        // (Later, you could play a "metal clank" sound effect right here!)
     }
 }

@@ -21,8 +21,6 @@ public class Water {
         deepWaterTexture = assets.manager.get(GameAssetManager.WATER_DEEP, Texture.class);
         deepWaterTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
 
-        // Fetch Surface Animation directly from the vault using the 3 individual frames
-        // NOTE: Adjust the "%d" to "%02d" if your files are named 01.png, 02.png instead of 1.png, 2.png
         surfaceAnimation = assets.getAnimation(GameAssetManager.WATER_SURFACE, 3, 0.15f, Animation.PlayMode.LOOP, "%d");
     }
 
@@ -38,7 +36,6 @@ public class Water {
         float totalWidth = bounds.width / Player.PPM;
         float totalHeight = bounds.height / Player.PPM;
 
-        // --- 1. DRAW DEEP WATER (Everything except the top row) ---
         float deepHeight = totalHeight - tileSize;
 
         if (deepHeight > 0) {
@@ -47,7 +44,6 @@ public class Water {
             batch.draw(deepWaterTexture, startX, startY, totalWidth, deepHeight, 0, 0, u2, v2);
         }
 
-        // --- 2. DRAW ANIMATED SURFACE (Exactly 1 tile high) ---
         float surfaceY = startY + deepHeight;
         TextureRegion currentFrame = surfaceAnimation.getKeyFrame(stateTime, true);
 

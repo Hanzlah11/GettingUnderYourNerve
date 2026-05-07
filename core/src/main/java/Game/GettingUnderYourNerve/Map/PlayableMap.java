@@ -131,9 +131,6 @@ public class PlayableMap {
         }
     }
 
-    // ===============================================================
-    // Map Parsing
-    // ===============================================================
 
     public void createPhysicsFromMap(World world) {
         TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get("Tile Layer 1");
@@ -466,9 +463,6 @@ public class PlayableMap {
         }
     }
 
-    // ===============================================================
-    // Triggers and Troll Logic
-    // ===============================================================
 
     public void activateTrigger(int triggerId) {
         for (TriggerZone zone : triggerZones) {
@@ -572,9 +566,6 @@ public class PlayableMap {
         System.out.println("CONTINGENCY ACTIVATED: TROLL FLOOR DROPPED!");
     }
 
-    // ===============================================================
-    // Update Loops
-    // ===============================================================
 
     public void updateCoins(float dt, World world) {
         Iterator<Coin> iter = coins.iterator();
@@ -681,9 +672,6 @@ public class PlayableMap {
         updateFlag(dt);
     }
 
-    // ===============================================================
-    // Render Methods
-    // ===============================================================
 
     public void RenderTileMap(OrthographicCamera camera) {
         mapRenderer.setView(camera);
