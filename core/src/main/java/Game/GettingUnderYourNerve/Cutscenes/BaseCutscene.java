@@ -3,7 +3,7 @@ package Game.GettingUnderYourNerve.Cutscenes;
 import Game.GettingUnderYourNerve.MainGame.PlayScreen;
 import Game.GettingUnderYourNerve.Player;
 import Game.GettingUnderYourNerve.Enemies.Batman;
-import Game.GettingUnderYourNerve.GameCam;
+import Game.GettingUnderYourNerve.Utilities.GameCam;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.math.Rectangle;

@@ -278,7 +278,7 @@
   <object id="100" name="Shell" type="Enemy" x="480" y="432" width="48" height="38"/>
  </objectgroup>
  <objectgroup id="3" name="Objects">
-  <object id="149" name="Player" type="PlayerStart" x="0" y="368" width="32" height="32"/>
+  <object id="149" name="Player" type="PlayerStart" x="4480" y="256" width="32" height="32"/>
  </objectgroup>
  <objectgroup id="22" name="Batman">
   <object id="64" name="Batman" x="3024" y="272" width="48" height="48"/>

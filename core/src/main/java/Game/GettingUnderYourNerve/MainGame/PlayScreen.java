@@ -3,7 +3,7 @@ package Game.GettingUnderYourNerve.MainGame;
 import Game.GettingUnderYourNerve.Cutscenes.BaseCutscene;
 import Game.GettingUnderYourNerve.Cutscenes.IntroEncounter;
 import Game.GettingUnderYourNerve.Cutscenes.PrologueCutscene;
-import Game.GettingUnderYourNerve.GameCam;
+import Game.GettingUnderYourNerve.Utilities.GameCam;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Map.PlayableMap;
 import Game.GettingUnderYourNerve.Player;
