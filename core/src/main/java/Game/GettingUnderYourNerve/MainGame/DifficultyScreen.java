@@ -38,11 +38,14 @@ public class DifficultyScreen implements Screen {
 
     public static boolean isNightmareMode = false;
 
-    public DifficultyScreen(Main game) {
+    TitleScreen titleScreen;
+    public DifficultyScreen(Main game, TitleScreen titleScreen) {
         this.game = game;
         viewport = new FitViewport(800, 480);
         touchVec = new Vector3();
         layout = new GlyphLayout();
+
+        this.titleScreen = titleScreen;
 
         background = game.assets.manager.get(GameAssetManager.TITLE_SIMPLE_BG, Texture.class);
 
@@ -141,6 +144,7 @@ public class DifficultyScreen implements Screen {
     }
 
     private void startGame() {
+        titleScreen.stopTitleScreenMusic();
         game.setScreen(new PlayScreen(game, 0)); // Launch Level 0!
         dispose();
     }

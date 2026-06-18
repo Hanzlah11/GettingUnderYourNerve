@@ -267,7 +267,7 @@ public class PlayScreen implements Screen {
         Music currentTrack;
 
         switch (levelNumber) {
-            case 0:  currentTrack = AudioManager.elevatorMusic; break;
+            case 0:  currentTrack = AudioManager.level1Music; break;
             case 1:  currentTrack = AudioManager.level1Music;   break;
             case 2:  currentTrack = AudioManager.level2Music;   break;
             case 3:  currentTrack = AudioManager.bossArenaMusic; break;

@@ -38,11 +38,14 @@ public class LeaderboardScreen implements Screen {
     private Vector3 touchVec;
     private ArrayList<FileHandler.ScoreEntry> scores;
 
-    public LeaderboardScreen(Main game) {
+    TitleScreen titleScreen;
+    public LeaderboardScreen(Main game, TitleScreen titleScreen) {
         this.game = game;
         viewport = new FitViewport(800, 480);
         touchVec = new Vector3();
         layout = new GlyphLayout();
+
+        this.titleScreen = titleScreen;
 
         background = game.assets.manager.get(GameAssetManager.TITLE_BG, Texture.class);
 

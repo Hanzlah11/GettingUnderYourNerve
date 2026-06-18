@@ -44,12 +44,16 @@ public class EnterNameScreen implements Screen, InputProcessor {
     private StringBuilder playerName;
     public static String globalPlayerName = "Player";
 
-    public EnterNameScreen(Main game) {
+    TitleScreen titleScreen;
+
+    public EnterNameScreen(Main game, TitleScreen titleScreen) {
         this.game = game;
         viewport = new FitViewport(800, 480);
         touchVec = new Vector3();
         layout = new GlyphLayout();
         playerName = new StringBuilder();
+
+        this.titleScreen = titleScreen;
 
         background = game.assets.manager.get(GameAssetManager.TITLE_SIMPLE_BG, Texture.class);
 
@@ -164,11 +168,11 @@ public class EnterNameScreen implements Screen, InputProcessor {
         if (playerName.length() > 0) {
             globalPlayerName = playerName.toString().trim();
             // --- NEW: Go to Difficulty Screen ---
-            game.setScreen(new DifficultyScreen(game));
+            game.setScreen(new DifficultyScreen(game, titleScreen));
             dispose();
         }
     }
-    
+
     @Override
     public boolean keyTyped(char character) {
         // Backspace
