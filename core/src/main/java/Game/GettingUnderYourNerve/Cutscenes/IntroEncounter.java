@@ -120,6 +120,8 @@ public class IntroEncounter extends BaseCutscene {
                 }
                 break;
         }
+        if(isFinished())
+            screen.increaseLevelAudio(0.5f);
     }
 
     @Override

@@ -24,13 +24,13 @@
   <object id="1" name="Player" x="128" y="122.667" width="32" height="32"/>
  </objectgroup>
  <objectgroup id="3" name="Batman">
-  <object id="2" name="Batman" x="20" y="108.667" width="48" height="48"/>
+  <object id="2" name="Batman" x="18" y="113.667" width="48" height="48"/>
  </objectgroup>
  <objectgroup id="5" name="CutsceneData">
   <object id="6" name="player_stop" x="407.333" y="39.3333" width="34.6667" height="130.667"/>
   <object id="7" name="batman_stop" x="245" y="38.9998" width="34.6667" height="130.667"/>
   <object id="9" name="escapebatman" x="761.333" y="58" width="21.3333" height="112.667"/>
   <object id="12" name="escapeplayer" x="761.333" y="58" width="21.3333" height="112.667"/>
-  <object id="16" name="batman_spawn" x="20" y="109.333" width="61.3333" height="46.6667"/>
+  <object id="16" name="batman_spawn" x="5" y="114.333" width="61.3333" height="46.6667"/>
  </objectgroup>
 </map>

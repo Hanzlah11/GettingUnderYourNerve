@@ -47,6 +47,13 @@ public class AudioManager
     public static Music level2Music;
     public static Music bossArenaMusic;
 
+    private static boolean wasRickPlaying = false;
+    private static boolean wasPokemonPlaying = false;
+    private static boolean wasElevatorPlaying = false;
+    private static boolean wasLevel1Playing = false;
+    private static boolean wasLevel2Playing = false;
+    private static boolean wasBossArenaPlaying = false;
+
     public static void load()
     {
 
@@ -99,6 +106,75 @@ public class AudioManager
         level2Music    = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/General/level2.mp3"));
         bossArenaMusic = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/General/bossLevel.mp3"));
 
+    }
+
+    public static void pauseAll() {
+        // 1. Record which music track was actively playing before pausing
+        wasRickPlaying = (rickMusic != null && rickMusic.isPlaying());
+        wasPokemonPlaying = (pokemonFightMusic != null && pokemonFightMusic.isPlaying());
+        wasElevatorPlaying = (elevatorMusic != null && elevatorMusic.isPlaying());
+        wasLevel1Playing = (level1Music != null && level1Music.isPlaying());
+        wasLevel2Playing = (level2Music != null && level2Music.isPlaying());
+        wasBossArenaPlaying = (bossArenaMusic != null && bossArenaMusic.isPlaying());
+
+        // 2. Pause the active music tracks
+        if (wasRickPlaying) rickMusic.pause();
+        if (wasPokemonPlaying) pokemonFightMusic.pause();
+        if (wasElevatorPlaying) elevatorMusic.pause();
+        if (wasLevel1Playing) level1Music.pause();
+        if (wasLevel2Playing) level2Music.pause();
+        if (wasBossArenaPlaying) bossArenaMusic.pause();
+
+        // 3. Pause all active running sound effect instances (like looping footsteps or alarms)
+        if (footsteps != null) footsteps.pause();
+        if (shellShoot != null) shellShoot.pause();
+        if (projectileBreak != null) projectileBreak.pause();
+        if (crabChaseShout != null) crabChaseShout.pause();
+        if (crabAttack != null) crabAttack.pause();
+        if (crabPatrol != null) crabPatrol.pause();
+
+        // Dialogue lines (Optional, in case paused mid-sentence)
+        if (ending_player1 != null) ending_player1.pause();
+        if (ending_batman1 != null) ending_batman1.pause();
+        if (batman_boss1 != null) batman_boss1.pause();
+        if (batman_boss2 != null) batman_boss2.pause();
+        if (player_boss1 != null) player_boss1.pause();
+    }
+
+    /**
+     * Resumes only the music track that was active before the pause,
+     * and resumes any ongoing sound effects. Call this when exiting the PauseScreen.
+     */
+    public static void resumeAll() {
+        // 1. Only resume the music track that was recorded as playing
+        if (wasRickPlaying && rickMusic != null) rickMusic.play();
+        if (wasPokemonPlaying && pokemonFightMusic != null) pokemonFightMusic.play();
+        if (wasElevatorPlaying && elevatorMusic != null) elevatorMusic.play();
+        if (wasLevel1Playing && level1Music != null) level1Music.play();
+        if (wasLevel2Playing && level2Music != null) level2Music.play();
+        if (wasBossArenaPlaying && bossArenaMusic != null) bossArenaMusic.play();
+
+        // 2. Clear the tracking variables to prevent state pollution
+        wasRickPlaying = false;
+        wasPokemonPlaying = false;
+        wasElevatorPlaying = false;
+        wasLevel1Playing = false;
+        wasLevel2Playing = false;
+        wasBossArenaPlaying = false;
+
+        // 3. Resume all sound effect channels that were paused mid-play
+        if (footsteps != null) footsteps.resume();
+        if (shellShoot != null) shellShoot.resume();
+        if (projectileBreak != null) projectileBreak.resume();
+        if (crabChaseShout != null) crabChaseShout.resume();
+        if (crabAttack != null) crabAttack.resume();
+        if (crabPatrol != null) crabPatrol.resume();
+
+        if (ending_player1 != null) ending_player1.resume();
+        if (ending_batman1 != null) ending_batman1.resume();
+        if (batman_boss1 != null) batman_boss1.resume();
+        if (batman_boss2 != null) batman_boss2.resume();
+        if (player_boss1 != null) player_boss1.resume();
     }
 
     public static void dispose()

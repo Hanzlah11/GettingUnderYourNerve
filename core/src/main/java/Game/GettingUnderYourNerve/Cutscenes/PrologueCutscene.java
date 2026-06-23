@@ -68,7 +68,7 @@ public class PrologueCutscene extends BaseCutscene {
                 break;
 
             case 2: // SPAWN BATMAN
-                if (stateTimer > 0.5f && !batmanSpawned) {
+                if (!batmanSpawned) {
                     if (!playedWhoosh) {
                         AudioManager.batman_spawn_whoosh.play(1.0f); // Max volume
                         playedWhoosh = true;
@@ -76,7 +76,7 @@ public class PrologueCutscene extends BaseCutscene {
                     this.batman = screen.getPlayableMap().spawnBatman(screen.getWorld(), bSpawn.x * 32, bSpawn.y * 32);
                     batmanSpawned = true;
                 }
-                if (stateTimer > 4.5f) {
+                if (stateTimer > 3.0f) {
                     state = 3;
                     stateTimer = 0;
                 }
@@ -144,13 +144,13 @@ public class PrologueCutscene extends BaseCutscene {
                 }
 
                 // PHASE 0: Dramatic Pause (Finish Whoosh + 1s Silence)
-                if (stateTimer < 1.3f) {
+                if (stateTimer < 0.5f) {
                     batman.setAction(Batman.State.IDLE);
                     batman.b2body.setLinearVelocity(0, 0);
                     batman.facingRight = true;
                 }
                 // PHASE A: Player Protests (Starts at 1.3s, lasts 5s)
-                else if (stateTimer < 6.3f) {
+                else if (stateTimer < 6.0f) {
                     if (!playedProtest) {
                         AudioManager.player_protest_wrong_guy.play(1.0f); // "I'm innocent! Wrong guy!"
                         playedProtest = true;
@@ -172,6 +172,9 @@ public class PrologueCutscene extends BaseCutscene {
                     batman.b2body.setLinearVelocity(4.0f, 0); // Awkward walk
                     if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.3f);
                     batman.setAction(Batman.State.MOVING);
+
+                    if(batman.GetXpos() > player.GetXpos() && !player.facingRight)
+                        player.facingRight = true;
                 }
                 // PHASE D: Escape
                 else {

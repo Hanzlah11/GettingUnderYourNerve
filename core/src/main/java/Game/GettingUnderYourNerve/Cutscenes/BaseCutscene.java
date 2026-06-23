@@ -32,6 +32,7 @@ public abstract class BaseCutscene {
      */
     public void skip() {
         this.finished = true;
+        screen.increaseLevelAudio(0.5f);
     }
 
     /**

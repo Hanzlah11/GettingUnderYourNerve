@@ -12,6 +12,8 @@ import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.physics.box2d.*;
 
+import static Game.GettingUnderYourNerve.Main.PPM;
+
 /**
  * Box — abstract superclass for all box types.
  *
@@ -42,11 +44,11 @@ public abstract class Box {
         Rectangle     rect  = ((RectangleMapObject) object).getRectangle();
         MapProperties props = object.getProperties();
 
-        width  = rect.width  / Main.PPM;
-        height = rect.height / Main.PPM;
+        width  = rect.width  / PPM;
+        height = rect.height / PPM;
 
-        float cx = (rect.x + rect.width  / 2f) / Main.PPM;
-        float cy = (rect.y + rect.height / 2f) / Main.PPM;
+        float cx = (rect.x + rect.width  / 2f) / PPM;
+        float cy = (rect.y + rect.height / 2f) / PPM;
 
         // Body
         BodyDef bdef = new BodyDef();
@@ -82,7 +84,7 @@ public abstract class Box {
 
         batch.draw(
             texture,
-            x, y,                       // position
+            x, y - 7.0f / PPM,                       // position
             width  / 2f, height / 2f,   // origin (center for rotation)
             width, height,              // size
             1f, 1f,                     // scale
