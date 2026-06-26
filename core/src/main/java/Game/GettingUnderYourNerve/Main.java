@@ -32,10 +32,8 @@ public class Main extends Game {
         batch = new SpriteBatch();
 
         AudioManager.load();
-
-        assets = new GameAssetManager();
-        assets.loadAllAssets();
-        assets.manager.finishLoading();
+        GameAssetManager.loadAllAssets();
+        GameAssetManager.manager.finishLoading();
 
         this.setScreen(new TitleScreen(this));
     }

@@ -96,9 +96,14 @@ public class PrologueCutscene extends BaseCutscene {
 
                     if (!playedShout) {
                         AudioManager.batman_shout_stop.play(1.0f);
+                        currentSubtitle = "BATMAN: Stop right there, criminal scum!";
                         playedShout = true;
                     }
-                    if (stateTimer > 5.5f) { state = 4; stateTimer = 0; }
+                    if (stateTimer > 5.5f)
+                    {
+                        currentSubtitle = "";
+                        state = 4;
+                        stateTimer = 0; }
                 }
                 break;
 

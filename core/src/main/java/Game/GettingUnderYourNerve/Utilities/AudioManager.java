@@ -125,7 +125,7 @@ public class AudioManager
         if (wasLevel2Playing) level2Music.pause();
         if (wasBossArenaPlaying) bossArenaMusic.pause();
 
-        // 3. Pause all active running sound effect instances (like looping footsteps or alarms)
+        // 3. Pause all active running sound effect instances
         if (footsteps != null) footsteps.pause();
         if (shellShoot != null) shellShoot.pause();
         if (projectileBreak != null) projectileBreak.pause();
@@ -133,12 +133,28 @@ public class AudioManager
         if (crabAttack != null) crabAttack.pause();
         if (crabPatrol != null) crabPatrol.pause();
 
-        // Dialogue lines (Optional, in case paused mid-sentence)
+        // 4. Pause Dialogue lines
         if (ending_player1 != null) ending_player1.pause();
         if (ending_batman1 != null) ending_batman1.pause();
         if (batman_boss1 != null) batman_boss1.pause();
         if (batman_boss2 != null) batman_boss2.pause();
         if (player_boss1 != null) player_boss1.pause();
+
+        if (player_lvl1 != null) player_lvl1.pause();
+        if (player_lvl2 != null) player_lvl2.pause();
+        if (player_lvl3 != null) player_lvl3.pause();
+        if (batman_lvl1 != null) batman_lvl1.pause();
+        if (batman_lvl2 != null) batman_lvl2.pause();
+        if (batman_lvl3 != null) batman_lvl3.pause();
+
+        // --- ADD THESE: PROLOGUE CUTSCENE AUDIO PAUSES ---
+        if (batman_spawn_whoosh != null) batman_spawn_whoosh.pause();
+        if (batman_shout_stop != null) batman_shout_stop.pause();
+        if (batman_swing_fist != null) batman_swing_fist.pause();
+        if (punch_impact_heavy != null) punch_impact_heavy.pause();
+        if (player_protest_wrong_guy != null) player_protest_wrong_guy.pause();
+        if (batman_apology_sorry != null) batman_apology_sorry.pause();
+        if (player_shout_come_back != null) player_shout_come_back.pause();
     }
 
     /**
@@ -162,7 +178,7 @@ public class AudioManager
         wasLevel2Playing = false;
         wasBossArenaPlaying = false;
 
-        // 3. Resume all sound effect channels that were paused mid-play
+        // 3. Resume all sound effect channels
         if (footsteps != null) footsteps.resume();
         if (shellShoot != null) shellShoot.resume();
         if (projectileBreak != null) projectileBreak.resume();
@@ -170,11 +186,28 @@ public class AudioManager
         if (crabAttack != null) crabAttack.resume();
         if (crabPatrol != null) crabPatrol.resume();
 
+        // 4. Resume dialogue lines
         if (ending_player1 != null) ending_player1.resume();
         if (ending_batman1 != null) ending_batman1.resume();
         if (batman_boss1 != null) batman_boss1.resume();
         if (batman_boss2 != null) batman_boss2.resume();
         if (player_boss1 != null) player_boss1.resume();
+
+        if (player_lvl1 != null) player_lvl1.resume();
+        if (player_lvl2 != null) player_lvl2.resume();
+        if (player_lvl3 != null) player_lvl3.resume();
+        if (batman_lvl1 != null) batman_lvl1.resume();
+        if (batman_lvl2 != null) batman_lvl2.resume();
+        if (batman_lvl3 != null) batman_lvl3.resume();
+
+        // --- ADD THESE: PROLOGUE CUTSCENE AUDIO RESUMES ---
+        if (batman_spawn_whoosh != null) batman_spawn_whoosh.resume();
+        if (batman_shout_stop != null) batman_shout_stop.resume();
+        if (batman_swing_fist != null) batman_swing_fist.resume();
+        if (punch_impact_heavy != null) punch_impact_heavy.resume();
+        if (player_protest_wrong_guy != null) player_protest_wrong_guy.resume();
+        if (batman_apology_sorry != null) batman_apology_sorry.resume();
+        if (player_shout_come_back != null) player_shout_come_back.resume();
     }
 
     public static void dispose()
