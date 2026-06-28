@@ -96,12 +96,11 @@ public class PrologueCutscene extends BaseCutscene {
 
                     if (!playedShout) {
                         AudioManager.batman_shout_stop.play(1.0f);
-                        currentSubtitle = "BATMAN: Stop right there, criminal scum!";
+                        currentSubtitle = "Halt evildoer! Your reign of minor\ninconveniences ends here!";
                         playedShout = true;
                     }
                     if (stateTimer > 5.5f)
                     {
-                        currentSubtitle = "";
                         state = 4;
                         stateTimer = 0; }
                 }
@@ -127,6 +126,7 @@ public class PrologueCutscene extends BaseCutscene {
                     batman.setAction(Batman.State.MOVING);
                     stateTimer = 0;
                 } else {
+                    currentSubtitle = "";
                     batman.b2body.setLinearVelocity(0, 0);
                     AudioManager.footsteps.stop(footstepId);
                     footstepId = -1;
@@ -159,6 +159,7 @@ public class PrologueCutscene extends BaseCutscene {
                     if (!playedProtest) {
                         AudioManager.player_protest_wrong_guy.play(1.0f); // "I'm innocent! Wrong guy!"
                         playedProtest = true;
+                        currentSubtitle = "Ouch! What the hell man!\nYou got the wrong guy!\nI was just going to the store!";
                     }
                     batman.setAction(Batman.State.IDLE);
                     batman.b2body.setLinearVelocity(0, 0);
@@ -168,12 +169,14 @@ public class PrologueCutscene extends BaseCutscene {
                     if (!playedSorry) {
                         AudioManager.batman_apology_sorry.play(1.0f);
                         playedSorry = true;
+                        currentSubtitle = "Wait your not the potato chip man?!\nOh shit sorry, I got the wrong guy!";
                     }
                     batman.b2body.setLinearVelocity(0, 0); // Remain still for 75% of apology
                     batman.setAction(Batman.State.IDLE);
                 }
                 // PHASE C: Walk Away (Starts at 12.3s, lasts 2s)
                 else if (stateTimer < 14.3f) {
+                    currentSubtitle = "My bad! Forget you saw me!";
                     batman.b2body.setLinearVelocity(4.0f, 0); // Awkward walk
                     if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.3f);
                     batman.setAction(Batman.State.MOVING);
@@ -202,6 +205,7 @@ public class PrologueCutscene extends BaseCutscene {
                 if (!playedChaseVoice) {
                     AudioManager.player_shout_come_back.play(1.0f);
                     playedChaseVoice = true;
+                    currentSubtitle = "Hey where the hell do you think your going!\nGet your ass back here!";
                 }
 
                 // Hold player for 4 seconds (half of 8s shout) before running
@@ -209,12 +213,14 @@ public class PrologueCutscene extends BaseCutscene {
                     player.getPlayerBody().setLinearVelocity(0, 0);
                 } else {
                     player.getPlayerBody().setLinearVelocity(8.0f, 0);
+                    currentSubtitle = "My nose is bleeding!\nGet me to the doctor immediately!";
                     if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.6f);
                 }
 
                 if (player.GetXpos() > escapePlay.x - 1.0f && stateTimer > 8.0f) {
                     AudioManager.footsteps.stop(footstepId);
                     finished = true;
+                    currentSubtitle = "";
                 }
                 break;
         }

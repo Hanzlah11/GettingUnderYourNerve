@@ -36,7 +36,6 @@ public class BossCutscene extends BaseCutscene {
         whitePixel = new Texture(pix);
         pix.dispose();
     }
-
     @Override
     public void update(float dt) {
         stateTimer += dt;
@@ -88,15 +87,31 @@ public class BossCutscene extends BaseCutscene {
                     AudioManager.batman_boss1.play();
                     playedThreat = true;
                 }
+                // You really thought you could walk in here? I've been watching you since the prologue. I have analyzed your patterns, your jumps and even your sword swings!
+
+                if(stateTimer < 3.5f)
+                    currentSubtitle = "You really thought you could walk in here?";
+                else if (stateTimer >= 3.5f && stateTimer < 8.0f)
+                    currentSubtitle = "I've been watching you since the prologue.\n I have analyzed your patterns,";
+                else
+                    currentSubtitle = "your jumps and even your sword swings.";
                 // Wait for audio to finish before moving to next dialogue
                 if (stateTimer > 10.0f) { state = 2; stateTimer = 0; }
                 break;
 
+            // But lets see how you handle a different kind of combat. I have prepared a specific simulation for someone like you. CHARIZARD I CHOOSE YOU!
             case 2: // BATMAN "CHARIZARD": batman2.wav (12 seconds)
                 if (!playedB2) {
                     AudioManager.batman_boss2.play();
                     playedB2 = true;
                 }
+
+                if(stateTimer < 5.0f)
+                    currentSubtitle = "But lets see how you handle a different kind of combat!";
+                else if (stateTimer >= 5.0f && stateTimer <= 9.5f)
+                    currentSubtitle = "I have prepared a specific simulation for someone like you!";
+                else
+                    currentSubtitle = "CHARIZARD I CHOOSE YOU!";
 
                 // RED BALL DROPS: At the end of the 12s dialogue
                 if (stateTimer > 12.0f && !playedBatmanChoose) {
@@ -110,15 +125,19 @@ public class BossCutscene extends BaseCutscene {
                 }
 
                 // Buffer: Wait 2 extra seconds to see the ball hit the ground
-                if (stateTimer > 14.0f) { state = 3; stateTimer = 0; }
+                if (stateTimer > 14.0f) { state = 3; stateTimer = 0; currentSubtitle = "";}
                 break;
-
+            // A pokemon battle, seriosuly? Fine, if this is how we do it. Go PIKACHU!
             case 3: // PLAYER "PIKACHU": player1.wav (8 seconds)
                 if (!playedP1) {
                     AudioManager.player_boss1.play();
                     playedP1 = true;
                 }
 
+                if(stateTimer < 6.0f)
+                    currentSubtitle = "A Pokemon battle, seriously?\nFine, if this is how we do it...";
+                else
+                    currentSubtitle = "GO PIKACHU!";
                 // YELLOW BALL DROPS: At the end of the 8s dialogue
                 if (stateTimer > 8.0f && !playedPlayerChoose) {
                     playedPlayerChoose = true;
@@ -129,7 +148,7 @@ public class BossCutscene extends BaseCutscene {
                 }
 
                 // Buffer: Wait 2.5 extra seconds before the final flash
-                if (stateTimer > 8.0f) { state = 4; stateTimer = 0; }
+                if (stateTimer > 8.0f) { state = 4; stateTimer = 0; currentSubtitle = "";}
                 break;
 
             case 4: // FLASHBANG & TRANSITION
@@ -145,6 +164,7 @@ public class BossCutscene extends BaseCutscene {
 
     @Override
     public void render(SpriteBatch batch) {
+        super.render(batch);
         if (batmanBall != null) batmanBall.render(batch);
         if (playerBall != null) playerBall.render(batch);
 

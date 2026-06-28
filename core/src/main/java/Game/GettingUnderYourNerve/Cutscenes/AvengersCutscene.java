@@ -46,8 +46,15 @@ public class AvengersCutscene extends BaseCutscene {
                     AudioManager.ending_player1.play();
                     playedPlayerLine = true;
                 }
+                //It's over batman! Your charizard is down! Now stop this madness and apologize for all the trolls and spikes you put me through!
+                if(stateTimer < 4.5f)
+                    currentSubtitle = "It's over batman. Your Charizard is down!";
+                else if (stateTimer >= 4.5f && stateTimer <= 8.5f)
+                    currentSubtitle = "Now stop this madness and apologize\nfor all the trolls ";
+                else
+                    currentSubtitle = "and spikes you put me through!";
                 // Wait for player audio to finish (10 seconds)
-                if (stateTimer > 10.0f) { state = 2; stateTimer = 0; }
+                if (stateTimer > 10.5f) { state = 2; stateTimer = 0; currentSubtitle = "";}
                 break;
 
             case 2: // BATMAN SPEAKS SECOND (batman1.wav - 20s)
@@ -55,8 +62,22 @@ public class AvengersCutscene extends BaseCutscene {
                     AudioManager.ending_batman1.play();
                     playedBatmanLine = true;
                 }
+                //Apologize? You still don't understand, do you? I don't lose! I simply adjust the parameters of the fight! I am vengeance! I am the night! I am Batman! And I have contingencies for everything!
+                if(stateTimer < 3.5f)
+                    currentSubtitle = "Apologize? You still don't understand, do you?";
+                else if (stateTimer >= 3.5f && stateTimer < 9.5f)
+                    currentSubtitle = "I don't lose! I simply adjust the parameters of the fight!";
+                else if (stateTimer >= 9.5f && stateTimer < 11.5f)
+                    currentSubtitle = "I am Vengeance!";
+                else if (stateTimer >= 11.5f && stateTimer < 13.5f)
+                    currentSubtitle = "I am the Night!";
+                else if (stateTimer >= 13.5f && stateTimer < 16.5f)
+                    currentSubtitle = "I am the BATMAN!";
+                else
+                    currentSubtitle = "And I have contingencies for everything!";
+
                 // Wait for Batman's long "contingency" response (20 seconds)
-                if (stateTimer > 21.0f) { state = 3; stateTimer = 0; }
+                if (stateTimer > 21.0f) { state = 3; stateTimer = 0; currentSubtitle = "";}
                 break;
 
             case 3: // THE FLOOR DISAPPEARS
