@@ -37,7 +37,7 @@ public class PokemonBattleScreen implements Screen {
     private int playerMaxHp = 100;
     private int playerHp = 100;
     private int enemyMaxHp = 300; // Was 150
-    private int enemyHp = 300;
+    private int enemyHp = 0;
 
     private Label dialogLabel;
     private Table actionMenu;

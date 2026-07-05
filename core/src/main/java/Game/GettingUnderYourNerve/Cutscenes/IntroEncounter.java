@@ -56,7 +56,6 @@ public class IntroEncounter extends BaseCutscene {
                     state = 1;
                 }
                 break;
-
             case 1: // AUTO-WALK + PLAYER DIALOGUE
                 if (player.GetXpos() < pancamPos.x) {
                     player.getPlayerBody().setLinearVelocity(2.5f, 0);
@@ -67,9 +66,31 @@ public class IntroEncounter extends BaseCutscene {
                     if (!playedPlayerVoice) {
                         playDialogue(true, level);
                         playedPlayerVoice = true;
+
+                    }
+
+                    if (level == 1)
+                    {
+                        if (stateTimer < 5.0f)
+                        {
+                            currentSubtitle = "Hey, you with the ears! My nose is still ringing!";
+                        }
+                        else
+                        {
+                            currentSubtitle = "And I am pretty sure justice doesn't involve\npunching innocent pedestrians!";
+                        }
+                    }
+                    // I've chased you this far! Through spike-pits and all those trials. Stop running and I can show you what an innocent left hook looks like.
+                    else if(level == 2)
+                    {
+                        if(stateTimer < 6.5f)
+                            currentSubtitle = "I've chased you this far! Through spike-pits\n and all those trails.";
+                        else
+                            currentSubtitle = "Stop running and I can show you\nwhat an innocent left hook looks like!";
                     }
                     // Wait for Player dialogue to finish before panning to Batman
                     if (stateTimer > getWaitTime(true, level)) {
+                        currentSubtitle = "";
                         state = 2;
                         stateTimer = 0;
                     }
@@ -94,10 +115,36 @@ public class IntroEncounter extends BaseCutscene {
                         playedBatmanVoice = true;
                     }
                 }
+
+                if (level == 1)
+                {
+                    if (stateTimer < 7.5f)
+                    {
+                        currentSubtitle = "Look citizens usually pay for the full vigilante experience.\nConsider that punch a free trail.";
+                    }
+                    else
+                    {
+                        currentSubtitle = "Anyways I have a cat to save from a toaster now!\nBye!";
+                    }
+                }
+                // Violence is never the answer, unless I'm the one doing it. Have you tried breathing execercises, I find that they help with the rage. Look theres a distraction over there!
+
+                else if (level == 2)
+                {
+                    if(stateTimer < 5.5f)
+                        currentSubtitle = "Violence is never the answer,\nunless I'm the one doing it.";
+                    else if(stateTimer >= 5.5f && stateTimer < 11.0f)
+                        currentSubtitle = "Have you tried breathing exercises? I find that\nthey help with the rage.";
+                    else
+                        currentSubtitle = "Look there's a distraction over there!";
+
+                }
+
                 // Wait for Batman's funny de-escalation to finish
                 if (stateTimer > getWaitTime(false, level)) {
                     state = 4;
                     stateTimer = 0;
+                    currentSubtitle = "";
                 }
                 break;
 
@@ -120,6 +167,8 @@ public class IntroEncounter extends BaseCutscene {
                 }
                 break;
         }
+        if(isFinished())
+            screen.increaseLevelAudio(0.5f);
     }
 
     @Override

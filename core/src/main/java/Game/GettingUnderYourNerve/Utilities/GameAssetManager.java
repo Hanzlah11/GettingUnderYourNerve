@@ -8,7 +8,8 @@ import com.badlogic.gdx.utils.Array;
 
 public class GameAssetManager {
 
-    public final AssetManager manager = new AssetManager();
+    // --- STATIC ASSET MANAGER INSTANCE ---
+    public static final AssetManager manager = new AssetManager();
 
     // --- WATER & SKY ---
     public static final String SKY_BASE =
@@ -83,7 +84,6 @@ public class GameAssetManager {
     public static final String WATER_SURFACE =
         "Treasure Hunters/Palm Tree Island/Sprites/Background/top/";
 
-
     //---TRAPS---
     public static final String SPIKE_ANIM_PREFIX =
         "Treasure Hunters/Palm Tree Island/Sprites/Objects/Spikes/";
@@ -146,7 +146,8 @@ public class GameAssetManager {
     public static final String FLAG_PREFIX =
         "Treasure Hunters/Palm Tree Island/Sprites/flag/";
 
-    public void loadAllAssets() {
+    // --- CHANGED TO STATIC ---
+    public static void loadAllAssets() {
 
         manager.load(SKY_BASE, Texture.class);
         manager.load(WATER_DEEP, Texture.class);
@@ -231,14 +232,16 @@ public class GameAssetManager {
         loadFrames(FLAG_PREFIX, 9, "%d");
     }
 
-    private void loadFrames(String prefix, int frameCount, String format) {
+    // --- CHANGED TO STATIC ---
+    private static void loadFrames(String prefix, int frameCount, String format) {
         for (int i = 1; i <= frameCount; i++) {
             String path = prefix + String.format(format, i) + ".png";
             manager.load(path, Texture.class);
         }
     }
 
-    public Animation<TextureRegion> getAnimation(
+    // --- CHANGED TO STATIC ---
+    public static Animation<TextureRegion> getAnimation(
         String prefix,
         int frameCount,
         float frameDuration,
@@ -260,7 +263,8 @@ public class GameAssetManager {
         return anim;
     }
 
-    public void dispose() {
+    // --- CHANGED TO STATIC ---
+    public static void dispose() {
         manager.dispose();
     }
 }

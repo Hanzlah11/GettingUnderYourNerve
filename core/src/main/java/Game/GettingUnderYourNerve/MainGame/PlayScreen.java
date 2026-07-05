@@ -49,6 +49,8 @@ public class PlayScreen implements Screen {
     private int quickSavesUsed = 0;
     private final int MAX_SAVES = 3;
 
+    Music currentTrack = null;
+
     public PlayScreen(Main game, int levelNumber)
     {
         this(game, levelNumber, false);
@@ -264,14 +266,13 @@ public class PlayScreen implements Screen {
     }
 
     private void startLevelMusic() {
-        Music currentTrack;
+
 
         switch (levelNumber) {
-            case 0:  currentTrack = AudioManager.elevatorMusic; break;
             case 1:  currentTrack = AudioManager.level1Music;   break;
             case 2:  currentTrack = AudioManager.level2Music;   break;
             case 3:  currentTrack = AudioManager.bossArenaMusic; break;
-            default: currentTrack = AudioManager.level1Music;   break;
+            default: currentTrack = null;   break;
         }
 
         if (currentTrack != AudioManager.elevatorMusic) AudioManager.elevatorMusic.stop();
@@ -279,13 +280,17 @@ public class PlayScreen implements Screen {
         if (currentTrack != AudioManager.level2Music) AudioManager.level2Music.stop();
         if (currentTrack != AudioManager.bossArenaMusic) AudioManager.bossArenaMusic.stop();
 
-        currentTrack.setLooping(true);
-        if(levelNumber == 0 || levelNumber == 3)
-            currentTrack.setVolume(0.05f);
-        else
+        if (currentTrack != null) {
+            currentTrack.setLooping(true);
             currentTrack.setVolume(0.15f);
+            currentTrack.play();
+        }
+    }
 
-        currentTrack.play();
+    public void increaseLevelAudio(float volume)
+    {
+        if(currentTrack != null)
+            currentTrack.setVolume(volume);
     }
 
     @Override

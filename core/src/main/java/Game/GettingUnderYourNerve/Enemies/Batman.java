@@ -180,7 +180,7 @@ public class Batman extends Enemy {
         batch.draw(
             frame,
             GetXpos() - drawWidth / 2f,
-            GetYpos() - (24 / PPM),
+            GetYpos() - (24 / PPM) - 3.5f / PPM,
             drawWidth,
             drawHeight
         );

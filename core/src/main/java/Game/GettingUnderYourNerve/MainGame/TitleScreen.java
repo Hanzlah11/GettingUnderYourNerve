@@ -7,6 +7,7 @@ import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -32,6 +33,7 @@ public class TitleScreen implements Screen {
     private Rectangle settingsRect;
     private Vector3 touchVec;
 
+    Music currentTrack;
     public TitleScreen(Main game) {
         this.game = game;
         viewport = new FitViewport(800, 480);
@@ -49,6 +51,8 @@ public class TitleScreen implements Screen {
         playRect = new Rectangle(startX, 160f, 200f, 50f);
         leaderboardRect = new Rectangle(startX, 110f, 200f, 50f);
         settingsRect = new Rectangle(startX, 60f, 200f, 50f);
+
+        startTitleScreenMusic();
     }
 
     @Override
@@ -59,11 +63,11 @@ public class TitleScreen implements Screen {
 
             if (playRect.contains(touchVec.x, touchVec.y)) {
                 AudioManager.buttonSound.play(); // PLAY SOUND
-                game.setScreen(new EnterNameScreen(game));
+                game.setScreen(new EnterNameScreen(game, this));
                 dispose();
             } else if (leaderboardRect.contains(touchVec.x, touchVec.y)) {
                 AudioManager.buttonSound.play(); // PLAY SOUND
-                game.setScreen(new LeaderboardScreen(game));
+                game.setScreen(new LeaderboardScreen(game, this));
                 dispose();
             } else if (settingsRect.contains(touchVec.x, touchVec.y)) {
                 AudioManager.buttonSound.play(); // PLAY SOUND
@@ -111,6 +115,20 @@ public class TitleScreen implements Screen {
         } catch (Exception e) {
             return new BitmapFont();
         }
+    }
+
+    void startTitleScreenMusic()
+    {
+        currentTrack = AudioManager.elevatorMusic;
+        currentTrack.setLooping(true);
+        currentTrack.setVolume(0.5f);
+        currentTrack.play();
+    }
+
+    void stopTitleScreenMusic()
+    {
+        if(currentTrack.isPlaying())
+            currentTrack.stop();
     }
 
     @Override public void resize(int width, int height) { viewport.update(width, height, true); }

@@ -61,6 +61,7 @@ public class PauseScreen implements Screen {
     private final HudBanner hudBanner = new HudBanner();
 
     public PauseScreen(Main game, PlayScreen playScreen, int health, int score) {
+        AudioManager.pauseAll();
         this.game = game;
         this.playScreen = playScreen;
         this.health = health;
@@ -70,9 +71,6 @@ public class PauseScreen implements Screen {
 
         loadAssets(game.assets);
         recalcLayout();
-
-        // --- PAUSE WORLD AUDIO ON ENTRY ---
-        pauseWorldAudio();
     }
 
     private void loadAssets(GameAssetManager assets) {
@@ -165,7 +163,7 @@ public class PauseScreen implements Screen {
 
     private void resumeGame() {
         stopRickroll();
-        resumeWorldAudio();
+        AudioManager.resumeAll();
         game.setScreen(playScreen);
     }
 
@@ -230,33 +228,6 @@ public class PauseScreen implements Screen {
             Gdx.app.error("PauseMenu", "Font load failed: " + e.getMessage());
             return new BitmapFont();
         }
-    }
-
-    private void pauseWorldAudio() {
-        // 1. Use pause() instead of stop() to keep loops alive in memory
-        AudioManager.crabPatrol.pause();
-        AudioManager.crabAttack.pause();
-        AudioManager.crabChaseShout.pause();
-
-        // Optional: Pause one-shots as well so they don't finish during the menu
-        AudioManager.shellShoot.pause();
-        AudioManager.projectileBreak.pause();
-
-        // 2. Room for Game Music:
-        // if (AudioManager.gameMusic != null && AudioManager.gameMusic.isPlaying()) {
-        //     AudioManager.gameMusic.setVolume(0.3f);
-        // }
-    }
-
-    private void resumeWorldAudio() {
-        AudioManager.crabPatrol.resume();
-        AudioManager.crabAttack.resume();
-        AudioManager.crabChaseShout.resume();
-        AudioManager.shellShoot.resume();
-        AudioManager.projectileBreak.resume();
-
-        // Restore Game Music volume
-        // if (AudioManager.gameMusic != null) AudioManager.gameMusic.setVolume(1.0f);
     }
 
     @Override public void show() { }
