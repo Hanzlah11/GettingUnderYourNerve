@@ -16,14 +16,16 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class PokemonBattleScreen implements Screen {
 
     private Main game;
     private Stage stage;
-    private FitViewport viewport;
+    private Viewport viewport;
     private ShapeRenderer shapeRenderer;
     private BitmapFont font;
 
@@ -49,7 +51,7 @@ public class PokemonBattleScreen implements Screen {
 
     public PokemonBattleScreen(Main game) {
         this.game = game;
-        this.viewport = new FitViewport(800, 480);
+        this.viewport = new ExtendViewport(800, 480);
         this.stage = new Stage(viewport, game.batch);
         this.shapeRenderer = new ShapeRenderer();
         this.font = new BitmapFont();

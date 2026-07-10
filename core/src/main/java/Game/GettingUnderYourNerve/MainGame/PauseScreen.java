@@ -15,6 +15,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -67,7 +68,7 @@ public class PauseScreen implements Screen {
         this.health = health;
         this.score = score;
         this.layout = new GlyphLayout();
-        this.uiViewport = new FitViewport(800, 480);
+        this.uiViewport = new ExtendViewport(800, 480);
 
         loadAssets(game.assets);
         recalcLayout();
