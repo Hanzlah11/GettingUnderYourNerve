@@ -16,6 +16,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -80,8 +81,8 @@ public class PlayScreen implements Screen {
         playableMap = new PlayableMap(game.assets, levelNumber);
 
         cam        = new GameCam();
-        viewport   = new FitViewport(WORLD_WIDTH / Main.PPM, WORLD_HEIGHT / Main.PPM, cam.GetCam());
-        uiViewport = new FitViewport(800, 480);
+        viewport   = new ExtendViewport(WORLD_WIDTH / Main.PPM, WORLD_HEIGHT / Main.PPM, cam.GetCam());
+        uiViewport = new ExtendViewport(800, 480);
 
         playableMap.createPhysicsFromMap(world);
         contactListener.setPlayableMap(playableMap);

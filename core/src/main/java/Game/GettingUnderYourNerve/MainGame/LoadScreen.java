@@ -15,6 +15,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -46,7 +47,7 @@ public class LoadScreen implements Screen, InputProcessor {
     public LoadScreen(Main game, PlayScreen playScreen) {
         this.game = game;
         this.playScreen = playScreen;
-        viewport = new FitViewport(800, 480);
+        viewport = new ExtendViewport(800, 480);
         touchVec = new Vector3();
         layout = new GlyphLayout();
         saveName = new StringBuilder();
@@ -103,7 +104,13 @@ public class LoadScreen implements Screen, InputProcessor {
 
         game.batch.begin();
 
-        game.batch.draw(background, 0, 0, 800, 480);
+        game.batch.draw(
+            background,
+            0,
+            0,
+            viewport.getWorldWidth(),
+            viewport.getWorldHeight()
+        );
 
         float BOARD_WIDTH = 500f;
         float BOARD_HEIGHT = 200f;

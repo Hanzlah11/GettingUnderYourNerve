@@ -175,6 +175,53 @@ public class PlayableMap {
         createEvilCoinsFromMap(world);
         createGhostBlocksFromMap(world);
         createFlagFromMap(world);
+        createInvisibleBlocks(world);
+    }
+
+    private void createInvisibleBlocks(World world) {
+
+        MapLayer layer = map.getLayers().get("InvisBlocks");
+        if (layer == null) return;
+
+        for (MapObject object : layer.getObjects()) {
+
+            if (!(object instanceof RectangleMapObject))
+                continue;
+
+            MapProperties props = object.getProperties();
+
+            if (!props.containsKey("Solid"))
+                continue;
+
+            Rectangle rect = ((RectangleMapObject)object).getRectangle();
+
+            BodyDef bdef = new BodyDef();
+            bdef.type = BodyDef.BodyType.StaticBody;
+            bdef.position.set(
+                (rect.x + rect.width / 2f) / PPM,
+                (rect.y + rect.height / 2f) / PPM
+            );
+
+            Body body = world.createBody(bdef);
+
+            PolygonShape shape = new PolygonShape();
+            shape.setAsBox(
+                (rect.width / 2f) / PPM,
+                (rect.height / 2f) / PPM
+            );
+
+            FixtureDef fdef = new FixtureDef();
+            fdef.shape = shape;
+            fdef.filter.categoryBits = Main.GROUND_BIT;
+            fdef.filter.maskBits =
+                Main.PLAYER_BIT |
+                    Main.ENEMY_BIT |
+                    Main.PROJECTILE_BIT;
+
+            body.createFixture(fdef);
+
+            shape.dispose();
+        }
     }
 
     private void createFlagFromMap(World world) {

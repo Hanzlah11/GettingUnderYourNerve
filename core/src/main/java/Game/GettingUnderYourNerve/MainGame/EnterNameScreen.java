@@ -15,6 +15,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
+import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -48,7 +49,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
 
     public EnterNameScreen(Main game, TitleScreen titleScreen) {
         this.game = game;
-        viewport = new FitViewport(800, 480);
+        viewport = new ExtendViewport(800, 480);
         touchVec = new Vector3();
         layout = new GlyphLayout();
         playerName = new StringBuilder();
@@ -111,7 +112,13 @@ public class EnterNameScreen implements Screen, InputProcessor {
         game.batch.begin();
 
         // 1. Background
-        game.batch.draw(background, 0, 0, 800, 480);
+        game.batch.draw(
+            background,
+            0,
+            0,
+            viewport.getWorldWidth(),
+            viewport.getWorldHeight()
+        );
 
         // 2. The Board UI
         float BOARD_WIDTH = 500f;
