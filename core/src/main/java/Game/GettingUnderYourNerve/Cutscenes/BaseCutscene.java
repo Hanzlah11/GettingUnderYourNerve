@@ -101,55 +101,76 @@ public abstract class BaseCutscene {
      * to ensure subtitles render pixel-perfect at screen-space positions.
      */
     public void render(SpriteBatch batch) {
-        if (currentSubtitle == null || currentSubtitle.isEmpty() || !subtitle) return;
-
-        // 1. Save the world-camera matrix so we don't disrupt map coordinates
+        // --- 1. Save the world-camera matrix so we don't disrupt map coordinates ---
         com.badlogic.gdx.math.Matrix4 oldMatrix = batch.getProjectionMatrix().cpy();
 
-        // 2. Temporarily switch batch to screen-space pixel coordinates (800x480)
+        // --- 2. Temporarily switch batch to screen-space pixel coordinates (800x480) ---
         com.badlogic.gdx.math.Matrix4 uiMatrix = new com.badlogic.gdx.math.Matrix4();
         uiMatrix.setToOrtho2D(0, 0, 800, 480);
         batch.setProjectionMatrix(uiMatrix);
 
-        // 3. Measure text bounds AND apply center-alignment for text inside the layout
-        float maxTextWidth = 600f; // Gives room for your text to align itself within
-        subtitleLayout.setText(
-            subtitleFont,
-            currentSubtitle,
-            Color.WHITE,
-            maxTextWidth,
-            com.badlogic.gdx.utils.Align.center, // <-- Forces internal lines to center
-            true
-        );
+        // =========================================================================
+        // PERMANENT "PRESS R TO SKIP" PROMPT (TOP-RIGHT CORNER)
+        // =========================================================================
+        String skipText = "Press R to skip the cutscene...";
+        com.badlogic.gdx.graphics.g2d.GlyphLayout skipLayout = new com.badlogic.gdx.graphics.g2d.GlyphLayout();
+        // We reuse your custom subtitleFont so it matches the Runescape text design style
+        skipLayout.setText(subtitleFont, skipText);
 
-        // GlyphLayout width reflects the longest line, height reflects total wrapped lines
-        float textWidth = subtitleLayout.width;
-        float textHeight = subtitleLayout.height;
+        float skipPaddingX = 15f;
+        float skipPaddingY = 8f;
+        float skipBoxWidth = skipLayout.width + (skipPaddingX * 2);
+        float skipBoxHeight = skipLayout.height + (skipPaddingY * 2);
 
-        float paddingX = 20f;
-        float paddingY = 12f;
+        // Position it flush against the top-right margins of our 800x480 frame container
+        float skipBoxX = 800f - skipBoxWidth - 20f; // 20px padding from right edge
+        float skipBoxY = 480f - skipBoxHeight - 20f; // 20px padding from top edge
 
-        // Calculate box constraints to wrap the text center-bottom perfectly
-        float boxWidth = textWidth + (paddingX * 2);
-        float boxHeight = textHeight + (paddingY * 2);
-        float boxX = (800 - boxWidth) / 2f;
-        float boxY = 45f; // Position from screen floor
-
-        // 4. Draw the semi-transparent black background box first
+        // Save and color-tint the batch for the skip background box
         Color oldColor = batch.getColor().cpy();
-        batch.setColor(0f, 0f, 0f, 0.65f); // 65% opacity black background box
-        batch.draw(blackBgTexture, boxX, boxY, boxWidth, boxHeight);
-        batch.setColor(oldColor); // Instantly restore default batch rendering tint
+        batch.setColor(0f, 0f, 0f, 0.50f); // Slightly softer 50% opacity dark bar box
+        batch.draw(blackBgTexture, skipBoxX, skipBoxY, skipBoxWidth, skipBoxHeight);
+        batch.setColor(oldColor); // Instantly restore standard color mask
 
-        // 5. FIXED: Draw the layout object directly instead of the raw string!
-        // Since Align.center relies on a target width context, we align it over the actual
-        // width of the layout text box bounding container.
-        float textX = (800 - maxTextWidth) / 2f;
-        float textY = boxY + paddingY + textHeight; // Font drawing works from the baseline up
+        // Draw prompt message text
+        subtitleFont.draw(batch, skipText, skipBoxX + skipPaddingX, skipBoxY + skipPaddingY + skipLayout.height);
+        // =========================================================================
 
-        subtitleFont.draw(batch, subtitleLayout, textX, textY);
+        // --- 3. Render Dialogue Subtitles (Only if one exists and subtitles are enabled) ---
+        if (currentSubtitle != null && !currentSubtitle.isEmpty() && subtitle) {
+            float maxTextWidth = 600f;
+            subtitleLayout.setText(
+                subtitleFont,
+                currentSubtitle,
+                Color.WHITE,
+                maxTextWidth,
+                com.badlogic.gdx.utils.Align.center,
+                true
+            );
 
-        // 6. Restore original world camera matrix back to standard rendering
+            float textWidth = subtitleLayout.width;
+            float textHeight = subtitleLayout.height;
+
+            float paddingX = 20f;
+            float paddingY = 12f;
+
+            float boxWidth = textWidth + (paddingX * 2);
+            float boxHeight = textHeight + (paddingY * 2);
+            float boxX = (800 - boxWidth) / 2f;
+            float boxY = 45f;
+
+            // Draw Subtitle Box
+            batch.setColor(0f, 0f, 0f, 0.65f);
+            batch.draw(blackBgTexture, boxX, boxY, boxWidth, boxHeight);
+            batch.setColor(oldColor);
+
+            // Draw Subtitle Text
+            float textX = (800 - maxTextWidth) / 2f;
+            float textY = boxY + paddingY + textHeight;
+            subtitleFont.draw(batch, subtitleLayout, textX, textY);
+        }
+
+        // --- 6. Restore original world camera matrix back to standard rendering ---
         batch.setProjectionMatrix(oldMatrix);
     }
 }

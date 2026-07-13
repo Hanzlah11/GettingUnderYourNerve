@@ -9,7 +9,9 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -17,7 +19,6 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -35,19 +36,30 @@ public class PokemonBattleScreen implements Screen {
     }
     private BattleState currentState = BattleState.START_WAIT;
     private float stateTimer = 0;
+    private float animationTime = 0;
 
     private int playerMaxHp = 100;
     private int playerHp = 100;
-    private int enemyMaxHp = 300; // Was 150
-    private int enemyHp = 0;
+    private int enemyMaxHp = 300;
+    private int enemyHp = 300;
+
+    private boolean damageApplied = false;
+    private boolean isPotion = false;
+    private int pendingDamage = 0;
+    private String pendingMessage = "";
 
     private Label dialogLabel;
     private Table actionMenu;
     private Skin skin;
 
     private Texture bgTexture;
-    private Texture pikachuSprite;
-    private Texture charizardSprite;
+
+    // --- ANIMATION CONTROLLERS ---
+    private Animation<TextureRegion> pikaIdleAnim, pikaTackleAnim, pikaThunderAnim, pikaHurtAnim, pikaFaintAnim;
+    private Animation<TextureRegion> charIdleAnim, charClawAnim, charFireAnim, charHurtAnim, charFaintAnim;
+
+    private Animation<TextureRegion> currentPikaAnimation;
+    private Animation<TextureRegion> currentCharAnimation;
 
     public PokemonBattleScreen(Main game) {
         this.game = game;
@@ -124,41 +136,55 @@ public class PokemonBattleScreen implements Screen {
         actionMenu.setVisible(false);
         currentState = BattleState.ANIMATING_PLAYER;
         stateTimer = 0;
+        animationTime = 0;
+        damageApplied = false;
+        isPotion = false;
+        pendingDamage = value;
 
         if (moveName.equals("Potion")) {
+            isPotion = true;
             playerHp = Math.min(playerMaxHp, playerHp + Math.abs(value));
             dialogLabel.setText("You used a Potion on PIKACHU!\nRecovered 40 HP.");
         } else {
-            // --- NEW: Play Player Attack Sound ---
             AudioManager.pokemonPlayerAttack.play();
+            dialogLabel.setText("PIKACHU used " + moveName + "!");
+            pendingMessage = "It dealt " + value + " damage.";
 
-            enemyHp = Math.max(0, enemyHp - value);
-            dialogLabel.setText("PIKACHU used " + moveName + "!\nIt dealt " + value + " damage.");
+            if (moveName.equals("Thunderbolt")) {
+                currentPikaAnimation = pikaThunderAnim;
+            } else {
+                currentPikaAnimation = pikaTackleAnim;
+            }
+            currentCharAnimation = charIdleAnim;
         }
     }
 
     private void enemyAttack() {
         currentState = BattleState.ANIMATING_ENEMY;
         stateTimer = 0;
+        animationTime = 0;
+        damageApplied = false;
 
-        // Plays immediately when Charizard strikes
-        AudioManager.pokemonPlayerDamage.play();
+        AudioManager.pokemonPlayerAttack.play();
 
         int moveChoice = MathUtils.random(1, 2);
         if (moveChoice == 1) {
-            // Nerfed from 55 to 35
-            playerHp = Math.max(0, playerHp - 35);
-            dialogLabel.setText("CHARIZARD used Fire Blast!\nIt's super effective!");
+            pendingDamage = 35;
+            dialogLabel.setText("CHARIZARD used Fire Blast!");
+            pendingMessage = "It's super effective!";
+            currentCharAnimation = charFireAnim;
         } else {
-            // Nerfed from 30 to 15
-            playerHp = Math.max(0, playerHp - 15);
-            dialogLabel.setText("CHARIZARD used Dragon Claw!\nA critical hit!");
+            pendingDamage = 15;
+            dialogLabel.setText("CHARIZARD used Dragon Claw!");
+            pendingMessage = "A critical hit!";
+            currentCharAnimation = charClawAnim;
         }
+        currentPikaAnimation = pikaIdleAnim;
     }
 
-    // --- FIX: CHANGED TO BOOLEAN SO WE CAN STOP RENDERING ---
     private boolean updateLogic(float delta) {
         stateTimer += delta;
+        animationTime += delta;
 
         switch (currentState) {
             case START_WAIT:
@@ -170,14 +196,47 @@ public class PokemonBattleScreen implements Screen {
                 break;
 
             case ANIMATING_PLAYER:
-                if (stateTimer > 2.5f) {
-                    if (enemyHp <= 0) {
-                        dialogLabel.setText("CHARIZARD fainted! You defeated BATMAN!");
-                        currentState = BattleState.WON;
-                        stateTimer = 0;
-                    } else {
+                if (isPotion) {
+                    if (stateTimer > 2.0f) {
                         currentState = BattleState.ENEMY_TURN;
                         stateTimer = 0;
+                    }
+                    break;
+                }
+
+                if (!damageApplied) {
+                    if (currentPikaAnimation.isAnimationFinished(animationTime)) {
+                        damageApplied = true;
+                        animationTime = 0;
+                        stateTimer = 0;
+                        currentPikaAnimation = pikaIdleAnim;
+
+                        AudioManager.pokemonPlayerDamage.play();
+                        enemyHp = Math.max(0, enemyHp - pendingDamage);
+
+                        if (enemyHp <= 0) {
+                            currentCharAnimation = charFaintAnim;
+                            dialogLabel.setText("CHARIZARD fainted! You defeated BATMAN!");
+                        } else {
+                            currentCharAnimation = charHurtAnim;
+                            dialogLabel.setText(pendingMessage);
+                        }
+                    }
+                } else {
+                    if (enemyHp > 0 && currentCharAnimation == charHurtAnim && currentCharAnimation.isAnimationFinished(animationTime)) {
+                        currentCharAnimation = charIdleAnim;
+                    }
+
+                    if (stateTimer > 1.5f) {
+                        if (enemyHp <= 0) {
+                            if (stateTimer > 2.5f) {
+                                currentState = BattleState.WON;
+                                stateTimer = 0;
+                            }
+                        } else {
+                            currentState = BattleState.ENEMY_TURN;
+                            stateTimer = 0;
+                        }
                     }
                 }
                 break;
@@ -189,31 +248,57 @@ public class PokemonBattleScreen implements Screen {
                 break;
 
             case ANIMATING_ENEMY:
-                if (stateTimer > 2.5f) {
-                    if (playerHp <= 0) {
-                        dialogLabel.setText("PIKACHU fainted! You blacked out!");
-                        currentState = BattleState.LOST;
+                if (!damageApplied) {
+                    if (currentCharAnimation.isAnimationFinished(animationTime)) {
+                        damageApplied = true;
+                        animationTime = 0;
                         stateTimer = 0;
-                    } else {
-                        dialogLabel.setText("What will PIKACHU do?");
-                        actionMenu.setVisible(true);
-                        currentState = BattleState.PLAYER_TURN;
+                        currentCharAnimation = charIdleAnim;
+
+                        AudioManager.pokemonPlayerDamage.play();
+                        playerHp = Math.max(0, playerHp - pendingDamage);
+
+                        if (playerHp <= 0) {
+                            currentPikaAnimation = pikaFaintAnim;
+                            dialogLabel.setText("PIKACHU fainted! You blacked out!");
+                        } else {
+                            currentPikaAnimation = pikaHurtAnim;
+                            dialogLabel.setText(pendingMessage);
+                        }
+                    }
+                } else {
+                    if (playerHp > 0 && currentPikaAnimation == pikaHurtAnim && currentPikaAnimation.isAnimationFinished(animationTime)) {
+                        currentPikaAnimation = pikaIdleAnim;
+                    }
+
+                    if (stateTimer > 1.5f) {
+                        if (playerHp <= 0) {
+                            if (stateTimer > 2.5f) {
+                                currentState = BattleState.LOST;
+                                stateTimer = 0;
+                            }
+                        } else {
+                            dialogLabel.setText("What will PIKACHU do?");
+                            actionMenu.setVisible(true);
+                            currentState = BattleState.PLAYER_TURN;
+                            stateTimer = 0;
+                        }
                     }
                 }
                 break;
 
             case WON:
-                if (stateTimer > 3.0f) {
-                    game.setScreen(new PlayScreen(game, 3, true)); // Triggers Avengers Phase!
+                if (stateTimer > 2.0f) {
+                    game.setScreen(new PlayScreen(game, 3, true));
                     dispose();
-                    return false; // <--- STOPS CRASH
+                    return false;
                 }
                 break;
 
             case LOST:
-                if (stateTimer > 3.0f) {
+                if (stateTimer > 2.0f) {
                     Gdx.app.exit();
-                    return false; // <--- STOPS CRASH
+                    return false;
                 }
                 break;
         }
@@ -222,7 +307,6 @@ public class PokemonBattleScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        // --- FIX: IF UPDATE LOGIC RETURNS FALSE, STOP IMMEDIATELY ---
         if (!updateLogic(delta)) {
             return;
         }
@@ -230,11 +314,17 @@ public class PokemonBattleScreen implements Screen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        TextureRegion pikaFrame = currentPikaAnimation.getKeyFrame(animationTime);
+        TextureRegion charFrame = currentCharAnimation.getKeyFrame(animationTime);
+
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
         game.batch.begin();
+
         game.batch.draw(bgTexture, 0, 140, 800, 340);
-        game.batch.draw(charizardSprite, 550, 260, 160, 160);
-        game.batch.draw(pikachuSprite, 80, 150, 160, 160);
+
+        game.batch.draw(charFrame, 510, 240, 200, 200);
+        game.batch.draw(pikaFrame, 80, 150, 180, 180);
+
         game.batch.end();
 
         drawHealthBars();
@@ -295,16 +385,26 @@ public class PokemonBattleScreen implements Screen {
     }
 
     private void createPlaceholderTextures() {
-        // We still need a generated background for now, so keep this part
-        Pixmap bgPix = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        bgPix.setColor(new Color(0.8f, 0.9f, 0.8f, 1));
-        bgPix.fill();
-        bgTexture = new Texture(bgPix);
-        bgPix.dispose(); // Always dispose Pixmaps after making a Texture!
+        // Fetch the background image from asset manager
+        bgTexture = game.assets.manager.get(GameAssetManager.POKEMON_BG, Texture.class);
 
-        // FETCH REAL IMAGES FROM ASSET MANAGER
-        pikachuSprite = game.assets.manager.get(GameAssetManager.PIKACHU_SPRITE, Texture.class);
-        charizardSprite = game.assets.manager.get(GameAssetManager.CHARIZARD_SPRITE, Texture.class);
+        // 1. Setup Pikachu Animations
+        pikaIdleAnim    = GameAssetManager.getAnimation(GameAssetManager.PIKA_IDLE_PREFIX, 6, 0.25f, Animation.PlayMode.LOOP, "%d");
+        pikaTackleAnim  = GameAssetManager.getAnimation(GameAssetManager.PIKA_TACKLE_PREFIX, 7, 0.15f, Animation.PlayMode.NORMAL, "%d");
+        pikaThunderAnim = GameAssetManager.getAnimation(GameAssetManager.PIKA_THUNDER_PREFIX, 8, 0.15f, Animation.PlayMode.NORMAL, "%d");
+        pikaHurtAnim    = GameAssetManager.getAnimation(GameAssetManager.PIKA_FAINT_PREFIX, 3, 0.20f, Animation.PlayMode.NORMAL, "%d");
+        pikaFaintAnim   = GameAssetManager.getAnimation(GameAssetManager.PIKA_FAINT_PREFIX, 5, 0.25f, Animation.PlayMode.NORMAL, "%d");
+
+        // 2. Setup Charizard Animations
+        charIdleAnim    = GameAssetManager.getAnimation(GameAssetManager.CHAR_IDLE_PREFIX, 6, 0.25f, Animation.PlayMode.LOOP, "%d");
+        charClawAnim    = GameAssetManager.getAnimation(GameAssetManager.CHAR_CLAW_PREFIX, 5, 0.15f, Animation.PlayMode.NORMAL, "%d");
+        charFireAnim    = GameAssetManager.getAnimation(GameAssetManager.CHAR_FIRE_PREFIX, 8, 0.15f, Animation.PlayMode.NORMAL, "%d");
+        charHurtAnim    = GameAssetManager.getAnimation(GameAssetManager.CHAR_FAINT_PREFIX, 3, 0.20f, Animation.PlayMode.NORMAL, "%d");
+        charFaintAnim   = GameAssetManager.getAnimation(GameAssetManager.CHAR_FAINT_PREFIX, 5, 0.25f, Animation.PlayMode.NORMAL, "%d");
+
+        // 3. Set entry startup default states
+        currentPikaAnimation = pikaIdleAnim;
+        currentCharAnimation = charIdleAnim;
     }
 
     @Override public void resize(int width, int height) { viewport.update(width, height, true); }
@@ -315,7 +415,6 @@ public class PokemonBattleScreen implements Screen {
 
     @Override
     public void dispose() {
-        // --- NEW: Stop battle music and sounds ---
         AudioManager.pokemonFightMusic.stop();
         AudioManager.pokemonPlayerAttack.stop();
         AudioManager.pokemonPlayerDamage.stop();
@@ -323,7 +422,6 @@ public class PokemonBattleScreen implements Screen {
         stage.dispose();
         shapeRenderer.dispose();
         font.dispose();
-        bgTexture.dispose();
         if (skin != null) skin.dispose();
     }
 }
