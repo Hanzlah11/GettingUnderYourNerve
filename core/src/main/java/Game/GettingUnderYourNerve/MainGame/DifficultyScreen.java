@@ -152,7 +152,7 @@ public class DifficultyScreen implements Screen {
 
     private void startGame() {
         titleScreen.stopTitleScreenMusic();
-        game.setScreen(new PlayScreen(game, 0)); // Launch Level 0!
+        game.setScreen(new PlayScreen(game, 1)); // Launch Level 0!
         dispose();
     }
 
