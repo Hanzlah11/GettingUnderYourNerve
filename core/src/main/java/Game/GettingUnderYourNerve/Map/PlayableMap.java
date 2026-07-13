@@ -1,6 +1,7 @@
 package Game.GettingUnderYourNerve.Map;
 
 import Game.GettingUnderYourNerve.*;
+import Game.GettingUnderYourNerve.Decorations.PalmTree;
 import Game.GettingUnderYourNerve.Enemies.Batman;
 import Game.GettingUnderYourNerve.Platforms.HorizontalPlatform;
 import Game.GettingUnderYourNerve.Platforms.VerticalPlatform;
@@ -44,6 +45,9 @@ public class PlayableMap {
     private Array<HorizontalPlatform> horizontalPlatforms;
     private Array<VerticalPlatform> verticalPlatforms;
     private Array<DevilPlatform> devilPlatforms;
+
+    //Decor
+    private Array<PalmTree> palmTrees;
 
     // Collectables
     private Array<Coin> coins;
@@ -111,12 +115,30 @@ public class PlayableMap {
         evilCoins = new Array<>();
         ghostBlocks = new Array<>();
 
+        palmTrees = new Array<>();
+
         trollTiles = new Array<>();
         deactivatedTrollTiles = new Array<>();
         triggerZones = new Array<>();
         pendingTriggers = new Array<>();
 
         backGround = new BackGround();
+    }
+
+    private void createPalmTreesFromMap() {
+
+        MapLayer layer = map.getLayers().get("PalmTree");
+        if(layer == null) return;
+
+        for(MapObject object : layer.getObjects()) {
+
+            if(!(object instanceof RectangleMapObject))
+                continue;
+
+            Rectangle rect = ((RectangleMapObject)object).getRectangle();
+
+            palmTrees.add(new PalmTree(rect));
+        }
     }
 
     public void applyLoadedCollectables(java.util.ArrayList<String> loadedCoins,
@@ -176,6 +198,7 @@ public class PlayableMap {
         createGhostBlocksFromMap(world);
         createFlagFromMap(world);
         createInvisibleBlocks(world);
+        createPalmTreesFromMap();
     }
 
     private void createInvisibleBlocks(World world) {
@@ -490,13 +513,13 @@ public class PlayableMap {
             if (name.equals("HorizontalPlatform")) {
                 float startX = rect.x;
                 float tiledStartX = props.containsKey("startX") ? props.get("startX", Float.class) : rect.x;
-                float tiledEndX = props.containsKey("endX") ? props.get("endX", Float.class) : rect.x;
+                float tiledEndX = props.containsKey("EndX") ? props.get("EndX", Float.class) : rect.x;
                 float endX = startX + (tiledEndX - tiledStartX);
                 horizontalPlatforms.add(new HorizontalPlatform(world, rect, startX, endX, speed, assets));
             } else if (name.equals("VerticalPlatform")) {
                 float startY = rect.y;
                 float tiledStartY = props.containsKey("startY") ? props.get("startY", Float.class) : rect.y;
-                float tiledEndY = props.containsKey("endY") ? props.get("endY", Float.class) : rect.y;
+                float tiledEndY = props.containsKey("EndY") ? props.get("EndY", Float.class) : rect.y;
                 float moveDistance = tiledStartY - tiledEndY;
                 float endY = startY + moveDistance;
                 verticalPlatforms.add(new VerticalPlatform(world, rect, startY, endY, speed, assets));
@@ -518,6 +541,20 @@ public class PlayableMap {
         if (!pendingTriggers.contains(triggerId, false)) {
             pendingTriggers.add(triggerId);
         }
+    }
+
+    public void updatePalmTrees(float dt){
+
+        for(PalmTree tree : palmTrees)
+            tree.update(dt);
+
+    }
+
+    public void drawPalmTrees(SpriteBatch batch){
+
+        for(PalmTree tree : palmTrees)
+            tree.render(batch);
+
     }
 
     private void updateTriggers(World world) {
@@ -717,6 +754,7 @@ public class PlayableMap {
         updateBoxes(dt);
         updateEvilCoins(dt, player, world);
         updateFlag(dt);
+        updatePalmTrees(dt);
     }
 
 
@@ -778,6 +816,7 @@ public class PlayableMap {
         drawTraps(batch, dt);
         drawEvilCoins(batch, dt);
         drawFlag(batch);
+        drawPalmTrees(batch);
     }
 
     public void DrawBackGround(SpriteBatch batch, GameCam camera, Viewport viewport, float dt) {

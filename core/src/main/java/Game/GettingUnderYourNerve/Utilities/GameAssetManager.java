@@ -146,6 +146,9 @@ public class GameAssetManager {
     public static final String FLAG_PREFIX =
         "Treasure Hunters/Palm Tree Island/Sprites/flag/";
 
+    //Palm Tree Plain
+    public static final String PALM_PLAIN_PREFIX = "Treasure Hunters/Palm Tree Island/Sprites/Back Palm Trees/Plain/Back Palm Tree Regular ";
+
     // --- CHANGED TO STATIC ---
     public static void loadAllAssets() {
 
@@ -230,6 +233,9 @@ public class GameAssetManager {
 
         //--FLAG--
         loadFrames(FLAG_PREFIX, 9, "%d");
+
+        //PALM PLAIN
+        loadFrames(PALM_PLAIN_PREFIX, 4, "%02d");
     }
 
     // --- CHANGED TO STATIC ---
