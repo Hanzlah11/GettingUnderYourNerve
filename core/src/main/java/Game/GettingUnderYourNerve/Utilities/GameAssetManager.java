@@ -101,6 +101,8 @@ public class GameAssetManager {
     //---FLAG---
     public static final String FLAG_PREFIX = "Treasure Hunters/Palm Tree Island/Sprites/flag/";
 
+    public static final String PALM_PLAIN_PREFIX = "Treasure Hunters/Palm Tree Island/Sprites/Back Palm Trees/Plain/Back Palm Tree Regular ";
+
     public static void loadAllAssets() {
         manager.load(SKY_BASE, Texture.class);
         manager.load(WATER_DEEP, Texture.class);
@@ -191,6 +193,8 @@ public class GameAssetManager {
 
         //--FLAG--
         loadFrames(FLAG_PREFIX, 9, "%d");
+
+        loadFrames(PALM_PLAIN_PREFIX, 4, "%02d");
     }
 
     private static void loadFrames(String prefix, int frameCount, String format) {

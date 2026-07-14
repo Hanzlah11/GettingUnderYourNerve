@@ -54,7 +54,6 @@ public class PokemonBattleScreen implements Screen {
 
     private Texture bgTexture;
 
-    // --- ANIMATION CONTROLLERS ---
     private Animation<TextureRegion> pikaIdleAnim, pikaTackleAnim, pikaThunderAnim, pikaHurtAnim, pikaFaintAnim;
     private Animation<TextureRegion> charIdleAnim, charClawAnim, charFireAnim, charHurtAnim, charFaintAnim;
 
@@ -385,24 +384,20 @@ public class PokemonBattleScreen implements Screen {
     }
 
     private void createPlaceholderTextures() {
-        // Fetch the background image from asset manager
         bgTexture = game.assets.manager.get(GameAssetManager.POKEMON_BG, Texture.class);
 
-        // 1. Setup Pikachu Animations
         pikaIdleAnim    = GameAssetManager.getAnimation(GameAssetManager.PIKA_IDLE_PREFIX, 6, 0.25f, Animation.PlayMode.LOOP, "%d");
         pikaTackleAnim  = GameAssetManager.getAnimation(GameAssetManager.PIKA_TACKLE_PREFIX, 7, 0.15f, Animation.PlayMode.NORMAL, "%d");
         pikaThunderAnim = GameAssetManager.getAnimation(GameAssetManager.PIKA_THUNDER_PREFIX, 8, 0.15f, Animation.PlayMode.NORMAL, "%d");
         pikaHurtAnim    = GameAssetManager.getAnimation(GameAssetManager.PIKA_FAINT_PREFIX, 3, 0.20f, Animation.PlayMode.NORMAL, "%d");
         pikaFaintAnim   = GameAssetManager.getAnimation(GameAssetManager.PIKA_FAINT_PREFIX, 5, 0.25f, Animation.PlayMode.NORMAL, "%d");
 
-        // 2. Setup Charizard Animations
         charIdleAnim    = GameAssetManager.getAnimation(GameAssetManager.CHAR_IDLE_PREFIX, 6, 0.25f, Animation.PlayMode.LOOP, "%d");
         charClawAnim    = GameAssetManager.getAnimation(GameAssetManager.CHAR_CLAW_PREFIX, 5, 0.15f, Animation.PlayMode.NORMAL, "%d");
         charFireAnim    = GameAssetManager.getAnimation(GameAssetManager.CHAR_FIRE_PREFIX, 8, 0.15f, Animation.PlayMode.NORMAL, "%d");
         charHurtAnim    = GameAssetManager.getAnimation(GameAssetManager.CHAR_FAINT_PREFIX, 3, 0.20f, Animation.PlayMode.NORMAL, "%d");
         charFaintAnim   = GameAssetManager.getAnimation(GameAssetManager.CHAR_FAINT_PREFIX, 5, 0.25f, Animation.PlayMode.NORMAL, "%d");
 
-        // 3. Set entry startup default states
         currentPikaAnimation = pikaIdleAnim;
         currentCharAnimation = charIdleAnim;
     }

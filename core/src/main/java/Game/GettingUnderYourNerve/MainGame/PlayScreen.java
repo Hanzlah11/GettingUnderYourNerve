@@ -208,9 +208,9 @@ public class PlayScreen implements Screen {
         }
 
         int healthBefore = player.getHealth();
+        world.step(1 / 60f, 6, 2);
         boolean wasDead = player.isDead;
 
-        world.step(1 / 60f, 6, 2);
 
         // --- LEVEL 3 TERMINATION (Contingency Ending) ---
         if (player.isDead && levelNumber == 3 && isPostBattle) {
