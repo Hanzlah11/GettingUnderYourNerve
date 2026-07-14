@@ -39,7 +39,7 @@ public class AudioManager
 
     // Pokemon
     public static Music pokemonFightMusic;
-    public static Sound pokemonPlayerAttack, pokemonPlayerDamage;
+    public static Sound pokemonPlayerAttack, pokemonPlayerDamage, pokeBallBounce;
 
     // Game Music
     public static Music elevatorMusic;
@@ -99,6 +99,7 @@ public class AudioManager
         pokemonFightMusic = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/Pokemon/fightMusic.mp3"));
         pokemonPlayerAttack = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Pokemon/playerAttack.wav"));
         pokemonPlayerDamage = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Pokemon/playerDamage.wav"));
+        pokeBallBounce = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Pokemon/pokeball.wav"));
 
         // Game music
         elevatorMusic  = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/General/elevator.mp3"));
@@ -242,7 +243,7 @@ public class AudioManager
         if (pokemonFightMusic != null) pokemonFightMusic.dispose();
         if (pokemonPlayerAttack != null) pokemonPlayerAttack.dispose();
         if (pokemonPlayerDamage != null) pokemonPlayerDamage.dispose();
-
+        if (pokeBallBounce != null) pokeBallBounce.dispose();
         if (elevatorMusic != null) elevatorMusic.dispose();
         if (level1Music != null) level1Music.dispose();
         if (level2Music != null) level2Music.dispose();

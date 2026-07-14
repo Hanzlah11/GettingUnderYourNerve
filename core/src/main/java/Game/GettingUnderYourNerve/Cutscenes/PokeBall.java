@@ -1,10 +1,14 @@
 package Game.GettingUnderYourNerve.Cutscenes;
 
 import Game.GettingUnderYourNerve.Main;
+import Game.GettingUnderYourNerve.Utilities.AudioManager;
+import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+
+import static Game.GettingUnderYourNerve.Utilities.GameAssetManager.manager;
 
 public class PokeBall {
     private float x, y;
@@ -19,12 +23,7 @@ public class PokeBall {
         this.y = startY;
         this.targetY = targetY;
 
-        // Generate a simple colored circle (Red for Batman/Charizard, Yellow for Player/Pikachu)
-        Pixmap pixmap = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
-        pixmap.setColor(isPlayer ? Color.YELLOW : Color.RED);
-        pixmap.fillCircle(8, 8, 8);
-        texture = new Texture(pixmap);
-        pixmap.dispose();
+        this.texture = manager.get(GameAssetManager.POKEBALL_SPRITE, Texture.class);
     }
 
     public void update(float dt) {
@@ -37,6 +36,11 @@ public class PokeBall {
             y = targetY;
             if (bounces < 2) {
                 velocityY = -velocityY * 0.4f; // Bounce effect
+
+                if (AudioManager.pokeBallBounce != null) {
+                    AudioManager.pokeBallBounce.play();
+                }
+
                 bounces++;
             } else {
                 finished = true;
@@ -45,7 +49,7 @@ public class PokeBall {
     }
 
     public void render(SpriteBatch batch) {
-        float size = 16f / Main.PPM; // Scale to physics world size
+        float size = 30f / Main.PPM; // Scale to physics world size
         batch.draw(texture, x - size/2f, y - size/2f, size, size);
     }
 
