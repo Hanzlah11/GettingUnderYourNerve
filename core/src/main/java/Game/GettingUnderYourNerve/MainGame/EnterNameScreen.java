@@ -192,7 +192,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
             if (!isTyping) {
                 for (int i = 0; i < 4; i++) {
                     if (slotRects[i].contains(touchVec.x, touchVec.y)) {
-                        AudioManager.buttonSound.play();
+                        AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
                         if (slotNames[i] == null) {
                             isTyping = true;
                             selectedSlot = i;
@@ -209,10 +209,10 @@ public class EnterNameScreen implements Screen, InputProcessor {
                 }
             } else {
                 if (confirmRect.contains(touchVec.x, touchVec.y)) {
-                    AudioManager.buttonSound.play();
+                    AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
                     confirmName();
                 } else if (cancelRect.contains(touchVec.x, touchVec.y)) {
-                    AudioManager.buttonSound.play();
+                    AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
                     isTyping = false;
                 }
             }
@@ -224,7 +224,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
 
             for (int i = 0; i < 4; i++) {
                 if (slotRects[i].contains(touchVec.x, touchVec.y) && slotNames[i] != null) {
-                    AudioManager.buttonSound.play();
+                    AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
                     FileHandler.deleteSlot(i);
                     refreshSlots();
                 }
@@ -247,7 +247,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
         if (character == '\b' && typedName.length() > 0) {
             typedName.setLength(typedName.length() - 1);
         } else if (character == '\r' || character == '\n') {
-            AudioManager.buttonSound.play();
+            AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
             confirmName();
         } else if (Character.isLetterOrDigit(character) || character == ' ') {
             if (typedName.length() < 12) {

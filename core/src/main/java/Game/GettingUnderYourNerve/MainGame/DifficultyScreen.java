@@ -89,11 +89,11 @@ public class DifficultyScreen implements Screen {
             viewport.unproject(touchVec);
 
             if (classicRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.buttonSound.play();
+                AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
                 isNightmareMode = false;
                 startGame();
             } else if (nightmareRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.buttonSound.play();
+                AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
                 isNightmareMode = true;
                 startGame();
             }

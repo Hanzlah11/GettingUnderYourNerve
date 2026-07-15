@@ -43,7 +43,8 @@ public class AvengersCutscene extends BaseCutscene {
 
             case 1: // PLAYER SPEAKS FIRST (player1.wav - 10s)
                 if (!playedPlayerLine) {
-                    AudioManager.ending_player1.play();
+                    // Play using the volume slider, scaled at full relative volume (1.0f)
+                    AudioManager.playSFX(AudioManager.ending_player1, 1.0f);
                     playedPlayerLine = true;
                 }
                 //It's over batman! Your charizard is down! Now stop this madness and apologize for all the trolls and spikes you put me through!
@@ -59,7 +60,8 @@ public class AvengersCutscene extends BaseCutscene {
 
             case 2: // BATMAN SPEAKS SECOND (batman1.wav - 20s)
                 if (!playedBatmanLine) {
-                    AudioManager.ending_batman1.play();
+                    // Play using the volume slider, scaled at full relative volume (1.0f)
+                    AudioManager.playSFX(AudioManager.ending_batman1, 1.0f);
                     playedBatmanLine = true;
                 }
                 //Apologize? You still don't understand, do you? I don't lose! I simply adjust the parameters of the fight! I am vengeance! I am the night! I am Batman! And I have contingencies for everything!

@@ -95,7 +95,7 @@ public class Projectile
         {
             if (!hasPlayedCollisionEffects) {
                 AudioManager.shellShoot.stop();
-                AudioManager.projectileBreak.play(0.5f);
+                AudioManager.playSFX(AudioManager.projectileBreak);
                 hasPlayedCollisionEffects = true;
             }
             if (destroyingAnimation.isAnimationFinished(stateTime))

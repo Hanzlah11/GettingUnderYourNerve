@@ -36,6 +36,7 @@ public class BossCutscene extends BaseCutscene {
         whitePixel = new Texture(pix);
         pix.dispose();
     }
+
     @Override
     public void update(float dt) {
         stateTimer += dt;
@@ -84,7 +85,7 @@ public class BossCutscene extends BaseCutscene {
                     batman.setAction(Batman.State.IDLE);
                 }
                 if (!playedThreat) {
-                    AudioManager.batman_boss1.play();
+                    AudioManager.playSFX(AudioManager.batman_boss1, 1.0f); // --- UPDATED ---
                     playedThreat = true;
                 }
                 // You really thought you could walk in here? I've been watching you since the prologue. I have analyzed your patterns, your jumps and even your sword swings!
@@ -102,7 +103,7 @@ public class BossCutscene extends BaseCutscene {
             // But lets see how you handle a different kind of combat. I have prepared a specific simulation for someone like you. CHARIZARD I CHOOSE YOU!
             case 2: // BATMAN "CHARIZARD": batman2.wav (12 seconds)
                 if (!playedB2) {
-                    AudioManager.batman_boss2.play();
+                    AudioManager.playSFX(AudioManager.batman_boss2, 1.0f); // --- UPDATED ---
                     playedB2 = true;
                 }
 
@@ -130,7 +131,7 @@ public class BossCutscene extends BaseCutscene {
             // A pokemon battle, seriosuly? Fine, if this is how we do it. Go PIKACHU!
             case 3: // PLAYER "PIKACHU": player1.wav (8 seconds)
                 if (!playedP1) {
-                    AudioManager.player_boss1.play();
+                    AudioManager.playSFX(AudioManager.player_boss1, 1.0f); // --- UPDATED ---
                     playedP1 = true;
                 }
 
@@ -154,7 +155,7 @@ public class BossCutscene extends BaseCutscene {
             case 4: // FLASHBANG & TRANSITION
                 flashAlpha = Math.min(1f, flashAlpha + (dt * 1.5f));
                 if (flashAlpha >= 1f) {
-                    whitePixel.dispose();
+                    dispose(); // Disposes both BaseCutscene components and local whitePixel cleanly
                     screen.startPokemonBattle();
                     finished = true;
                 }
@@ -168,7 +169,7 @@ public class BossCutscene extends BaseCutscene {
         if (batmanBall != null) batmanBall.render(batch);
         if (playerBall != null) playerBall.render(batch);
 
-        if (flashAlpha > 0) {
+        if (flashAlpha > 0 && whitePixel != null) {
             Color c = batch.getColor();
             batch.setColor(1, 1, 1, flashAlpha);
             // Draw massive white box covering the camera
@@ -181,8 +182,7 @@ public class BossCutscene extends BaseCutscene {
     public void skip() {
         super.skip();
 
-        // Dispose the transition texture
-        if (whitePixel != null) whitePixel.dispose();
+        dispose(); // Clean up textures/fonts cleanly upon skip
 
         // --- NEW: STOP ALL BOSS DIALOGUE AUDIO ---
         // This prevents the dialogue from continuing over the Pokemon battle music
@@ -192,5 +192,14 @@ public class BossCutscene extends BaseCutscene {
 
         // Transition to the battle screen
         screen.startPokemonBattle();
+    }
+
+    @Override
+    public void dispose() {
+        super.dispose(); // Cleans up subtitleFont and blackBgTexture from BaseCutscene
+        if (whitePixel != null) {
+            whitePixel.dispose();
+            whitePixel = null;
+        }
     }
 }
