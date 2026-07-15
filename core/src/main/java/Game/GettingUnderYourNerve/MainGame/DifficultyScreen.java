@@ -7,6 +7,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
@@ -15,15 +16,21 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class DifficultyScreen implements Screen {
 
     private Main game;
-    private Viewport viewport;
-    private Texture background;
 
+    private String playerName;
+    private int slotIndex;
+    private float startX;
+    private float startY;
+    private int startLevel;
+
+    private TitleScreen titleScreen;
+
+    private Viewport viewport;
 
     private Texture boardTL, boardTC, boardTR, boardCL, boardCC, boardCR, boardBL, boardBC, boardBR;
     private Texture btnL, btnC, btnR;
@@ -36,19 +43,20 @@ public class DifficultyScreen implements Screen {
     private Rectangle nightmareRect;
     private Vector3 touchVec;
 
-
     public static boolean isNightmareMode = false;
 
-    TitleScreen titleScreen;
-    public DifficultyScreen(Main game, TitleScreen titleScreen) {
+    public DifficultyScreen(Main game, TitleScreen titleScreen, String playerName, int slotIndex, float startX, float startY, int startLevel) {
         this.game = game;
+        this.titleScreen = titleScreen;
+        this.playerName = playerName;
+        this.slotIndex = slotIndex;
+        this.startX = startX;
+        this.startY = startY;
+        this.startLevel = startLevel;
+
         viewport = new ExtendViewport(800, 480);
         touchVec = new Vector3();
         layout = new GlyphLayout();
-
-        this.titleScreen = titleScreen;
-
-        background = game.assets.manager.get(GameAssetManager.TITLE_SIMPLE_BG, Texture.class);
 
         boardTL = game.assets.manager.get(GameAssetManager.BOARD_TL, Texture.class);
         boardTC = game.assets.manager.get(GameAssetManager.BOARD_TC, Texture.class);
@@ -66,7 +74,6 @@ public class DifficultyScreen implements Screen {
 
         font = loadFont("ui/runescape_uf.ttf", 24);
         titleFont = loadFont("ui/runescape_uf.ttf", 36);
-
 
         classicRect = new Rectangle(200, 150, 180, 40);
         nightmareRect = new Rectangle(420, 150, 180, 40);
@@ -92,20 +99,20 @@ public class DifficultyScreen implements Screen {
             }
         }
 
-        ScreenUtils.clear(0, 0, 0, 1);
+        // 1. Clear Screen
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        // 2. Render Live Tiled Map Background from TitleScreen
+        titleScreen.getMenuBg().updateAndRender(delta, game.batch);
+
+        // 3. Render UI Components on Top
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
 
         game.batch.begin();
-        game.batch.draw(
-            background,
-            0,
-            0,
-            viewport.getWorldWidth(),
-            viewport.getWorldHeight()
-        );
 
-        // Draw Board
+        // Draw Wooden Board Backing
         float BOARD_WIDTH = 500f;
         float BOARD_HEIGHT = 200f;
         float BOARD_CORNER = 32f;
@@ -124,13 +131,10 @@ public class DifficultyScreen implements Screen {
         game.batch.draw(boardBC, bx + BOARD_CORNER, by, innerW, BOARD_CORNER);
         game.batch.draw(boardBR, bx + BOARD_WIDTH - BOARD_CORNER, by, BOARD_CORNER, BOARD_CORNER);
 
-
         layout.setText(titleFont, "CHOOSE DIFFICULTY");
         titleFont.draw(game.batch, "CHOOSE DIFFICULTY", (800 - layout.width) / 2f, 280);
 
-
         drawButton(classicRect, "CLASSIC");
-
 
         font.setColor(Color.RED);
         drawButton(nightmareRect, "NIGHTMARE");
@@ -152,7 +156,7 @@ public class DifficultyScreen implements Screen {
 
     private void startGame() {
         titleScreen.stopTitleScreenMusic();
-        game.setScreen(new PlayScreen(game, 3)); // Launch Level 0!
+        game.setScreen(new PlayScreen(game, playerName, slotIndex, startX, startY, startLevel));
         dispose();
     }
 

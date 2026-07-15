@@ -17,7 +17,9 @@ import Game.GettingUnderYourNerve.Trap.Trap;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import Game.GettingUnderYourNerve.Utilities.GameCam;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.MapProperties;
@@ -74,8 +76,9 @@ public class PlayableMap {
     private Array<TriggerZone> triggerZones;
     private Array<Integer> pendingTriggers;
 
-    // Progression
+    // Progression & Checkpoints
     private VictoryFlag victoryFlag;
+    private Array<CheckpointFlag> checkpointFlags;
     private int currentLevel;
 
     // Save/Load IDs
@@ -114,29 +117,25 @@ public class PlayableMap {
         boxes = new Array<>();
         evilCoins = new Array<>();
         ghostBlocks = new Array<>();
-
         palmTrees = new Array<>();
-
         trollTiles = new Array<>();
         deactivatedTrollTiles = new Array<>();
         triggerZones = new Array<>();
         pendingTriggers = new Array<>();
+        checkpointFlags = new Array<>();
 
         backGround = new BackGround();
     }
 
     private void createPalmTreesFromMap() {
-
         MapLayer layer = map.getLayers().get("PalmTree");
         if(layer == null) return;
 
         for(MapObject object : layer.getObjects()) {
-
             if(!(object instanceof RectangleMapObject))
                 continue;
 
             Rectangle rect = ((RectangleMapObject)object).getRectangle();
-
             palmTrees.add(new PalmTree(rect));
         }
     }
@@ -152,7 +151,6 @@ public class PlayableMap {
             this.pendingDestroyPotionIds.addAll(loadedPotions);
         }
     }
-
 
     public void createPhysicsFromMap(World world) {
         TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get("Tile Layer 1");
@@ -197,22 +195,20 @@ public class PlayableMap {
         createEvilCoinsFromMap(world);
         createGhostBlocksFromMap(world);
         createFlagFromMap(world);
+        createCheckpointsFromMap(world);
         createInvisibleBlocks(world);
         createPalmTreesFromMap();
     }
 
     private void createInvisibleBlocks(World world) {
-
         MapLayer layer = map.getLayers().get("InvisBlocks");
         if (layer == null) return;
 
         for (MapObject object : layer.getObjects()) {
-
             if (!(object instanceof RectangleMapObject))
                 continue;
 
             MapProperties props = object.getProperties();
-
             if (!props.containsKey("Solid"))
                 continue;
 
@@ -242,7 +238,6 @@ public class PlayableMap {
                     Main.PROJECTILE_BIT;
 
             body.createFixture(fdef);
-
             shape.dispose();
         }
     }
@@ -256,6 +251,17 @@ public class PlayableMap {
             Rectangle rect = ((RectangleMapObject) object).getRectangle();
             victoryFlag = new VictoryFlag(world, rect, assets);
             break;
+        }
+    }
+
+    private void createCheckpointsFromMap(World world) {
+        MapLayer layer = map.getLayers().get("Checkpoints");
+        if (layer == null) return;
+
+        for (MapObject object : layer.getObjects()) {
+            if (!(object instanceof RectangleMapObject)) continue;
+            Rectangle rect = ((RectangleMapObject) object).getRectangle();
+            checkpointFlags.add(new CheckpointFlag(world, rect, assets));
         }
     }
 
@@ -533,7 +539,6 @@ public class PlayableMap {
         }
     }
 
-
     public void activateTrigger(int triggerId) {
         for (TriggerZone zone : triggerZones) {
             if (zone.id == triggerId && zone.fired) return;
@@ -544,17 +549,13 @@ public class PlayableMap {
     }
 
     public void updatePalmTrees(float dt){
-
         for(PalmTree tree : palmTrees)
             tree.update(dt);
-
     }
 
     public void drawPalmTrees(SpriteBatch batch){
-
         for(PalmTree tree : palmTrees)
             tree.render(batch);
-
     }
 
     private void updateTriggers(World world) {
@@ -650,7 +651,6 @@ public class PlayableMap {
         System.out.println("CONTINGENCY ACTIVATED: TROLL FLOOR DROPPED!");
     }
 
-
     public void updateCoins(float dt, World world) {
         Iterator<Coin> iter = coins.iterator();
         while (iter.hasNext()) {
@@ -743,6 +743,10 @@ public class PlayableMap {
         if (victoryFlag != null) victoryFlag.update(dt);
     }
 
+    public void updateCheckpoints(float dt) {
+        for (CheckpointFlag flag : checkpointFlags) flag.update(dt);
+    }
+
     public void UpdateMap(OrthographicCamera camera, float dt, World world, Player player) {
         updateTriggers(world);
         updatePlatforms(dt, player);
@@ -754,9 +758,9 @@ public class PlayableMap {
         updateBoxes(dt);
         updateEvilCoins(dt, player, world);
         updateFlag(dt);
+        updateCheckpoints(dt);
         updatePalmTrees(dt);
     }
-
 
     public void RenderTileMap(OrthographicCamera camera) {
         mapRenderer.setView(camera);
@@ -805,6 +809,10 @@ public class PlayableMap {
         if (victoryFlag != null) victoryFlag.render(batch);
     }
 
+    public void drawCheckpoints(SpriteBatch batch) {
+        for (CheckpointFlag flag : checkpointFlags) flag.draw(batch);
+    }
+
     public void DrawElements(SpriteBatch batch, float dt) {
         drawPlatforms(batch);
         drawBoxes(batch);
@@ -816,6 +824,7 @@ public class PlayableMap {
         drawTraps(batch, dt);
         drawEvilCoins(batch, dt);
         drawFlag(batch);
+        drawCheckpoints(batch);
         drawPalmTrees(batch);
     }
 
@@ -883,6 +892,6 @@ public class PlayableMap {
         boxes.clear();
         evilCoins.clear();
         ghostBlocks.clear();
+        checkpointFlags.clear();
     }
-
 }
