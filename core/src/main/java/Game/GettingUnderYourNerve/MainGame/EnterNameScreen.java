@@ -1,64 +1,77 @@
 package Game.GettingUnderYourNerve.MainGame;
 
-import Game.GettingUnderYourNerve.Main;
-import Game.GettingUnderYourNerve.Utilities.AudioManager;
-import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import Game.GettingUnderYourNerve.Main;
+import Game.GettingUnderYourNerve.Utilities.AudioManager;
+import Game.GettingUnderYourNerve.Utilities.FileHandler;
+import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 
 public class EnterNameScreen implements Screen, InputProcessor {
 
     private Main game;
+    private TitleScreen titleScreen;
     private Viewport viewport;
-    private Texture background;
+    private Vector3 touchVec;
 
-
-    private Texture boardTL, boardTC, boardTR;
-    private Texture boardCL, boardCC, boardCR;
-    private Texture boardBL, boardBC, boardBR;
-
-
+    // --- Textures ---
+    private Texture boardTL, boardTC, boardTR, boardCL, boardCC, boardCR, boardBL, boardBC, boardBR;
     private Texture btnL, btnC, btnR;
 
+    // --- Fonts ---
     private BitmapFont font;
     private BitmapFont titleFont;
     private GlyphLayout layout;
 
-    private Rectangle backRect;
-    private Rectangle startRect;
-    private Vector3 touchVec;
+    // --- UI Bounds ---
+    private Rectangle[] slotRects = new Rectangle[4];
+    private Rectangle confirmRect;
+    private Rectangle cancelRect;
 
-
-    private StringBuilder playerName;
-    public static String globalPlayerName = "Player";
-
-    TitleScreen titleScreen;
+    // --- Logic State ---
+    private String[] slotNames = new String[4];
+    private boolean isTyping = false;
+    private int selectedSlot = -1;
+    private StringBuilder typedName = new StringBuilder();
 
     public EnterNameScreen(Main game, TitleScreen titleScreen) {
         this.game = game;
-        viewport = new ExtendViewport(800, 480);
-        touchVec = new Vector3();
-        layout = new GlyphLayout();
-        playerName = new StringBuilder();
-
         this.titleScreen = titleScreen;
+        this.viewport = new ExtendViewport(800, 480);
+        this.touchVec = new Vector3();
+        this.layout = new GlyphLayout();
 
-        background = game.assets.manager.get(GameAssetManager.TITLE_SIMPLE_BG, Texture.class);
+        loadAssets();
+        refreshSlots();
 
-        // Load Board
+        // Calculate Rectangles
+        float btnWidth = 300f;
+        float btnHeight = 45f;
+        float startX = (800 - btnWidth) / 2f;
+        float startY = 320f;
+        float gap = 60f;
+
+        for (int i = 0; i < 4; i++) {
+            slotRects[i] = new Rectangle(startX, startY - (i * gap), btnWidth, btnHeight);
+        }
+
+        confirmRect = new Rectangle(420, 150, 130, 40);
+        cancelRect = new Rectangle(250, 150, 130, 40);
+    }
+
+    private void loadAssets() {
         boardTL = game.assets.manager.get(GameAssetManager.BOARD_TL, Texture.class);
         boardTC = game.assets.manager.get(GameAssetManager.BOARD_TC, Texture.class);
         boardTR = game.assets.manager.get(GameAssetManager.BOARD_TR, Texture.class);
@@ -69,94 +82,179 @@ public class EnterNameScreen implements Screen, InputProcessor {
         boardBC = game.assets.manager.get(GameAssetManager.BOARD_BC, Texture.class);
         boardBR = game.assets.manager.get(GameAssetManager.BOARD_BR, Texture.class);
 
-        // Load Buttons
         btnL = game.assets.manager.get(GameAssetManager.BUTTON_L, Texture.class);
         btnC = game.assets.manager.get(GameAssetManager.BUTTON_C, Texture.class);
         btnR = game.assets.manager.get(GameAssetManager.BUTTON_R, Texture.class);
 
         font = loadFont("ui/runescape_uf.ttf", 24);
         titleFont = loadFont("ui/runescape_uf.ttf", 36);
+    }
 
-        backRect = new Rectangle(200, 100, 150, 40);
-        startRect = new Rectangle(450, 100, 150, 40);
+    private void refreshSlots() {
+        for (int i = 0; i < 4; i++) {
+            String[] data = FileHandler.getSlotInfo(i);
+            slotNames[i] = (data != null) ? data[0] : null;
+        }
     }
 
     @Override
     public void show() {
-
         Gdx.input.setInputProcessor(this);
     }
 
     @Override
     public void render(float delta) {
-        // Handle Mouse Clicks
-        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-            touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-            viewport.unproject(touchVec);
+        handleMouseInput();
 
-            if (backRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.buttonSound.play();
-                Gdx.input.setInputProcessor(null); // Clear input!
-                game.setScreen(new TitleScreen(game));
-                dispose();
-            } else if (startRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.buttonSound.play();
-                startGame();
-            }
-        }
+        // 1. Clear Screen
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        ScreenUtils.clear(0, 0, 0, 1);
+        // 2. Render Live Tiled Map Background
+        titleScreen.getMenuBg().updateAndRender(delta, game.batch);
+
+        // 3. Render UI Overlays on Top
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
 
         game.batch.begin();
 
-        // 1. Background
-        game.batch.draw(
-            background,
-            0,
-            0,
-            viewport.getWorldWidth(),
-            viewport.getWorldHeight()
-        );
+        // Title text
+        layout.setText(titleFont, "SELECT A SAVE SLOT");
+        titleFont.draw(game.batch, "SELECT A SAVE SLOT", (800 - layout.width) / 2f, 420);
 
-        // 2. The Board UI
-        float BOARD_WIDTH = 500f;
-        float BOARD_HEIGHT = 200f;
-        float BOARD_CORNER = 32f;
-        float bx = (800 - BOARD_WIDTH) / 2f;
-        float by = 180f; // Shifted up slightly
-        float innerW = BOARD_WIDTH - BOARD_CORNER * 2;
-        float innerH = BOARD_HEIGHT - BOARD_CORNER * 2;
+        // Instructions
+        font.setColor(Color.LIGHT_GRAY);
+        layout.setText(font, "Left Click: Play  |  Right Click: Delete");
+        font.draw(game.batch, "Left Click: Play  |  Right Click: Delete", (800 - layout.width) / 2f, 390);
+        font.setColor(Color.WHITE);
 
-        game.batch.draw(boardTL, bx, by + BOARD_HEIGHT - BOARD_CORNER, BOARD_CORNER, BOARD_CORNER);
-        game.batch.draw(boardTC, bx + BOARD_CORNER, by + BOARD_HEIGHT - BOARD_CORNER, innerW, BOARD_CORNER);
-        game.batch.draw(boardTR, bx + BOARD_WIDTH - BOARD_CORNER, by + BOARD_HEIGHT - BOARD_CORNER, BOARD_CORNER, BOARD_CORNER);
-        game.batch.draw(boardCL, bx, by + BOARD_CORNER, BOARD_CORNER, innerH);
-        game.batch.draw(boardCC, bx + BOARD_CORNER, by + BOARD_CORNER, innerW, innerH);
-        game.batch.draw(boardCR, bx + BOARD_WIDTH - BOARD_CORNER, by + BOARD_CORNER, BOARD_CORNER, innerH);
-        game.batch.draw(boardBL, bx, by, BOARD_CORNER, BOARD_CORNER);
-        game.batch.draw(boardBC, bx + BOARD_CORNER, by, innerW, BOARD_CORNER);
-        game.batch.draw(boardBR, bx + BOARD_WIDTH - BOARD_CORNER, by, BOARD_CORNER, BOARD_CORNER);
-
-
-        layout.setText(titleFont, "ENTER YOUR NAME");
-        titleFont.draw(game.batch, "ENTER YOUR NAME", (800 - layout.width) / 2f, 340);
-
-        layout.setText(font, playerName.toString());
-        float nameWidth = layout.width;
-        float startX = (800 - nameWidth) / 2f;
-
-        font.draw(game.batch, playerName.toString(), startX, 260);
-
-        if (System.currentTimeMillis() / 500 % 2 == 0) {
-            font.draw(game.batch, "_", startX + nameWidth, 260);
+        // Active save slots
+        for (int i = 0; i < 4; i++) {
+            String label = (slotNames[i] == null) ? "Slot " + (i + 1) + " - Empty" : slotNames[i];
+            drawButton(slotRects[i], label);
         }
 
-        drawButton(backRect, "BACK");
-        drawButton(startRect, "START");
+        // Popup Naming Window (if creating a save)
+        if (isTyping) {
+            drawTypingPopup();
+        }
 
         game.batch.end();
+    }
+
+    private void drawTypingPopup() {
+        float bW = 400f;
+        float bH = 200f;
+        float corner = 32f;
+        float bx = (800 - bW) / 2f;
+        float by = 130f;
+        float inW = bW - corner * 2;
+        float inH = bH - corner * 2;
+
+        // Draw Wooden Board Backing and Frame
+        game.batch.draw(boardTL, bx, by + bH - corner, corner, corner);
+        game.batch.draw(boardTC, bx + corner, by + bH - corner, inW, corner);
+        game.batch.draw(boardTR, bx + bW - corner, by + bH - corner, corner, corner);
+        game.batch.draw(boardCL, bx, by + corner, corner, inH);
+        game.batch.draw(boardCC, bx + corner, by + corner, inW, inH);
+        game.batch.draw(boardCR, bx + bW - corner, by + corner, corner, inH);
+        game.batch.draw(boardBL, bx, by, corner, corner);
+        game.batch.draw(boardBC, bx + corner, by, inW, corner);
+        game.batch.draw(boardBR, bx + bW - corner, by, corner, corner);
+
+        layout.setText(font, "ENTER CHARACTER NAME:");
+        font.draw(game.batch, "ENTER CHARACTER NAME:", (800 - layout.width) / 2f, 290);
+
+        // Input String Display
+        layout.setText(font, typedName.toString());
+        float nameWidth = layout.width;
+        float textStartX = (800 - nameWidth) / 2f;
+
+        font.setColor(Color.YELLOW);
+        font.draw(game.batch, typedName.toString(), textStartX, 240);
+
+        // Blinking cursor
+        if (System.currentTimeMillis() / 500 % 2 == 0) {
+            font.draw(game.batch, "_", textStartX + nameWidth, 240);
+        }
+        font.setColor(Color.WHITE);
+
+        drawButton(cancelRect, "CANCEL");
+        drawButton(confirmRect, "START");
+    }
+
+    private void handleMouseInput() {
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+            viewport.unproject(touchVec);
+
+            if (!isTyping) {
+                for (int i = 0; i < 4; i++) {
+                    if (slotRects[i].contains(touchVec.x, touchVec.y)) {
+                        AudioManager.buttonSound.play();
+                        if (slotNames[i] == null) {
+                            isTyping = true;
+                            selectedSlot = i;
+                            typedName.setLength(0);
+                        } else {
+                            String[] currentData = FileHandler.getSlotInfo(i);
+                            float savedX = Float.parseFloat(currentData[1]);
+                            float savedY = Float.parseFloat(currentData[2]);
+                            int savedLevel = (currentData.length > 3) ? Integer.parseInt(currentData[3]) : 0;
+
+                            game.setScreen(new DifficultyScreen(game, titleScreen, currentData[0], i, savedX, savedY, savedLevel));
+                        }
+                    }
+                }
+            } else {
+                if (confirmRect.contains(touchVec.x, touchVec.y)) {
+                    AudioManager.buttonSound.play();
+                    confirmName();
+                } else if (cancelRect.contains(touchVec.x, touchVec.y)) {
+                    AudioManager.buttonSound.play();
+                    isTyping = false;
+                }
+            }
+        }
+
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT) && !isTyping) {
+            touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+            viewport.unproject(touchVec);
+
+            for (int i = 0; i < 4; i++) {
+                if (slotRects[i].contains(touchVec.x, touchVec.y) && slotNames[i] != null) {
+                    AudioManager.buttonSound.play();
+                    FileHandler.deleteSlot(i);
+                    refreshSlots();
+                }
+            }
+        }
+    }
+
+    private void confirmName() {
+        if (typedName.length() > 0) {
+            String name = typedName.toString().trim();
+            FileHandler.saveSlot(selectedSlot, name, 0f, 0f, 0);
+            game.setScreen(new DifficultyScreen(game, titleScreen, name, selectedSlot, 0f, 0f, 0));
+        }
+    }
+
+    @Override
+    public boolean keyTyped(char character) {
+        if (!isTyping) return false;
+
+        if (character == '\b' && typedName.length() > 0) {
+            typedName.setLength(typedName.length() - 1);
+        } else if (character == '\r' || character == '\n') {
+            AudioManager.buttonSound.play();
+            confirmName();
+        } else if (Character.isLetterOrDigit(character) || character == ' ') {
+            if (typedName.length() < 12) {
+                typedName.append(character);
+            }
+        }
+        return true;
     }
 
     private void drawButton(Rectangle rect, String label) {
@@ -165,54 +263,8 @@ public class EnterNameScreen implements Screen, InputProcessor {
         game.batch.draw(btnR, rect.x + rect.width - 20, rect.y, 20, rect.height);
 
         layout.setText(font, label);
-        font.setColor(Color.WHITE);
-        font.draw(game.batch, label,
-            rect.x + (rect.width - layout.width) / 2f,
-            rect.y + (rect.height + layout.height) / 2f);
+        font.draw(game.batch, label, rect.x + (rect.width - layout.width) / 2f, rect.y + (rect.height + layout.height) / 2f);
     }
-
-    private void startGame() {
-        if (playerName.length() > 0) {
-            globalPlayerName = playerName.toString().trim();
-            // --- NEW: Go to Difficulty Screen ---
-            game.setScreen(new DifficultyScreen(game, titleScreen));
-            dispose();
-        }
-    }
-
-    @Override
-    public boolean keyTyped(char character) {
-        // Backspace
-        if (character == '\b' && playerName.length() > 0) {
-            playerName.setLength(playerName.length() - 1);
-        }
-        // Enter / Return
-        else if (character == '\r' || character == '\n') {
-            AudioManager.buttonSound.play();
-            startGame();
-        }
-        // Valid characters (Letters, Numbers, Space) up to 12 chars
-        else if (Character.isLetterOrDigit(character) || character == ' ') {
-            if (playerName.length() < 12) {
-                playerName.append(character);
-            }
-        }
-        return true;
-    }
-
-    @Override public boolean keyDown(int keycode) { return false; }
-    @Override public boolean keyUp(int keycode) { return false; }
-    @Override public boolean touchDown(int screenX, int screenY, int pointer, int button) { return false; }
-    @Override public boolean touchUp(int screenX, int screenY, int pointer, int button) { return false; }
-
-    @Override
-    public boolean touchCancelled(int i, int i1, int i2, int i3) {
-        return false;
-    }
-
-    @Override public boolean touchDragged(int screenX, int screenY, int pointer) { return false; }
-    @Override public boolean mouseMoved(int screenX, int screenY) { return false; }
-    @Override public boolean scrolled(float amountX, float amountY) { return false; }
 
     private BitmapFont loadFont(String filename, int size) {
         try {
@@ -224,13 +276,22 @@ public class EnterNameScreen implements Screen, InputProcessor {
     }
 
     @Override public void resize(int width, int height) { viewport.update(width, height, true); }
-    @Override public void pause() {}
-    @Override public void resume() {}
-    @Override public void hide() {}
+    @Override public void pause() { }
+    @Override public void resume() { }
+    @Override public void hide() { Gdx.input.setInputProcessor(null); }
 
     @Override
     public void dispose() {
-        if (font != null) font.dispose();
-        if (titleFont != null) titleFont.dispose();
+        if(font != null) font.dispose();
+        if(titleFont != null) titleFont.dispose();
     }
+
+    @Override public boolean keyDown(int keycode) { return false; }
+    @Override public boolean keyUp(int keycode) { return false; }
+    @Override public boolean touchDown(int screenX, int screenY, int pointer, int button) { return false; }
+    @Override public boolean touchUp(int screenX, int screenY, int pointer, int button) { return false; }
+    @Override public boolean touchCancelled(int screenX, int screenY, int pointer, int button) { return false; }
+    @Override public boolean touchDragged(int screenX, int screenY, int pointer) { return false; }
+    @Override public boolean mouseMoved(int screenX, int screenY) { return false; }
+    @Override public boolean scrolled(float amountX, float amountY) { return false; }
 }

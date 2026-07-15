@@ -1,10 +1,11 @@
 package Game.GettingUnderYourNerve.Utilities;
 
 import Game.GettingUnderYourNerve.Map.VictoryFlag;
+import Game.GettingUnderYourNerve.Map.CheckpointFlag; // --- NEW CHECKPOINT IMPORT ---
 import Game.GettingUnderYourNerve.Trolls.EvilCoin;
 import Game.GettingUnderYourNerve.Trolls.LauncherBox;
 import Game.GettingUnderYourNerve.Trolls.RotatingBox;
-import Game.GettingUnderYourNerve.Trolls.GhostBlock; // --- NEW ---
+import Game.GettingUnderYourNerve.Trolls.GhostBlock;
 import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Collectables.Potion;
 import Game.GettingUnderYourNerve.Enemies.Crab;
@@ -21,9 +22,6 @@ import com.badlogic.gdx.physics.box2d.*;
 
 public class WorldContactListener implements ContactListener {
 
-    // ---------------------------------------------------------------
-    // PlayableMap reference — set once from PlayScreen after map is created.
-    // ---------------------------------------------------------------
     private PlayableMap playableMap;
 
     public void setPlayableMap(PlayableMap map) {
@@ -112,6 +110,15 @@ public class WorldContactListener implements ContactListener {
                 handleProjectileGroundCollision(fixA, fixB);
                 break;
 
+            // ---- Checkpoint Flag Collision Case ----
+            case Main.PLAYER_BIT | Main.CHECKPOINT_BIT:
+                if (fixA.getFilterData().categoryBits == Main.PLAYER_BIT) {
+                    ((CheckpointFlag) fixB.getUserData()).onCheckpointHit((Player) fixA.getUserData());
+                } else {
+                    ((CheckpointFlag) fixA.getUserData()).onCheckpointHit((Player) fixB.getUserData());
+                }
+                break;
+
             // ---- Box interactions ----
             case Main.PLAYER_BIT | Main.GROUND_BIT: {
                 Fixture groundFix = fixA.getFilterData().categoryBits == Main.GROUND_BIT ? fixA : fixB;
@@ -123,15 +130,12 @@ public class WorldContactListener implements ContactListener {
                 if (playerData instanceof Player) {
                     Player p = (Player) playerData;
 
-                    // Only react when player is landing from above,
-                    // not when walking into the side of the box
                     if (p.getPlayerBody().getLinearVelocity().y <= 0) {
-
                         if (groundData instanceof RotatingBox) {
                             ((RotatingBox) groundData).onPlayerLand(p.GetXpos(), p);
                         } else if (groundData instanceof LauncherBox) {
                             ((LauncherBox) groundData).onPlayerLand(p);
-                        } else if (groundData instanceof GhostBlock) { // --- NEW: GHOST BLOCK REVEAL ---
+                        } else if (groundData instanceof GhostBlock) {
                             ((GhostBlock) groundData).reveal();
                         }
                     }
@@ -176,14 +180,14 @@ public class WorldContactListener implements ContactListener {
         Projectile projectile;
         Player     player;
         if (userDataA instanceof Projectile) {
-            projectile = (Projectile) userDataA;
+            projectile = (userDataA instanceof Projectile) ? (Projectile) userDataA : null; // Safe casting checks
             player     = (Player)     userDataB;
         } else {
             projectile = (Projectile) userDataB;
             player     = (Player)     userDataA;
         }
-        projectile.setToDestroy();
-        player.hit(10, projectile.GetXpos());
+        if (projectile != null) projectile.setToDestroy();
+        player.hit(10, projectile != null ? projectile.GetXpos() : player.GetXpos());
     }
 
     private void handlePlayerEnemyCollision(Fixture a, Fixture b) {

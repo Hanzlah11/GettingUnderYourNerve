@@ -2,6 +2,7 @@ package Game.GettingUnderYourNerve;
 
 import Game.GettingUnderYourNerve.MainGame.DifficultyScreen;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
+import Game.GettingUnderYourNerve.Utilities.FileHandler;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
@@ -30,7 +31,15 @@ public class Player {
 
     public float spawnX;
     public float spawnY;
+    public int currentLevel;
+
     public boolean isDead = false;
+
+    // ---------------- SAVE SLOT DATA ----------------
+    public String playerName;
+    public int saveSlotIndex;
+    public float checkpointX;
+    public float checkpointY;
 
     // ---------------- STATES ----------------
     public enum State {
@@ -131,6 +140,10 @@ public class Player {
         spawnX = startX + (drawWidth / 2f);
         spawnY = startY + (drawHeight / 2f);
 
+        // Default checkpoint to initial spawn
+        checkpointX = spawnX;
+        checkpointY = spawnY;
+
         BodyDef bdef = new BodyDef();
         bdef.type = BodyDef.BodyType.DynamicBody;
         bdef.position.set(startX + (drawWidth / 2f), startY + (drawHeight / 2f));
@@ -159,7 +172,7 @@ public class Player {
         fdef.density = 1f;
 
         fdef.filter.categoryBits = Main.PLAYER_BIT;
-        fdef.filter.maskBits = (short) (Main.GROUND_BIT | Main.ENEMY_BIT | Main.PROJECTILE_BIT | Main.COIN_BIT | Main.POTION_BIT | Main.WATER_BIT | Main.TRAP_BIT | Main.TRIGGER_BIT);
+        fdef.filter.maskBits = (short) (Main.GROUND_BIT | Main.ENEMY_BIT | Main.PROJECTILE_BIT | Main.COIN_BIT | Main.POTION_BIT | Main.WATER_BIT | Main.TRAP_BIT | Main.TRIGGER_BIT | Main.CHECKPOINT_BIT);
 
         playerBody.createFixture(fdef).setUserData(this);
         playerBody.setFixedRotation(true);
@@ -178,6 +191,32 @@ public class Player {
         swordFixture = playerBody.createFixture(sdef);
         swordFixture.setUserData(this);
         swordShape.dispose();
+    }
+
+    // ---------------------------------------------------
+    // AUTO-SAVE MECHANICS
+    // ---------------------------------------------------
+    public void setPlayerData(String name, int slotIndex, float x, float y, int level) {
+        this.playerName = name;
+        this.saveSlotIndex = slotIndex;
+        this.currentLevel = level;
+
+        if (x == 0 && y == 0) {
+            this.checkpointX = this.spawnX;
+            this.checkpointY = this.spawnY;
+        } else {
+            this.checkpointX = x;
+            this.checkpointY = y;
+        }
+        playerBody.setTransform(this.checkpointX, this.checkpointY, 0);
+    }
+
+    public void setCheckpointCoords(float x, float y) {
+        this.checkpointX = x;
+        this.checkpointY = y;
+
+        // Now includes this.currentLevel!
+        FileHandler.saveSlot(this.saveSlotIndex, this.playerName, x, y, this.currentLevel);
     }
 
     // ---------------------------------------------------
@@ -456,10 +495,9 @@ public class Player {
         this.controlsInverted = false;
         this.invertTimer = 0f;
 
-        playerBody.setTransform(spawnX, spawnY, 0);
+        // Uses the newly updated checkpoint variables instead of the original spawn variables
+        playerBody.setTransform(checkpointX, checkpointY, 0);
         playerBody.setLinearVelocity(0, 0);
-
-
     }
 
     public void launch(float horizontalForce, float verticalForce) {

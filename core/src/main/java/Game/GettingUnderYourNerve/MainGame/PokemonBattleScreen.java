@@ -30,6 +30,13 @@ public class PokemonBattleScreen implements Screen {
     private ShapeRenderer shapeRenderer;
     private BitmapFont font;
 
+    // --- SAVE DATA VARIABLES ---
+    private String playerName;
+    private int slotIndex;
+    private float startX;
+    private float startY;
+    private int startLevel;
+
     public enum BattleState {
         START_WAIT, PLAYER_TURN, ANIMATING_PLAYER,
         ENEMY_TURN, ANIMATING_ENEMY, WON, LOST
@@ -60,8 +67,15 @@ public class PokemonBattleScreen implements Screen {
     private Animation<TextureRegion> currentPikaAnimation;
     private Animation<TextureRegion> currentCharAnimation;
 
-    public PokemonBattleScreen(Main game) {
+    // Updated Constructor to catch the save data
+    public PokemonBattleScreen(Main game, String playerName, int slotIndex, float startX, float startY, int startLevel) {
         this.game = game;
+        this.playerName = playerName;
+        this.slotIndex = slotIndex;
+        this.startX = startX;
+        this.startY = startY;
+        this.startLevel = startLevel;
+
         this.viewport = new ExtendViewport(800, 480);
         this.stage = new Stage(viewport, game.batch);
         this.shapeRenderer = new ShapeRenderer();
@@ -288,7 +302,8 @@ public class PokemonBattleScreen implements Screen {
 
             case WON:
                 if (stateTimer > 2.0f) {
-                    game.setScreen(new PlayScreen(game, 3, true));
+                    // Uses the stored variables to load back into PlayScreen accurately
+                    game.setScreen(new PlayScreen(game, playerName, slotIndex, startX, startY, startLevel, true));
                     dispose();
                     return false;
                 }
