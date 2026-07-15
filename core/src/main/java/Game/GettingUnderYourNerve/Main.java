@@ -26,6 +26,7 @@ public class Main extends Game {
     public static final short TRAP_BIT       = 128;
     public static final short SWORD_BIT      = 256;
     public static final short TRIGGER_BIT    = 512;
+    public static final short CHECKPOINT_BIT = 1024;
 
     @Override
     public void create() {

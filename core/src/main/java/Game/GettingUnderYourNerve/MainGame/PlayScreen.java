@@ -6,7 +6,6 @@ import Game.GettingUnderYourNerve.Utilities.GameCam;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Map.PlayableMap;
 import Game.GettingUnderYourNerve.Player;
-import Game.GettingUnderYourNerve.Utilities.FileHandler;
 import Game.GettingUnderYourNerve.Utilities.WorldContactListener;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -17,13 +16,17 @@ import com.badlogic.gdx.physics.box2d.Box2DDebugRenderer;
 import com.badlogic.gdx.physics.box2d.World;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class PlayScreen implements Screen {
 
     private Main game;
-    private FileHandler fileHandler;
+
+    // --- Save Slot Data ---
+    private String playerName;
+    private int slotIndex;
+    private float startX;
+    private float startY;
 
     // --- Box2D ---
     private World world;
@@ -46,26 +49,25 @@ public class PlayScreen implements Screen {
     private int levelNumber;
     private boolean isPostBattle = false;
 
-    // --- Save Limiter (From Version 2) ---
-    private int quickSavesUsed = 0;
-    private final int MAX_SAVES = 3;
-
     Music currentTrack = null;
 
-    public PlayScreen(Main game, int levelNumber)
-    {
-        this(game, levelNumber, false);
+    // Updated Constructor to receive save data
+    public PlayScreen(Main game, String playerName, int slotIndex, float startX, float startY, int levelNumber) {
+        this(game, playerName, slotIndex, startX, startY, levelNumber, false);
         startLevelMusic();
     }
 
-    public PlayScreen(Main game, int levelNumber, boolean isPostBattle) {
+    public PlayScreen(Main game, String playerName, int slotIndex, float startX, float startY, int levelNumber, boolean isPostBattle) {
         this.game = game;
+        this.playerName = playerName;
+        this.slotIndex = slotIndex;
+        this.startX = startX;
+        this.startY = startY;
         this.levelNumber = levelNumber;
         this.isPostBattle = isPostBattle;
 
         startLevelMusic();
 
-        // Dynamic world sizing based on level
         this.WORLD_WIDTH  = (levelNumber == 0) ? 400 : 800;
         this.WORLD_HEIGHT = (levelNumber == 0) ? 240 : 480;
 
@@ -75,7 +77,6 @@ public class PlayScreen implements Screen {
         world.setContactListener(contactListener);
 
         debugRenderer = new Box2DDebugRenderer();
-        fileHandler = new FileHandler();
 
         player      = new Player(20, game.assets);
         playableMap = new PlayableMap(game.assets, levelNumber);
@@ -87,7 +88,11 @@ public class PlayScreen implements Screen {
         playableMap.createPhysicsFromMap(world);
         contactListener.setPlayableMap(playableMap);
 
+        // Spawn player normally from Tiled
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
+
+        // Immediately overwrite coordinates with Save Data (if X/Y are not 0)
+        player.setPlayerData(this.playerName, this.slotIndex, this.startX, this.startY, this.levelNumber);
 
         // --- LEVEL TRIGGER LOGIC ---
         if (this.levelNumber == 0) {
@@ -95,7 +100,7 @@ public class PlayScreen implements Screen {
         } else if (this.levelNumber == 3 && !this.isPostBattle) {
             currentCutscene = new BossCutscene(this, playableMap.getBatman());
         } else if (this.levelNumber == 3 && this.isPostBattle) {
-            currentCutscene = new AvengersCutscene(this, playableMap.getBatman()); // Contingency Phase
+            currentCutscene = new AvengersCutscene(this, playableMap.getBatman());
         } else {
             currentCutscene = new IntroEncounter(this, playableMap.getBatman());
         }
@@ -109,7 +114,7 @@ public class PlayScreen implements Screen {
         AudioManager.level2Music.pause();
         AudioManager.bossArenaMusic.pause();
 
-        game.setScreen(new PokemonBattleScreen(game));
+        game.setScreen(new PokemonBattleScreen(game, playerName, slotIndex, startX, startY, this.levelNumber));
     }
 
     public World getWorld() { return world; }
@@ -130,7 +135,6 @@ public class PlayScreen implements Screen {
         player.Render(game.batch, delta);
         playableMap.DrawElements(game.batch, delta);
 
-        // Renders Pokeballs or other cutscene overlays
         if (currentCutscene != null) currentCutscene.render(game.batch);
 
         game.batch.end();
@@ -169,7 +173,6 @@ public class PlayScreen implements Screen {
                 currentCutscene.update(delta);
             }
 
-            // Camera clamping for Prologue
             if (levelNumber == 0) {
                 cam.GetCam().position.x = com.badlogic.gdx.math.MathUtils.clamp(
                     cam.GetCam().position.x, halfVW, worldWidth - halfVW);
@@ -178,9 +181,9 @@ public class PlayScreen implements Screen {
             }
 
             if (currentCutscene.isFinished()) {
-                // If the prologue just finished, go to Level 1
                 if (levelNumber == 0) {
-                    game.setScreen(new PlayScreen(game, 1));
+                    // Update next level transition with save variables
+                    game.setScreen(new PlayScreen(game, playerName, slotIndex, 0, 0, 1));
                     this.dispose();
                     return false;
                 }
@@ -189,30 +192,12 @@ public class PlayScreen implements Screen {
                 currentCutscene = null;
                 inCutscene = false;
             }
-        } else {
-            // INPUT HANDLING
-            boolean isCtrlPressed = Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
-
-            if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.S)) {
-                if (quickSavesUsed < MAX_SAVES) {
-                    String playerSaveFile = "SavedFiles/" + EnterNameScreen.globalPlayerName + ".json";
-                    fileHandler.saveGameState(player, playableMap, playerSaveFile);
-                    quickSavesUsed++;
-                }
-            }
-
-            if (isCtrlPressed && Gdx.input.isKeyJustPressed(Input.Keys.L)) {
-                game.setScreen(new LoadScreen(game, this));
-                return false;
-            }
         }
 
         int healthBefore = player.getHealth();
         world.step(1 / 60f, 6, 2);
         boolean wasDead = player.isDead;
 
-
-        // --- LEVEL 3 TERMINATION (Contingency Ending) ---
         if (player.isDead && levelNumber == 3 && isPostBattle) {
             System.out.println("GAME OVER. BATMAN WINS.");
             Gdx.app.exit();
@@ -221,26 +206,25 @@ public class PlayScreen implements Screen {
 
         player.UpdatePlayer(delta, world, inCutscene);
 
-        // --- FLAG TRANSITION ---
         if (!inCutscene && playableMap.isFlagReached()) {
-            game.setScreen(new PlayScreen(game, levelNumber + 1));
+            // Update next level transition with save variables
+            game.setScreen(new PlayScreen(game, playerName, slotIndex, 0, 0, levelNumber + 1));
             this.dispose();
             return false;
         }
 
-        // Standard Respawns
         if (wasDead && !player.isDead) {
             playableMap.resetTriggers(world);
         }
 
-        // Damage Effects
         if (!player.isDead && player.getHealth() < healthBefore) {
             int damageTaken = healthBefore - player.getHealth();
             cam.startShake(damageTaken >= 25 ? 0.4f : 0.2f, damageTaken >= 25 ? 0.6f : 0.4f);
         }
 
         if (player.isDead) {
-            cam.SetDeathTarget(worldWidth, worldHeight, halfVW, halfVH, player.spawnX, player.spawnY);
+            // Updated death logic to rely on the Player's checkpoint variables
+            cam.SetDeathTarget(worldWidth, worldHeight, halfVW, halfVH, player.checkpointX, player.checkpointY);
         }
 
         if (currentCutscene == null) {
@@ -260,15 +244,7 @@ public class PlayScreen implements Screen {
         }
     }
 
-    public void executeLoad(String saveName) {
-        String playerSaveFile = "SavedFiles/" + saveName + ".json";
-        fileHandler.loadGameState(player, playableMap, playerSaveFile);
-        EnterNameScreen.globalPlayerName = saveName;
-    }
-
     private void startLevelMusic() {
-
-
         switch (levelNumber) {
             case 1:  currentTrack = AudioManager.level1Music;   break;
             case 2:  currentTrack = AudioManager.level2Music;   break;
@@ -288,8 +264,7 @@ public class PlayScreen implements Screen {
         }
     }
 
-    public void increaseLevelAudio(float volume)
-    {
+    public void increaseLevelAudio(float volume) {
         if(currentTrack != null)
             currentTrack.setVolume(volume);
     }
@@ -303,8 +278,7 @@ public class PlayScreen implements Screen {
     @Override public void pause()  { }
     @Override public void resume() { }
     @Override public void hide()   { }
-    @Override
-    public void show() {}
+    @Override public void show() {}
 
     @Override
     public void dispose() {

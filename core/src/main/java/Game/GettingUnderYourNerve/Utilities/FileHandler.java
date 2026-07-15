@@ -1,28 +1,52 @@
 package Game.GettingUnderYourNerve.Utilities;
 
-import Game.GettingUnderYourNerve.Map.PlayableMap;
-import Game.GettingUnderYourNerve.Player;
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.files.FileHandle;
-import com.badlogic.gdx.utils.Json;
-
+import java.io.*;
 import java.util.ArrayList;
-import java.util.Collections;
 
 public class FileHandler {
-    private Json json;
 
-    public static class GameSaveData {
-        public float x;
-        public float y;
-        public int score;
-        public int health;
-        public boolean isJumping;
-        public ArrayList<String> collectedCoins = new ArrayList<>();
-        public ArrayList<String> collectedPotions = new ArrayList<>();
+    // ==========================================
+    //          4-SLOT SAVE SYSTEM
+    // ==========================================
+
+    // Returns an array [Name, X, Y] or null if the slot is empty
+    public static String[] getSlotInfo(int slotIndex) {
+        File file = new File("save_slot_" + slotIndex + ".txt");
+        if (file.exists()) {
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line = br.readLine();
+                if (line != null && !line.trim().isEmpty()) {
+                    return line.split(",");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
     }
 
-    public static class ScoreEntry implements Comparable<ScoreEntry> {
+    // Saves the player data into the specified slot
+    public static void saveSlot(int slotIndex, String name, float x, float y, int level) {
+        try (FileWriter fw = new FileWriter("save_slot_" + slotIndex + ".txt")) {
+            fw.write(name + "," + x + "," + y + "," + level);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Deletes the slot file when the user right-clicks
+    public static void deleteSlot(int slotIndex) {
+        File file = new File("save_slot_" + slotIndex + ".txt");
+        if (file.exists()) {
+            file.delete();
+        }
+    }
+
+    // ==========================================
+    //          LEADERBOARD SYSTEM
+    // ==========================================
+
+    public static class ScoreEntry {
         public String name;
         public int score;
 
@@ -30,80 +54,62 @@ public class FileHandler {
             this.name = name;
             this.score = score;
         }
-
-        @Override
-        public int compareTo(ScoreEntry o) {
-            return Integer.compare(o.score, this.score); // Descending order
-        }
     }
 
-    public FileHandler() {
-        json = new Json();
-    }
-
-    public void saveGameState(Player player, PlayableMap map, String fileName) {
-        GameSaveData data = new GameSaveData();
-        data.x = player.GetXpos();
-        data.y = player.GetYpos();
-        data.score = player.getScore();
-        data.health = player.getHealth();
-        data.isJumping = !player.isGrounded && player.getPlayerBody().getLinearVelocity().y > 0;
-        data.collectedCoins = map.collectedCoinIds;
-        data.collectedPotions = map.collectedPotionIds;
-
-        String saveString = json.toJson(data);
-        FileHandle file = Gdx.files.local(fileName);
-        file.writeString(saveString, false); // false = overwrite existing file
-
-        System.out.println("--- GAME SAVED SUCCESSFULLY TO: " + fileName + " ---");
-    }
-
-    public void loadGameState(Player player, PlayableMap map, String fileName) {
-        FileHandle file = Gdx.files.local(fileName);
+    // Retrieves the top 10 scores from the leaderboard file
+    public static ArrayList<ScoreEntry> getTopScores() {
+        ArrayList<ScoreEntry> scores = new ArrayList<>();
+        File file = new File("leaderboard.txt");
 
         if (file.exists()) {
-            String saveString = file.readString();
-            GameSaveData data = json.fromJson(GameSaveData.class, saveString);
-
-            player.OverridePos(data.x, data.y);
-            player.OverrideScore(data.score);
-            player.OverrideHealth(data.health);
-
-            if (data.isJumping) {
-                player.ApplyJump();
+            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    String[] parts = line.split(",");
+                    if (parts.length == 2) {
+                        try {
+                            scores.add(new ScoreEntry(parts[0], Integer.parseInt(parts[1])));
+                        } catch (NumberFormatException e) {
+                            System.out.println("Skipping corrupted score entry: " + line);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-
-            map.applyLoadedCollectables(data.collectedCoins, data.collectedPotions);
-            System.out.println("--- GAME LOADED SUCCESSFULLY FROM: " + fileName + " ---");
-        } else {
-            System.out.println("--- NO SAVE FILE FOUND FOR: " + fileName + " ---");
         }
+
+        // Sort descending (highest score first)
+        scores.sort((s1, s2) -> Integer.compare(s2.score, s1.score));
+
+        // Pad the list with blank entries (-1) up to 10 so the UI always has 10 lines
+        while (scores.size() < 10) {
+            scores.add(new ScoreEntry("---", -1));
+        }
+
+        // Return strictly the top 10
+        return new ArrayList<>(scores.subList(0, 10));
     }
 
-    public static ArrayList<ScoreEntry> getTopScores() {
-        ArrayList<ScoreEntry> allScores = new ArrayList<>();
-        FileHandle dir = Gdx.files.local("SavedFiles");
-        Json jsonParser = new Json();
+    // Saves a new score and automatically truncates the file to the top 10
+    public static void saveScore(String name, int score) {
+        ArrayList<ScoreEntry> scores = getTopScores();
 
-        if (dir.exists() && dir.isDirectory()) {
-            for (FileHandle file : dir.list(".json")) {
-                try {
-                    GameSaveData data = jsonParser.fromJson(GameSaveData.class, file.readString());
-                    allScores.add(new ScoreEntry(file.nameWithoutExtension(), data.score));
-                } catch (Exception ignored) {}
+        // Remove the blank padding entries before adding the new one
+        scores.removeIf(entry -> entry.score == -1);
+
+        scores.add(new ScoreEntry(name, score));
+
+        // Re-sort with the new score included
+        scores.sort((s1, s2) -> Integer.compare(s2.score, s1.score));
+
+        try (FileWriter fw = new FileWriter("leaderboard.txt")) {
+            // Only write the top 10 back to the file
+            for (int i = 0; i < Math.min(10, scores.size()); i++) {
+                fw.write(scores.get(i).name + "," + scores.get(i).score + "\n");
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        Collections.sort(allScores);
-        ArrayList<ScoreEntry> top10 = new ArrayList<>();
-
-        for (int i = 0; i < 10; i++) {
-            if (i < allScores.size()) {
-                top10.add(allScores.get(i));
-            } else {
-                top10.add(new ScoreEntry("--", -1));
-            }
-        }
-        return top10;
     }
 }

@@ -16,13 +16,12 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class PauseScreen implements Screen {
 
     private final Main game;
-    private final PlayScreen playScreen; // Reference to resume the game
+    private final PlayScreen playScreen;
     private final int health, score;
 
     // --- UI Layout ---
@@ -46,11 +45,11 @@ public class PauseScreen implements Screen {
     private GlyphLayout layout;
 
     // --- Interactive Elements ---
-    private Rectangle resumeRect = new Rectangle();
-    private Rectangle helpRect   = new Rectangle();
-    private Rectangle cheatsRect = new Rectangle();
-    private Rectangle menuRect   = new Rectangle();
-    private Vector3 touchVec     = new Vector3();
+    private Rectangle resumeRect     = new Rectangle();
+    private Rectangle helpRect       = new Rectangle();
+    private Rectangle cheatsRect     = new Rectangle();
+    private Rectangle checkpointRect = new Rectangle(); // Replaced menuRect for Checkpoint system
+    private Vector3 touchVec         = new Vector3();
 
     // --- Prank Logic ---
     private boolean isRickrolling = false;
@@ -89,7 +88,6 @@ public class PauseScreen implements Screen {
         btnC = assets.manager.get(GameAssetManager.BUTTON_C, Texture.class);
         btnR = assets.manager.get(GameAssetManager.BUTTON_R, Texture.class);
 
-        // Reusing your font loading logic from Source 18
         font = loadFont("ui/runescape_uf.ttf", 18);
 
         // Rickroll Setup
@@ -132,17 +130,16 @@ public class PauseScreen implements Screen {
         if (isRickrolling) {
             rickTimer += delta;
             TextureRegion frame = rickAnim.getKeyFrame(rickTimer);
-            // Squeezed dimensions center the video inside the frame
             game.batch.draw(frame, bx + (BOARD_WIDTH - RICK_DRAW_W)/2f, by + (BOARD_HEIGHT - RICK_DRAW_H)/2f, RICK_DRAW_W, RICK_DRAW_H);
 
             if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) stopRickroll();
             if (rickAnim.isAnimationFinished(rickTimer)) stopRickroll();
         } else {
-            handleMenuInput(); // Process button clicks
+            handleMenuInput();
             drawButton(game.batch, resumeRect, "Resume");
             drawButton(game.batch, helpRect, "Need Some Help?");
             drawButton(game.batch, cheatsRect, "Cheat Codes");
-            drawButton(game.batch, menuRect, "Return to Menu");
+            drawButton(game.batch, checkpointRect, "Last Checkpoint"); // Integrated checkpoint button
         }
 
         // --- STEP C: Draw the Wooden Frame ON TOP of the video ---
@@ -179,15 +176,21 @@ public class PauseScreen implements Screen {
         touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
         uiViewport.unproject(touchVec);
 
-        if (resumeRect.contains(touchVec.x, touchVec.y)) resumeGame();
-        else if (helpRect.contains(touchVec.x, touchVec.y)) Gdx.app.exit();
-        else if (cheatsRect.contains(touchVec.x, touchVec.y)) {
+        if (resumeRect.contains(touchVec.x, touchVec.y)) {
+            resumeGame();
+        } else if (helpRect.contains(touchVec.x, touchVec.y)) {
+            Gdx.app.exit();
+        } else if (cheatsRect.contains(touchVec.x, touchVec.y)) {
             isRickrolling = true;
             AudioManager.rickMusic.play();
+        } else if (checkpointRect.contains(touchVec.x, touchVec.y)) {
+            // Force the player to respawn at their saved coordinates
+            playScreen.getPlayer().Respawn();
+            resumeGame();
+            dispose();
         }
     }
 
-    // Reuse your helper methods for drawing buttons and tex from Source 18...
     private void drawButton(SpriteBatch batch, Rectangle rect, String label) {
         drawTex(batch, btnL, rect.x, rect.y, BTN_CORNER_W, rect.height);
         drawTex(batch, btnC, rect.x + BTN_CORNER_W, rect.y, rect.width - BTN_CORNER_W * 2, rect.height);
@@ -206,7 +209,9 @@ public class PauseScreen implements Screen {
         float totalBtns = (BTN_HEIGHT * 4) + (BTN_GAP * 3);
         float startY = by + (BOARD_HEIGHT - totalBtns) / 2f;
         float btnX = bx + (BOARD_WIDTH - BTN_WIDTH) / 2f;
-        menuRect.set(btnX, startY, BTN_WIDTH, BTN_HEIGHT);
+
+        // Updated to use the checkpointRect for the bottom-most button position
+        checkpointRect.set(btnX, startY, BTN_WIDTH, BTN_HEIGHT);
         cheatsRect.set(btnX, startY + BTN_HEIGHT + BTN_GAP, BTN_WIDTH, BTN_HEIGHT);
         helpRect.set(btnX, startY + (BTN_HEIGHT + BTN_GAP) * 2f, BTN_WIDTH, BTN_HEIGHT);
         resumeRect.set(btnX, startY + (BTN_HEIGHT + BTN_GAP) * 3f, BTN_WIDTH, BTN_HEIGHT);
@@ -235,7 +240,6 @@ public class PauseScreen implements Screen {
     @Override
     public void resize(int width, int height) {
         uiViewport.update(width, height, true);
-
         playScreen.resize(width, height);
     }
     @Override public void pause() { }
