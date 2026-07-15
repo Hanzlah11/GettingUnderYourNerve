@@ -3,6 +3,8 @@ package Game.GettingUnderYourNerve.Cutscenes;
 import Game.GettingUnderYourNerve.Enemies.Batman;
 import Game.GettingUnderYourNerve.MainGame.PlayScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.MathUtils;
 
@@ -30,6 +32,12 @@ public class PrologueCutscene extends BaseCutscene {
         escapePlay = getObjectPos("escapeplayer");
     }
 
+    // Helper to get active SFX setting volume for direct loops
+    private float getSFXVolumeModifier() {
+        Preferences prefs = Gdx.app.getPreferences("GettingUnderYourNerve_Settings");
+        return prefs.getFloat("sfxVolume", 0.5f);
+    }
+
     // HELPER: Calculates where the camera is actually allowed to stop
     private float getClampedX(float targetX) {
         float worldWidth = screen.getPlayableMap().getMapWidthInMeters();
@@ -41,12 +49,13 @@ public class PrologueCutscene extends BaseCutscene {
     public void update(float dt) {
         stateTimer += dt;
         float lerp = 0.05f;
+        float masterSFX = getSFXVolumeModifier();
 
         switch (state) {
             case 0: // PLAYER AUTO-WALKS IN
                 if (player.GetXpos() < pStop.x) {
                     player.getPlayerBody().setLinearVelocity(2.5f, 0);
-                    if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.4f);
+                    if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.4f * masterSFX);
                     cam.GetCam().position.x = getClampedX(player.GetXpos()); // Follow with clamp
                 } else {
                     player.getPlayerBody().setLinearVelocity(0, 0);
@@ -70,7 +79,7 @@ public class PrologueCutscene extends BaseCutscene {
             case 2: // SPAWN BATMAN
                 if (!batmanSpawned) {
                     if (!playedWhoosh) {
-                        AudioManager.batman_spawn_whoosh.play(1.0f); // Max volume
+                        AudioManager.playSFX(AudioManager.batman_spawn_whoosh, 1.0f); // Max volume relative to settings
                         playedWhoosh = true;
                     }
                     this.batman = screen.getPlayableMap().spawnBatman(screen.getWorld(), bSpawn.x * 32, bSpawn.y * 32);
@@ -85,7 +94,7 @@ public class PrologueCutscene extends BaseCutscene {
             case 3: // BATMAN WALKS IN
                 if (batman.GetXpos() < bStop.x) {
                     batman.b2body.setLinearVelocity(3.0f, 0);
-                    if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.4f);
+                    if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.4f * masterSFX);
                     batman.setAction(Batman.State.MOVING);
                 } else {
                     batman.b2body.setLinearVelocity(0, 0);
@@ -95,14 +104,14 @@ public class PrologueCutscene extends BaseCutscene {
                     batman.facingRight = true;
 
                     if (!playedShout) {
-                        AudioManager.batman_shout_stop.play(1.0f);
+                        AudioManager.playSFX(AudioManager.batman_shout_stop, 1.0f);
                         currentSubtitle = "Halt evildoer! Your reign of minor\ninconveniences ends here!";
                         playedShout = true;
                     }
-                    if (stateTimer > 5.5f)
-                    {
+                    if (stateTimer > 5.5f) {
                         state = 4;
-                        stateTimer = 0; }
+                        stateTimer = 0;
+                    }
                 }
                 break;
 
@@ -122,7 +131,7 @@ public class PrologueCutscene extends BaseCutscene {
 
                 if (batman.GetXpos() < player.GetXpos() - 1.0f) {
                     batman.b2body.setLinearVelocity(5.0f, 0);
-                    if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.5f);
+                    if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.5f * masterSFX);
                     batman.setAction(Batman.State.MOVING);
                     stateTimer = 0;
                 } else {
@@ -131,10 +140,16 @@ public class PrologueCutscene extends BaseCutscene {
                     AudioManager.footsteps.stop(footstepId);
                     footstepId = -1;
                     batman.setAction(Batman.State.ATTACKING);
-                    if (!playedSwing) { AudioManager.batman_swing_fist.play(1.0f); playedSwing = true; }
+                    if (!playedSwing) {
+                        AudioManager.playSFX(AudioManager.batman_swing_fist, 1.0f);
+                        playedSwing = true;
+                    }
 
                     if (stateTimer > 0.7f) {
-                        if (!playedImpact) { AudioManager.punch_impact_heavy.play(1.0f); playedImpact = true; }
+                        if (!playedImpact) {
+                            AudioManager.playSFX(AudioManager.punch_impact_heavy, 1.0f);
+                            playedImpact = true;
+                        }
                         player.hit(0, batman.GetXpos());
                         state = 6;
                         stateTimer = 0;
@@ -157,7 +172,7 @@ public class PrologueCutscene extends BaseCutscene {
                 // PHASE A: Player Protests (Starts at 1.3s, lasts 5s)
                 else if (stateTimer < 6.0f) {
                     if (!playedProtest) {
-                        AudioManager.player_protest_wrong_guy.play(1.0f); // "I'm innocent! Wrong guy!"
+                        AudioManager.playSFX(AudioManager.player_protest_wrong_guy, 1.0f); // "I'm innocent! Wrong guy!"
                         playedProtest = true;
                         currentSubtitle = "Ouch! What the hell man!\nYou got the wrong guy!\nI was just going to the store!";
                     }
@@ -167,7 +182,7 @@ public class PrologueCutscene extends BaseCutscene {
                 // PHASE B: Batman Apologizes (Starts at 6.3s, 6s Stillness)
                 else if (stateTimer < 12.3f) {
                     if (!playedSorry) {
-                        AudioManager.batman_apology_sorry.play(1.0f);
+                        AudioManager.playSFX(AudioManager.batman_apology_sorry, 1.0f);
                         playedSorry = true;
                         currentSubtitle = "Wait your not the potato chip man?!\nOh shit sorry, I got the wrong guy!";
                     }
@@ -178,7 +193,7 @@ public class PrologueCutscene extends BaseCutscene {
                 else if (stateTimer < 14.3f) {
                     currentSubtitle = "My bad! Forget you saw me!";
                     batman.b2body.setLinearVelocity(4.0f, 0); // Awkward walk
-                    if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.3f);
+                    if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.3f * masterSFX);
                     batman.setAction(Batman.State.MOVING);
 
                     if(batman.GetXpos() > player.GetXpos() && !player.facingRight)
@@ -203,7 +218,7 @@ public class PrologueCutscene extends BaseCutscene {
 
             case 7: // FINAL CHASE
                 if (!playedChaseVoice) {
-                    AudioManager.player_shout_come_back.play(1.0f);
+                    AudioManager.playSFX(AudioManager.player_shout_come_back, 1.0f);
                     playedChaseVoice = true;
                     currentSubtitle = "Hey where the hell do you think your going!\nGet your ass back here!";
                 }
@@ -214,7 +229,7 @@ public class PrologueCutscene extends BaseCutscene {
                 } else {
                     player.getPlayerBody().setLinearVelocity(8.0f, 0);
                     currentSubtitle = "My nose is bleeding!\nGet me to the doctor immediately!";
-                    if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.6f);
+                    if (footstepId == -1) footstepId = AudioManager.footsteps.loop(0.6f * masterSFX);
                 }
 
                 if (player.GetXpos() > escapePlay.x - 1.0f && stateTimer > 8.0f) {

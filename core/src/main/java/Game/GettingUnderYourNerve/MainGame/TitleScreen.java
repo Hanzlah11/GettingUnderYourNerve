@@ -1,6 +1,7 @@
 package Game.GettingUnderYourNerve.MainGame;
 
 import Game.GettingUnderYourNerve.Main;
+import Game.GettingUnderYourNerve.SettingsScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import Game.GettingUnderYourNerve.Utilities.MenuBackground;
@@ -92,14 +93,15 @@ public class TitleScreen implements Screen {
             viewport.unproject(touchVec);
 
             if (playRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.buttonSound.play();
+                AudioManager.playSFX(AudioManager.buttonSound);
                 game.setScreen(new EnterNameScreen(game, this));
             } else if (leaderboardRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.buttonSound.play();
+                AudioManager.playSFX(AudioManager.buttonSound);
                 game.setScreen(new LeaderboardScreen(game, this));
             } else if (settingsRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.buttonSound.play();
-                System.out.println("Settings Button Clicked");
+                AudioManager.playSFX(AudioManager.buttonSound);
+                // Switches to the persistent SettingsScreen while sharing this title screen context
+                game.setScreen(new SettingsScreen(game, this));
             }
         }
 

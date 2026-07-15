@@ -32,13 +32,13 @@ public class IntroEncounter extends BaseCutscene {
 
     private void playDialogue(boolean isPlayer, int level) {
         if (isPlayer) {
-            if (level == 1) AudioManager.player_lvl1.play(1.0f);
-            else if (level == 2) AudioManager.player_lvl2.play(1.0f);
-            else AudioManager.player_lvl3.play(1.0f);
+            if (level == 1) AudioManager.playSFX(AudioManager.player_lvl1, 1.0f);
+            else if (level == 2) AudioManager.playSFX(AudioManager.player_lvl2, 1.0f);
+            else AudioManager.playSFX(AudioManager.player_lvl3, 1.0f);
         } else {
-            if (level == 1) AudioManager.batman_lvl1.play(1.0f);
-            else if (level == 2) AudioManager.batman_lvl2.play(1.0f);
-            else AudioManager.batman_lvl3.play(1.0f);
+            if (level == 1) AudioManager.playSFX(AudioManager.batman_lvl1, 1.0f);
+            else if (level == 2) AudioManager.playSFX(AudioManager.batman_lvl2, 1.0f);
+            else AudioManager.playSFX(AudioManager.batman_lvl3, 1.0f);
         }
     }
 
@@ -66,7 +66,6 @@ public class IntroEncounter extends BaseCutscene {
                     if (!playedPlayerVoice) {
                         playDialogue(true, level);
                         playedPlayerVoice = true;
-
                     }
 
                     if (level == 1)
@@ -137,7 +136,6 @@ public class IntroEncounter extends BaseCutscene {
                         currentSubtitle = "Have you tried breathing exercises? I find that\nthey help with the rage.";
                     else
                         currentSubtitle = "Look there's a distraction over there!";
-
                 }
 
                 // Wait for Batman's funny de-escalation to finish

@@ -96,6 +96,7 @@ public class GameAssetManager {
     public static final String CHAR_CLAW_PREFIX = "Treasure Hunters/Pokemon/Charizard/Claw/char";
     public static final String CHAR_FIRE_PREFIX = "Treasure Hunters/Pokemon/Charizard/Fireblast/char";
     public static final String CHAR_FAINT_PREFIX = "Treasure Hunters/Pokemon/Charizard/Faint/char";
+    public static final String POKEBALL_SPRITE = "Treasure Hunters/Pokemon/pokeball.png";
 
     public static final String POKEMON_BG = "Treasure Hunters/Pokemon/background.jpeg";
     //---FLAG---
@@ -181,6 +182,7 @@ public class GameAssetManager {
 
         //--POKEMON--
         manager.load(POKEMON_BG, Texture.class);
+        manager.load(POKEBALL_SPRITE, Texture.class);
         loadFrames(PIKA_IDLE_PREFIX, 6, "%d");
         loadFrames(PIKA_TACKLE_PREFIX, 7, "%d");
         loadFrames(PIKA_THUNDER_PREFIX, 8, "%d");
