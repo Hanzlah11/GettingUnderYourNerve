@@ -1,5 +1,6 @@
 package Game.GettingUnderYourNerve;
 
+import Game.GettingUnderYourNerve.MainGame.LoadingScreen;
 import Game.GettingUnderYourNerve.MainGame.TitleScreen;
 //import Game.GettingUnderYourNerve.MainGame.PlayScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
@@ -36,7 +37,7 @@ public class Main extends Game {
         GameAssetManager.loadAllAssets();
         GameAssetManager.manager.finishLoading();
 
-        this.setScreen(new TitleScreen(this));
+        this.setScreen(new LoadingScreen(this));
     }
 
     @Override
