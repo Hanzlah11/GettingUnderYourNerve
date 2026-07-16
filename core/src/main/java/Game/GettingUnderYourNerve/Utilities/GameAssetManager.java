@@ -98,7 +98,6 @@ public class GameAssetManager {
     public static final String CHAR_FAINT_PREFIX = "Treasure Hunters/Pokemon/Charizard/Faint/char";
     public static final String POKEBALL_SPRITE = "Treasure Hunters/Pokemon/pokeball.png";
 
-
     public static final String POKEMON_BG = "Treasure Hunters/Pokemon/background.jpeg";
     //---FLAG---
     public static final String FLAG_PREFIX = "Treasure Hunters/Palm Tree Island/Sprites/flag/";

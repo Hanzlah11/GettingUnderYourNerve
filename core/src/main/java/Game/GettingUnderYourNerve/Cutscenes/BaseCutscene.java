@@ -173,4 +173,14 @@ public abstract class BaseCutscene {
         // --- 6. Restore original world camera matrix back to standard rendering ---
         batch.setProjectionMatrix(oldMatrix);
     }
+
+    // --- NEW: Clean up disposable assets to prevent memory leaks ---
+    public void dispose() {
+        if (subtitleFont != null) {
+            subtitleFont.dispose();
+        }
+        if (blackBgTexture != null) {
+            blackBgTexture.dispose();
+        }
+    }
 }

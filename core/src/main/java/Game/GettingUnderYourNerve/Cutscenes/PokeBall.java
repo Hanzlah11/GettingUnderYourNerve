@@ -37,8 +37,9 @@ public class PokeBall {
             if (bounces < 2) {
                 velocityY = -velocityY * 0.4f; // Bounce effect
 
+                // Updated: Uses the master SFX slider settings for correct volume
                 if (AudioManager.pokeBallBounce != null) {
-                    AudioManager.pokeBallBounce.play();
+                    AudioManager.playSFX(AudioManager.pokeBallBounce);
                 }
 
                 bounces++;
@@ -56,6 +57,6 @@ public class PokeBall {
     public boolean isFinished() { return finished; }
 
     public void dispose() {
-        texture.dispose();
+        // Safe: Left empty because the texture is owned and disposed of by GameAssetManager.
     }
 }

@@ -4,6 +4,8 @@ import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Player;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -74,7 +76,9 @@ public class Crab extends Enemy {
             "%02d"
         );
 
-        patrolSoundId = AudioManager.crabPatrol.loop(0f);
+        // Start the patrol loop scaled against default configuration settings
+        float sfxMasterVolume = Gdx.app.getPreferences("GettingUnderYourNerve_Settings").getFloat("sfxVolume", 0.5f);
+        patrolSoundId = AudioManager.crabPatrol.loop(0f * sfxMasterVolume);
     }
 
     @Override
@@ -287,13 +291,13 @@ public class Crab extends Enemy {
         if (newState == State.ATTACK) {
 
             stateTime = 0f;
-            AudioManager.crabAttack.play(0.5f);
+            AudioManager.playSFX(AudioManager.crabAttack);
             shoutCooldown = 3f;
 
         } else if (newState == State.CHASE) {
 
             if (shoutCooldown <= 0f) {
-                AudioManager.crabChaseShout.play(0.25f);
+                AudioManager.playSFX(AudioManager.crabChaseShout);
                 shoutCooldown = 3f;
             }
         }
@@ -302,13 +306,16 @@ public class Crab extends Enemy {
     }
 
     private void handleAudio(float distance) {
+        // --- NEW: Scale 3D distance sound attenuation against persistent master settings ---
+        Preferences prefs = Gdx.app.getPreferences("GettingUnderYourNerve_Settings");
+        float sfxMasterVolume = prefs.getFloat("sfxVolume", 0.5f);
 
-        float vol =
-            Math.max(0, 0.4f * (1f - (distance / 20f)));
+        float calculatedVolume = Math.max(0, 0.4f * (1f - (distance / 20f)));
 
+        // Scale the volume relative to the master settings bar
         AudioManager.crabPatrol.setVolume(
             patrolSoundId,
-            vol
+            calculatedVolume * sfxMasterVolume
         );
     }
 

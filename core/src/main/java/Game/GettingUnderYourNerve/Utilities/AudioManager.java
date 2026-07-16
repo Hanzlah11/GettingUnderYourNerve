@@ -1,7 +1,7 @@
-//AudioManager.java
 package Game.GettingUnderYourNerve.Utilities;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 
@@ -54,8 +54,17 @@ public class AudioManager
     private static boolean wasLevel2Playing = false;
     private static boolean wasBossArenaPlaying = false;
 
+    // --- Persistent Volume Modifiers ---
+    private static float musicVolumeModifier = 0.5f;
+    private static float sfxVolumeModifier = 0.5f;
+    private static Preferences prefs;
+
     public static void load()
     {
+        // Initialize persistent settings file
+        prefs = Gdx.app.getPreferences("GettingUnderYourNerve_Settings");
+        musicVolumeModifier = prefs.getFloat("musicVolume", 0.5f);
+        sfxVolumeModifier = prefs.getFloat("sfxVolume", 0.5f);
 
         footsteps = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/General/footsteps.wav"));
 
@@ -107,6 +116,52 @@ public class AudioManager
         level2Music    = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/General/level2.mp3"));
         bossArenaMusic = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/General/bossLevel.mp3"));
 
+        // Set initial volumes for all music tracks
+        syncMusicVolume();
+    }
+
+    /**
+     * Updates the persistent music volume modifier and propagates it instantly to playing tracks.
+     */
+    public static void updateMusicVolume(float volume) {
+        musicVolumeModifier = volume;
+        syncMusicVolume();
+    }
+
+    /**
+     * Updates the persistent SFX volume modifier.
+     */
+    public static void updateSFXVolume(float volume) {
+        sfxVolumeModifier = volume;
+    }
+
+    private static void syncMusicVolume() {
+        if (rickMusic != null) rickMusic.setVolume(musicVolumeModifier);
+        if (pokemonFightMusic != null) pokemonFightMusic.setVolume(musicVolumeModifier);
+        if (elevatorMusic != null) elevatorMusic.setVolume(musicVolumeModifier * 0.5f); // Normalized
+        if (level1Music != null) level1Music.setVolume(musicVolumeModifier);
+        if (level2Music != null) level2Music.setVolume(musicVolumeModifier);
+        if (bossArenaMusic != null) bossArenaMusic.setVolume(musicVolumeModifier);
+    }
+
+    /**
+     * Plays a sound effect automatically adjusted to the user's current settings slider.
+     */
+    public static long playSFX(Sound sound) {
+        if (sound != null) {
+            return sound.play(sfxVolumeModifier);
+        }
+        return -1;
+    }
+
+    /**
+     * Plays a sound effect at a relative local volume level scaled against the player's master settings.
+     */
+    public static long playSFX(Sound sound, float relativeVolume) {
+        if (sound != null) {
+            return sound.play(sfxVolumeModifier * relativeVolume);
+        }
+        return -1;
     }
 
     public static void pauseAll() {
@@ -148,7 +203,7 @@ public class AudioManager
         if (batman_lvl2 != null) batman_lvl2.pause();
         if (batman_lvl3 != null) batman_lvl3.pause();
 
-        // --- ADD THESE: PROLOGUE CUTSCENE AUDIO PAUSES ---
+        // --- PROLOGUE CUTSCENE AUDIO PAUSES ---
         if (batman_spawn_whoosh != null) batman_spawn_whoosh.pause();
         if (batman_shout_stop != null) batman_shout_stop.pause();
         if (batman_swing_fist != null) batman_swing_fist.pause();
@@ -201,7 +256,7 @@ public class AudioManager
         if (batman_lvl2 != null) batman_lvl2.resume();
         if (batman_lvl3 != null) batman_lvl3.resume();
 
-        // --- ADD THESE: PROLOGUE CUTSCENE AUDIO RESUMES ---
+        // --- PROLOGUE CUTSCENE AUDIO RESUMES ---
         if (batman_spawn_whoosh != null) batman_spawn_whoosh.resume();
         if (batman_shout_stop != null) batman_shout_stop.resume();
         if (batman_swing_fist != null) batman_swing_fist.resume();
@@ -213,7 +268,6 @@ public class AudioManager
 
     public static void dispose()
     {
-
         shellShoot.dispose();
         projectileBreak.dispose();
         crabChaseShout.dispose();
@@ -222,7 +276,6 @@ public class AudioManager
         if (rickMusic != null) rickMusic.dispose();
         if (buttonSound != null) buttonSound.dispose();
 
-        if(buttonSound != null) buttonSound.dispose();
         footsteps.dispose();
         batman_spawn_whoosh.dispose();
         batman_shout_stop.dispose();
@@ -244,10 +297,10 @@ public class AudioManager
         if (pokemonPlayerAttack != null) pokemonPlayerAttack.dispose();
         if (pokemonPlayerDamage != null) pokemonPlayerDamage.dispose();
         if (pokeBallBounce != null) pokeBallBounce.dispose();
+
         if (elevatorMusic != null) elevatorMusic.dispose();
         if (level1Music != null) level1Music.dispose();
         if (level2Music != null) level2Music.dispose();
         if (bossArenaMusic != null) bossArenaMusic.dispose();
     }
-
 }

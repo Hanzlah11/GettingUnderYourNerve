@@ -109,7 +109,7 @@ public class Shell extends Enemy
         }
         else if (shooting) {
             if(shootingAnimation.getKeyFrameIndex(stateTime) == 4 && !hasPlayedSound) {
-                AudioManager.shellShoot.play(0.5f);
+                AudioManager.playSFX(AudioManager.shellShoot);
                 hasPlayedSound = true;
 
                 // Pass the assets vault into the new Projectile!
@@ -202,7 +202,7 @@ public class Shell extends Enemy
             currentState = State.BITING;
             stateTime = 0;
             shooting = false;
-            AudioManager.shellShoot.play(0.8f);
+            AudioManager.playSFX(AudioManager.shellShoot);
         }
     }
 
