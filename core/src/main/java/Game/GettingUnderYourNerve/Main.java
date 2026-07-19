@@ -52,4 +52,8 @@ public class Main extends Game {
         assets.dispose();
         AudioManager.dispose();
     }
+
+    public SpriteBatch getBatch() {
+        return batch;
+    }
 }

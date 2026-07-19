@@ -44,7 +44,7 @@ public class TitleScreen implements Screen {
     private float pulseTime = 0;
 
     private final String[] taglines = {
-        "WITH GREAT GAME COMES GREAT RAGE - SOME RANDOM IDIOT",
+        "WITH GREAT GAME COMES GREAT RAGE ~ SOME RANDOM IDIOT",
         "TRY NOT TO CRY",
         "YOU COULD NOT LIVE WITH YOUR OWN FAILURE, WHERE DID THAT BRING YOU, BACK TO ME",
         "TOTALLY FAMILY FRIENDLY",

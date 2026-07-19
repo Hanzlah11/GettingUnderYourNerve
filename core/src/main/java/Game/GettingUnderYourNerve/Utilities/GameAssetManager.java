@@ -46,6 +46,12 @@ public class GameAssetManager {
     public static final String CRAB_RUN_PREFIX = "Treasure Hunters/The Crusty Crew/Sprites/Crabby/02-Run/Run ";
     public static final String CRAB_ATTACK_PREFIX = "Treasure Hunters/The Crusty Crew/Sprites/Crabby/07-Attack/Attack ";
 
+    // --- CR7 ---
+    public static final String CR7_WALK_PREFIX = "Treasure Hunters/CR7/Walking/cr";
+    public static final String CR7_RUN_PREFIX = "Treasure Hunters/CR7/Running/cr";
+    public static final String CR7_SUI_PREFIX = "Treasure Hunters/CR7/Sui/cr";
+    public static final String CR7_EXPLOSION_PREFIX = "Treasure Hunters/CR7/Explosion/cr";
+
     // --- BATMAN ---
     public static final String BATMAN_IDLE_PREFIX = "Treasure Hunters/Batman/Idle/";
     public static final String BATMAN_MOVE_PREFIX = "Treasure Hunters/Batman/Moving/";
@@ -104,6 +110,9 @@ public class GameAssetManager {
 
     public static final String PALM_PLAIN_PREFIX = "Treasure Hunters/Palm Tree Island/Sprites/Back Palm Trees/Plain/Back Palm Tree Regular ";
 
+    // Ball
+    public static final String FOOTBALL_BALL = "Treasure Hunters/CR7/ball.png";
+
     public static void loadAllAssets() {
         manager.load(SKY_BASE, Texture.class);
         manager.load(WATER_DEEP, Texture.class);
@@ -148,6 +157,15 @@ public class GameAssetManager {
         loadFrames(BATMAN_IDLE_PREFIX, 3, "%d");
         loadFrames(BATMAN_MOVE_PREFIX, 3, "%d");
         loadFrames(BATMAN_ATTACK_PREFIX, 8, "%d");
+
+        // CR7
+        loadFrames(CR7_WALK_PREFIX, 4, "%d");
+        loadFrames(CR7_RUN_PREFIX, 4, "%d");
+        loadFrames(CR7_SUI_PREFIX, 7, "%d");
+        loadFrames(CR7_EXPLOSION_PREFIX, 6, "%d");
+
+        // Ball
+        manager.load(FOOTBALL_BALL, Texture.class);
 
         //Water
         loadFrames(WATER_SURFACE, 3, "%d");

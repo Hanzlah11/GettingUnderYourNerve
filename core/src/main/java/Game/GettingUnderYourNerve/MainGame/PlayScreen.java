@@ -234,6 +234,17 @@ public class PlayScreen implements Screen {
         }
 
         playableMap.UpdateMap(cam.GetCam(), delta, world, player);
+
+        // --- FOOTBALL ENCOUNTER CAPTURE ---
+        if (playableMap.pendingMinigameMatch) {
+            playableMap.pendingMinigameMatch = false; // Reset map event flag
+            if (currentTrack != null) currentTrack.pause(); // Pause level music tracks cleanly[cite: 9]
+
+            // Swap screens and save current platformer context to return later[cite: 8]
+            game.setScreen(new FootballMinigameScreen(game, this));
+            return false; // Halts additional logic updates on this frame instance[cite: 9]
+        }
+
         return true;
     }
 
