@@ -2,15 +2,12 @@ package Game.GettingUnderYourNerve.Map;
 
 import Game.GettingUnderYourNerve.*;
 import Game.GettingUnderYourNerve.Decorations.PalmTree;
-import Game.GettingUnderYourNerve.Enemies.Batman;
+import Game.GettingUnderYourNerve.Enemies.*;
 import Game.GettingUnderYourNerve.Platforms.HorizontalPlatform;
 import Game.GettingUnderYourNerve.Platforms.VerticalPlatform;
 import Game.GettingUnderYourNerve.Trolls.*;
 import Game.GettingUnderYourNerve.Collectables.Coin;
 import Game.GettingUnderYourNerve.Collectables.Potion;
-import Game.GettingUnderYourNerve.Enemies.Crab;
-import Game.GettingUnderYourNerve.Enemies.Enemy;
-import Game.GettingUnderYourNerve.Enemies.Shell;
 import Game.GettingUnderYourNerve.Trap.Spike;
 import Game.GettingUnderYourNerve.Trap.SpikedBall;
 import Game.GettingUnderYourNerve.Trap.Trap;
@@ -89,6 +86,8 @@ public class PlayableMap {
     public java.util.HashMap<Potion, String> potionIds = new java.util.HashMap<>();
     public java.util.ArrayList<String> collectedPotionIds = new java.util.ArrayList<>();
     public java.util.ArrayList<String> pendingDestroyPotionIds = new java.util.ArrayList<>();
+
+    public boolean pendingMinigameMatch = false;
 
     public PlayableMap(GameAssetManager assets, int level) {
         this.assets = assets;
@@ -406,20 +405,23 @@ public class PlayableMap {
 
     public void createEnemiesFromMap(World world, int level) {
         for (MapLayer layer : map.getLayers()) {
-            if (layer instanceof TiledMapTileLayer) continue;
+            if (layer instanceof TiledMapTileLayer) continue; //[cite: 6]
             for (MapObject object : layer.getObjects()) {
-                if (object instanceof RectangleMapObject) {
-                    Rectangle rect = ((RectangleMapObject) object).getRectangle();
-                    String name = object.getName();
+                if (object instanceof RectangleMapObject) { //[cite: 6]
+                    Rectangle rect = ((RectangleMapObject) object).getRectangle(); //[cite: 6]
+                    String name = object.getName(); //[cite: 6]
 
-                    if ("Batman".equals(name) && level == 0) continue;
+                    if ("Batman".equals(name) && level == 0) continue; //[cite: 6]
 
-                    if ("Shell".equals(name)) {
-                        enemies.add(new Shell(world, rect.x, rect.y, assets));
-                    } else if ("Crab".equals(name)) {
-                        enemies.add(new Crab(world, rect.x, rect.y, assets));
-                    } else if ("Batman".equals(name)) {
-                        enemies.add(new Batman(world, rect.x, rect.y, assets));
+                    if ("Shell".equals(name)) { //[cite: 6]
+                        enemies.add(new Shell(world, rect.x, rect.y, assets)); //[cite: 6]
+                    } else if ("Crab".equals(name)) { //[cite: 6]
+                        enemies.add(new Crab(world, rect.x, rect.y, assets)); //[cite: 6]
+                    } else if ("Batman".equals(name)) { //[cite: 6]
+                        enemies.add(new Batman(world, rect.x, rect.y, assets)); //[cite: 6]
+                    } else if ("CR7".equals(name)) { // <-- ADD THIS BLOCK
+                        // Note: CR7 does not need the 'assets' parameter based on our constructor
+                        enemies.add(new CR7(world, rect.x, rect.y));
                     }
                 }
             }
@@ -706,10 +708,32 @@ public class PlayableMap {
         while (iter.hasNext()) {
             Enemy enemy = iter.next();
             enemy.updateEnemy(dt, player);
+
+            // Intercept active football match request before destroying body
+            if (enemy instanceof CR7 && ((CR7) enemy).triggerMinigame) {
+                pendingMinigameMatch = true;
+            }
+
             if (enemy.setToDestroy && !enemy.destroyed) {
                 world.destroyBody(enemy.b2body);
                 enemy.destroyed = true;
                 iter.remove();
+            }
+        }
+    }
+
+    public void resolveMinigameOutcome(boolean playerWon) {
+        for (Enemy enemy : enemies) {
+            if (enemy instanceof CR7 && ((CR7) enemy).triggerMinigame) {
+                CR7 ronaldo = (CR7) enemy;
+                ronaldo.triggerMinigame = false; // Clear active trigger flag
+
+                if (playerWon) {
+                    ronaldo.setToDestroy = true; // Safe removal if player won the match[cite: 7]
+                } else {
+                    ronaldo.resetAfterMinigameLoss(); // Reset to patrol if CR7 won the match
+                }
+                break;
             }
         }
     }
