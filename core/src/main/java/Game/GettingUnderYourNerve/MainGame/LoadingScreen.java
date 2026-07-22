@@ -13,6 +13,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
@@ -23,6 +24,7 @@ public class LoadingScreen implements Screen {
     private Main game;
     private Viewport viewport;
     private GlyphLayout layout;
+    private ShapeRenderer shapeRenderer; // For drawing the cinematic black fade overlay
 
     // --- Fonts ---
     private BitmapFont font;
@@ -39,14 +41,28 @@ public class LoadingScreen implements Screen {
     private int transitionState = 0;
     private float textAlpha = 0f;
 
+    // --- Retro Custom Transition States ---
+    private boolean isTransitioningToTitle = false;
+    private float transitionTimer = 0f;
+    private float promptScale = 1.0f;       // Grows when key is pressed
+    private float screenFadeAlpha = 0f;      // Fades screen to black
+    private final float RETRO_DURATION = 1.0f; // Total time for the pop & fade effect
+
+    // --- FIX: guards against using disposed resources within the same frame ---
+    // Once the retro transition finishes, we set this flag instead of disposing
+    // immediately. render() checks it right after updateTransitions() and bails
+    // out before touching font/texture/shapeRenderer resources that are about
+    // to be (or have been) disposed.
+    private boolean screenFinished = false;
+
     // --- JellyByte Logo Animation Assets ---
     private Animation<TextureRegion> logoAnimation;
     private float logoAnimationTime = 0f;
-    private final float LOGO_STAY_DURATION = 1.5f; // Seconds logo stays on screen after animation ends
+    private final float LOGO_STAY_DURATION = 1.5f;
 
     // --- Audio Assets ---
     private Music logoIntroMusic;
-    private boolean musicStarted = false; // --- FIXED: Reliable music tracking flag ---
+    private boolean musicStarted = false;
 
     // --- Configuration Constants ---
     private final float FADE_DURATION = 0.6f;
@@ -63,6 +79,7 @@ public class LoadingScreen implements Screen {
         this.game = game;
         this.viewport = new ExtendViewport(800, 480);
         this.layout = new GlyphLayout();
+        this.shapeRenderer = new ShapeRenderer();
 
         loadAssets();
     }
@@ -71,23 +88,20 @@ public class LoadingScreen implements Screen {
         font = loadFont("ui/runescape_uf.ttf", 22, false);
         titleFont = loadFont("ui/runescape_uf.ttf", 28, true);
 
-        // Load Logo Intro Music Track
         logoIntroMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/sounds/UI/logo_intro.mp3"));
         logoIntroMusic.setLooping(false);
 
-        // Match the player's persistent audio options settings volume slider
         float musicVolume = Gdx.app.getPreferences("GettingUnderYourNerve_Settings").getFloat("musicVolume", 0.5f);
         logoIntroMusic.setVolume(musicVolume);
 
-        // Load JellyByte Logo Frame Sequence
-        int frameCount = 51;
+        int frameCount = 52;
         TextureRegion[] logoFrames = new TextureRegion[frameCount];
         for (int i = 0; i < frameCount; i++) {
             String fileName = String.format("ui/logo/ezgif-frame-%03d.png", i + 1);
             Texture texture = new Texture(Gdx.files.internal(fileName));
             logoFrames[i] = new TextureRegion(texture);
         }
-        logoAnimation = new Animation<>(0.098f, logoFrames); // Frame duration synchronized to 5s
+        logoAnimation = new Animation<>(0.04f, logoFrames);
         logoAnimation.setPlayMode(Animation.PlayMode.NORMAL);
     }
 
@@ -95,7 +109,6 @@ public class LoadingScreen implements Screen {
     public void render(float delta) {
         stateTime += delta;
 
-        // Pitch black canvas for premium contrast aesthetics
         Gdx.gl.glClearColor(0.02f, 0.02f, 0.02f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
@@ -104,31 +117,37 @@ public class LoadingScreen implements Screen {
 
         updateTransitions(delta);
 
+        // --- FIX: bail out immediately once the screen has handed off control.
+        // updateTransitions() may have just called dispose() on font/titleFont/
+        // shapeRenderer/logoAnimation textures. Without this guard, the code
+        // below would immediately try to use those freed GPU resources in the
+        // very same frame, which crashes (GL error / native crash / NPE
+        // depending on backend).
+        if (screenFinished) {
+            return;
+        }
+
         game.batch.begin();
 
         // 1. RENDER STAGE CONTENT
         if (currentSlideIndex == -1) {
-            // --- JELLYBYTE LOGO SPLASH STAGE ---
             logoAnimationTime += delta;
             TextureRegion currentFrame = logoAnimation.getKeyFrame(logoAnimationTime);
 
             if (currentFrame != null) {
                 game.batch.setColor(1f, 1f, 1f, textAlpha);
-
-                // --- Scale your 920x720 frames to cover the FULL 800x480 virtual screen space ---
                 game.batch.draw(currentFrame, 0, 0, 800f, 480f);
-
                 game.batch.setColor(1f, 1f, 1f, 1f);
             }
         } else if (transitionState != 3) {
-            // --- STANDARD INNER ACKNOWLEDGMENT TEXT ---
             float maxTextWidth = 620f;
             font.setColor(new Color(1f, 1f, 1f, textAlpha));
             font.draw(game.batch, acknowledgments[currentSlideIndex], (800 - maxTextWidth) / 2f, 270f, maxTextWidth, Align.center, true);
         } else {
-            // --- FINAL LOCK ACTION: Hold final array element text visibly ---
             float maxTextWidth = 620f;
-            font.setColor(Color.WHITE);
+            // If retro transition running, dim out underlying text subtly
+            float currentTextAlpha = isTransitioningToTitle ? Math.max(0f, 1f - (transitionTimer * 2f)) : 1f;
+            font.setColor(new Color(1f, 1f, 1f, currentTextAlpha));
             font.draw(game.batch, acknowledgments[currentSlideIndex], (800 - maxTextWidth) / 2f, 270f, maxTextWidth, Align.center, true);
         }
 
@@ -137,7 +156,6 @@ public class LoadingScreen implements Screen {
 
         // 3. RENDER RUNNING PROGRESS BARS OR INTERACTION PROMPTS
         if (transitionState != 3) {
-            // --- FIXED: Only show LOADING... if the intro logo (-1) has finished playing ---
             if (currentSlideIndex > -1) {
                 titleFont.setColor(new Color(0.7f, 0.7f, 0.7f, glowAlpha));
                 String loadingText = "LOADING... ";
@@ -145,24 +163,75 @@ public class LoadingScreen implements Screen {
                 titleFont.draw(game.batch, loadingText, 800f - layout.width - 40f, 50f);
             }
         } else {
-            // --- INTERACTION PROMPT (Bottom Center) ---
-            titleFont.setColor(new Color(1.0f, 0.85f, 0.0f, glowAlpha));
+            // --- RETRO "PRESS ANY KEY" SCALE POP RENDERING ---
             String continueText = "PRESS ANY KEY TO CONTINUE";
-            layout.setText(titleFont, continueText);
-            titleFont.draw(game.batch, continueText, (800 - layout.width) / 2f, 60f);
 
-            // Transition to main menu upon input registration
-            if (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY) || Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-                game.setScreen(new TitleScreen(game));
-                dispose();
+            // Set dynamic scale multiplier context
+            titleFont.getData().setScale(promptScale);
+            layout.setText(titleFont, continueText);
+
+            float targetX = (800f - layout.width) / 2f;
+            float targetY = 60f + (layout.height / 2f); // Offset base baseline center logic
+
+            if (!isTransitioningToTitle) {
+                titleFont.setColor(new Color(1.0f, 0.85f, 0.0f, glowAlpha));
+            } else {
+                // Flash white rapidly like old arcades while fading out completely
+                float flashGlow = (int)(transitionTimer * 20f) % 2 == 0 ? 1f : 0.4f;
+                float promptAlpha = Math.max(0f, 1f - (transitionTimer / RETRO_DURATION));
+                titleFont.setColor(new Color(1.0f, 0.95f, 0.4f * flashGlow, promptAlpha));
+            }
+
+            titleFont.draw(game.batch, continueText, targetX, targetY);
+            titleFont.getData().setScale(1.0f); // Always restore font scale defaults immediately
+
+            // Capture initial keystroke entry
+            if (!isTransitioningToTitle && (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY) || Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))) {
+                isTransitioningToTitle = true;
+                transitionTimer = 0f;
             }
         }
 
         game.batch.end();
+
+        // 4. DRAW CINEMATIC FADE OVERLAY
+        if (isTransitioningToTitle) {
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(new Color(0.02f, 0.02f, 0.02f, screenFadeAlpha));
+            shapeRenderer.rect(0, 0, 800f, 480f);
+            shapeRenderer.end();
+            Gdx.gl.glDisable(GL20.GL_BLEND);
+        }
     }
 
     private void updateTransitions(float dt) {
-        if (transitionState == 3) return;
+        if (transitionState == 3) {
+            // Handle Retro Exit Sequence Timers
+            if (isTransitioningToTitle) {
+                transitionTimer += dt;
+                float progress = Math.min(1f, transitionTimer / RETRO_DURATION);
+
+                // Arcade scale mathematical pop curves (Starts scaling up, peaks cleanly)
+                promptScale = 1.0f + (MathUtils.sin(progress * MathUtils.PI) * 0.4f);
+
+                // Linear fade weight profile to screen space black overlay
+                screenFadeAlpha = Math.min(1f, progress * 1.2f);
+
+                if (progress >= 1f) {
+                    // --- FIX: mark finished BEFORE switching/disposing, and let
+                    // render() see the flag and skip all further resource use
+                    // this frame. Previously dispose() ran here while render()
+                    // kept executing and touching the now-freed font/texture/
+                    // shapeRenderer objects in the same call stack -> crash.
+                    screenFinished = true;
+                    game.setScreen(new TitleScreen(game));
+                    dispose();
+                }
+            }
+            return;
+        }
 
         slideTimer += dt;
 
@@ -184,7 +253,7 @@ public class LoadingScreen implements Screen {
 
                 if (currentSlideIndex == -1) {
                     if (logoAnimation.isAnimationFinished(logoAnimationTime) && slideTimer >= LOGO_STAY_DURATION) {
-                        transitionState = 2; // Fade out logo
+                        transitionState = 2;
                         slideTimer = 0f;
                     }
                 } else {
@@ -236,14 +305,13 @@ public class LoadingScreen implements Screen {
     @Override public void dispose() {
         if (font != null) font.dispose();
         if (titleFont != null) titleFont.dispose();
+        if (shapeRenderer != null) shapeRenderer.dispose();
 
-        // Stop and dispose the intro music stream cleanly
         if (logoIntroMusic != null) {
             logoIntroMusic.stop();
             logoIntroMusic.dispose();
         }
 
-        // Clean up animation frame native dependencies from GPU VRAM memory
         if (logoAnimation != null) {
             for (TextureRegion frame : logoAnimation.getKeyFrames()) {
                 frame.getTexture().dispose();

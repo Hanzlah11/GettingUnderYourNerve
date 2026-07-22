@@ -47,12 +47,21 @@ public class AudioManager
     public static Music level2Music;
     public static Music bossArenaMusic;
 
+    // --- NEW: FOOTBALL MINIGAME ASSETS ---
+    public static Music footballCrowd;
+    public static Music footballWhistle;
+    public static Sound footballKick;
+    public static Sound cr7Sui;
+    public static Sound cr7Explosion;
+
     private static boolean wasRickPlaying = false;
     private static boolean wasPokemonPlaying = false;
     private static boolean wasElevatorPlaying = false;
     private static boolean wasLevel1Playing = false;
     private static boolean wasLevel2Playing = false;
     private static boolean wasBossArenaPlaying = false;
+    private static boolean wasFootballCrowdPlaying = false;
+    private static boolean wasFootballWhistlePlaying = false;
 
     // --- Persistent Volume Modifiers ---
     private static float musicVolumeModifier = 0.5f;
@@ -116,21 +125,21 @@ public class AudioManager
         level2Music    = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/General/level2.mp3"));
         bossArenaMusic = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/General/bossLevel.mp3"));
 
-        // Set initial volumes for all music tracks
+        // --- LOAD FOOTBALL AUDIO ASSETS ---
+        footballCrowd = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/Enemy/crowd.mp3"));
+        footballWhistle = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/Enemy/whistle.wav"));
+        footballKick = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Enemy/kicking.wav"));
+        cr7Sui = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Enemy/sui.wav"));
+        cr7Explosion = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Enemy/explosion.wav"));
+
         syncMusicVolume();
     }
 
-    /**
-     * Updates the persistent music volume modifier and propagates it instantly to playing tracks.
-     */
     public static void updateMusicVolume(float volume) {
         musicVolumeModifier = volume;
         syncMusicVolume();
     }
 
-    /**
-     * Updates the persistent SFX volume modifier.
-     */
     public static void updateSFXVolume(float volume) {
         sfxVolumeModifier = volume;
     }
@@ -138,15 +147,16 @@ public class AudioManager
     private static void syncMusicVolume() {
         if (rickMusic != null) rickMusic.setVolume(musicVolumeModifier);
         if (pokemonFightMusic != null) pokemonFightMusic.setVolume(musicVolumeModifier);
-        if (elevatorMusic != null) elevatorMusic.setVolume(musicVolumeModifier * 0.5f); // Normalized
+        if (elevatorMusic != null) elevatorMusic.setVolume(musicVolumeModifier * 0.5f);
         if (level1Music != null) level1Music.setVolume(musicVolumeModifier);
         if (level2Music != null) level2Music.setVolume(musicVolumeModifier);
         if (bossArenaMusic != null) bossArenaMusic.setVolume(musicVolumeModifier);
+
+        // Dynamic Minigame Volume Sync Hooks
+        if (footballCrowd != null) footballCrowd.setVolume(musicVolumeModifier * 0.4f);
+        if (footballWhistle != null) footballWhistle.setVolume(musicVolumeModifier * 0.5f);
     }
 
-    /**
-     * Plays a sound effect automatically adjusted to the user's current settings slider.
-     */
     public static long playSFX(Sound sound) {
         if (sound != null) {
             return sound.play(sfxVolumeModifier);
@@ -154,9 +164,6 @@ public class AudioManager
         return -1;
     }
 
-    /**
-     * Plays a sound effect at a relative local volume level scaled against the player's master settings.
-     */
     public static long playSFX(Sound sound, float relativeVolume) {
         if (sound != null) {
             return sound.play(sfxVolumeModifier * relativeVolume);
@@ -165,23 +172,24 @@ public class AudioManager
     }
 
     public static void pauseAll() {
-        // 1. Record which music track was actively playing before pausing
         wasRickPlaying = (rickMusic != null && rickMusic.isPlaying());
         wasPokemonPlaying = (pokemonFightMusic != null && pokemonFightMusic.isPlaying());
         wasElevatorPlaying = (elevatorMusic != null && elevatorMusic.isPlaying());
         wasLevel1Playing = (level1Music != null && level1Music.isPlaying());
         wasLevel2Playing = (level2Music != null && level2Music.isPlaying());
         wasBossArenaPlaying = (bossArenaMusic != null && bossArenaMusic.isPlaying());
+        wasFootballCrowdPlaying = (footballCrowd != null && footballCrowd.isPlaying());
+        wasFootballWhistlePlaying = (footballWhistle != null && footballWhistle.isPlaying());
 
-        // 2. Pause the active music tracks
         if (wasRickPlaying) rickMusic.pause();
         if (wasPokemonPlaying) pokemonFightMusic.pause();
         if (wasElevatorPlaying) elevatorMusic.pause();
         if (wasLevel1Playing) level1Music.pause();
         if (wasLevel2Playing) level2Music.pause();
         if (wasBossArenaPlaying) bossArenaMusic.pause();
+        if (wasFootballCrowdPlaying) footballCrowd.pause();
+        if (wasFootballWhistlePlaying) footballWhistle.pause();
 
-        // 3. Pause all active running sound effect instances
         if (footsteps != null) footsteps.pause();
         if (shellShoot != null) shellShoot.pause();
         if (projectileBreak != null) projectileBreak.pause();
@@ -189,7 +197,6 @@ public class AudioManager
         if (crabAttack != null) crabAttack.pause();
         if (crabPatrol != null) crabPatrol.pause();
 
-        // 4. Pause Dialogue lines
         if (ending_player1 != null) ending_player1.pause();
         if (ending_batman1 != null) ending_batman1.pause();
         if (batman_boss1 != null) batman_boss1.pause();
@@ -203,7 +210,6 @@ public class AudioManager
         if (batman_lvl2 != null) batman_lvl2.pause();
         if (batman_lvl3 != null) batman_lvl3.pause();
 
-        // --- PROLOGUE CUTSCENE AUDIO PAUSES ---
         if (batman_spawn_whoosh != null) batman_spawn_whoosh.pause();
         if (batman_shout_stop != null) batman_shout_stop.pause();
         if (batman_swing_fist != null) batman_swing_fist.pause();
@@ -211,30 +217,31 @@ public class AudioManager
         if (player_protest_wrong_guy != null) player_protest_wrong_guy.pause();
         if (batman_apology_sorry != null) batman_apology_sorry.pause();
         if (player_shout_come_back != null) player_shout_come_back.pause();
+
+        if (footballKick != null) footballKick.pause();
+        if (cr7Sui != null) cr7Sui.pause();
+        if (cr7Explosion != null) cr7Explosion.pause();
     }
 
-    /**
-     * Resumes only the music track that was active before the pause,
-     * and resumes any ongoing sound effects. Call this when exiting the PauseScreen.
-     */
     public static void resumeAll() {
-        // 1. Only resume the music track that was recorded as playing
         if (wasRickPlaying && rickMusic != null) rickMusic.play();
         if (wasPokemonPlaying && pokemonFightMusic != null) pokemonFightMusic.play();
         if (wasElevatorPlaying && elevatorMusic != null) elevatorMusic.play();
         if (wasLevel1Playing && level1Music != null) level1Music.play();
         if (wasLevel2Playing && level2Music != null) level2Music.play();
         if (wasBossArenaPlaying && bossArenaMusic != null) bossArenaMusic.play();
+        if (wasFootballCrowdPlaying && footballCrowd != null) footballCrowd.play();
+        if (wasFootballWhistlePlaying && footballWhistle != null) footballWhistle.play();
 
-        // 2. Clear the tracking variables to prevent state pollution
         wasRickPlaying = false;
         wasPokemonPlaying = false;
         wasElevatorPlaying = false;
         wasLevel1Playing = false;
         wasLevel2Playing = false;
         wasBossArenaPlaying = false;
+        wasFootballCrowdPlaying = false;
+        wasFootballWhistlePlaying = false;
 
-        // 3. Resume all sound effect channels
         if (footsteps != null) footsteps.resume();
         if (shellShoot != null) shellShoot.resume();
         if (projectileBreak != null) projectileBreak.resume();
@@ -242,7 +249,6 @@ public class AudioManager
         if (crabAttack != null) crabAttack.resume();
         if (crabPatrol != null) crabPatrol.resume();
 
-        // 4. Resume dialogue lines
         if (ending_player1 != null) ending_player1.resume();
         if (ending_batman1 != null) ending_batman1.resume();
         if (batman_boss1 != null) batman_boss1.resume();
@@ -256,7 +262,6 @@ public class AudioManager
         if (batman_lvl2 != null) batman_lvl2.resume();
         if (batman_lvl3 != null) batman_lvl3.resume();
 
-        // --- PROLOGUE CUTSCENE AUDIO RESUMES ---
         if (batman_spawn_whoosh != null) batman_spawn_whoosh.resume();
         if (batman_shout_stop != null) batman_shout_stop.resume();
         if (batman_swing_fist != null) batman_swing_fist.resume();
@@ -264,6 +269,10 @@ public class AudioManager
         if (player_protest_wrong_guy != null) player_protest_wrong_guy.resume();
         if (batman_apology_sorry != null) batman_apology_sorry.resume();
         if (player_shout_come_back != null) player_shout_come_back.resume();
+
+        if (footballKick != null) footballKick.resume();
+        if (cr7Sui != null) cr7Sui.resume();
+        if (cr7Explosion != null) cr7Explosion.resume();
     }
 
     public static void dispose()
@@ -302,5 +311,11 @@ public class AudioManager
         if (level1Music != null) level1Music.dispose();
         if (level2Music != null) level2Music.dispose();
         if (bossArenaMusic != null) bossArenaMusic.dispose();
+
+        if (footballCrowd != null) footballCrowd.dispose();
+        if (footballWhistle != null) footballWhistle.dispose();
+        if (footballKick != null) footballKick.dispose();
+        if (cr7Sui != null) cr7Sui.dispose();
+        if (cr7Explosion != null) cr7Explosion.dispose();
     }
 }

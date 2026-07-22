@@ -303,7 +303,7 @@ public class PokemonBattleScreen implements Screen {
             case WON:
                 if (stateTimer > 2.0f) {
                     // Uses the stored variables to load back into PlayScreen accurately
-                    game.setScreen(new PlayScreen(game, playerName, slotIndex, startX, startY, startLevel, true));
+                    game.setScreen(new EndCreditsScreen(game));
                     dispose();
                     return false;
                 }

@@ -236,7 +236,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
         if (typedName.length() > 0) {
             String name = typedName.toString().trim();
             FileHandler.saveSlot(selectedSlot, name, 0f, 0f, 0);
-            game.setScreen(new DifficultyScreen(game, titleScreen, name, selectedSlot, 0f, 0f, 0));
+            game.setScreen(new DifficultyScreen(game, titleScreen, name, selectedSlot, 0f, 0f, 2));
         }
     }
 
