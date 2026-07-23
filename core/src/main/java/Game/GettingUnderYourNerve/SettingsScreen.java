@@ -38,11 +38,14 @@ public class SettingsScreen implements Screen {
     // --- UI Layout Bounds ---
     private Rectangle musicSliderBar;
     private Rectangle sfxSliderBar;
+    private Rectangle subtitleBtnRect;
     private Rectangle backBtnRect;
 
-    // --- Volume State ---
+    // --- Settings State ---
     private float musicVolume;
     private float sfxVolume;
+    private boolean subtitlesEnabled;
+
     private boolean isDraggingMusic = false;
     private boolean isDraggingSFX = false;
 
@@ -59,13 +62,15 @@ public class SettingsScreen implements Screen {
         prefs = Gdx.app.getPreferences("GettingUnderYourNerve_Settings");
         musicVolume = prefs.getFloat("musicVolume", 0.5f);
         sfxVolume = prefs.getFloat("sfxVolume", 0.5f);
+        subtitlesEnabled = prefs.getBoolean("subtitlesEnabled", true);
 
         loadAssets();
 
-        // Define layout coordinates (Centered layout inside the viewport)
-        musicSliderBar = new Rectangle(300, 260, 250, 10);
-        sfxSliderBar   = new Rectangle(300, 190, 250, 10);
-        backBtnRect    = new Rectangle(325, 80, 150, 40);
+        // Define adjusted layout coordinates to evenly space all 3 options
+        musicSliderBar  = new Rectangle(300, 275, 250, 10);
+        sfxSliderBar    = new Rectangle(300, 215, 250, 10);
+        subtitleBtnRect = new Rectangle(330, 145, 140, 36);
+        backBtnRect     = new Rectangle(325, 75, 150, 40);
     }
 
     private void loadAssets() {
@@ -131,21 +136,25 @@ public class SettingsScreen implements Screen {
 
         // Header Title
         layout.setText(titleFont, "SETTINGS");
-        titleFont.draw(game.batch, "SETTINGS", (800 - layout.width) / 2f, 360);
+        titleFont.draw(game.batch, "SETTINGS", (800 - layout.width) / 2f, 365);
 
         // --- MUSIC SETTING ROW ---
-        font.draw(game.batch, "MUSIC VOLUME:", 130, 272);
+        font.draw(game.batch, "MUSIC VOLUME:", 130, 287);
         game.batch.draw(btnC, musicSliderBar.x, musicSliderBar.y, musicSliderBar.width, musicSliderBar.height);
         float musicKnobX = musicSliderBar.x + (musicSliderBar.width * musicVolume) - 10;
         game.batch.draw(btnC, musicKnobX, musicSliderBar.y - 10, 20, 30);
-        font.draw(game.batch, Math.round(musicVolume * 100) + "%", 570, 272);
+        font.draw(game.batch, Math.round(musicVolume * 100) + "%", 570, 287);
 
         // --- SFX SETTING ROW ---
-        font.draw(game.batch, "SFX VOLUME:", 130, 202);
+        font.draw(game.batch, "SFX VOLUME:", 130, 227);
         game.batch.draw(btnC, sfxSliderBar.x, sfxSliderBar.y, sfxSliderBar.width, sfxSliderBar.height);
         float sfxKnobX = sfxSliderBar.x + (sfxSliderBar.width * sfxVolume) - 10;
         game.batch.draw(btnC, sfxKnobX, sfxSliderBar.y - 10, 20, 30);
-        font.draw(game.batch, Math.round(sfxVolume * 100) + "%", 570, 202);
+        font.draw(game.batch, Math.round(sfxVolume * 100) + "%", 570, 227);
+
+        // --- SUBTITLES TOGGLE ROW ---
+        font.draw(game.batch, "SUBTITLES:", 130, 168);
+        drawButton(subtitleBtnRect, subtitlesEnabled ? "ON" : "OFF");
 
         // --- BACK BUTTON ---
         drawButton(backBtnRect, "BACK");
@@ -155,22 +164,31 @@ public class SettingsScreen implements Screen {
         touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
         viewport.unproject(touchVec);
 
-        // Detect click down to start slider dragging
         if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            // Subtitle Toggle Click
+            if (subtitleBtnRect.contains(touchVec.x, touchVec.y)) {
+                AudioManager.playSFX(AudioManager.buttonSound);
+                subtitlesEnabled = !subtitlesEnabled;
+                prefs.putBoolean("subtitlesEnabled", subtitlesEnabled);
+                prefs.flush();
+                return;
+            }
+
+            // Back Button Click
             if (backBtnRect.contains(touchVec.x, touchVec.y)) {
-                // Play back button transition sound
                 AudioManager.playSFX(AudioManager.buttonSound);
 
-                // Write configurations to file when returning
+                // Write all configurations to file when returning
                 prefs.putFloat("musicVolume", musicVolume);
                 prefs.putFloat("sfxVolume", sfxVolume);
+                prefs.putBoolean("subtitlesEnabled", subtitlesEnabled);
                 prefs.flush();
 
                 game.setScreen(titleScreen);
                 return;
             }
 
-            // Check if clicking inside slider range bounds
+            // Slider drag triggers
             if (touchVec.y >= musicSliderBar.y - 15 && touchVec.y <= musicSliderBar.y + 25
                 && touchVec.x >= musicSliderBar.x && touchVec.x <= musicSliderBar.x + musicSliderBar.width) {
                 isDraggingMusic = true;
@@ -181,17 +199,17 @@ public class SettingsScreen implements Screen {
             }
         }
 
-        // Handle active drag manipulation
+        // Active drag manipulation
         if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
             if (isDraggingMusic) {
                 float relativeX = touchVec.x - musicSliderBar.x;
                 musicVolume = Math.max(0f, Math.min(1f, relativeX / musicSliderBar.width));
-                AudioManager.updateMusicVolume(musicVolume); // Propagate instantly to playing music
+                AudioManager.updateMusicVolume(musicVolume);
             }
             if (isDraggingSFX) {
                 float relativeX = touchVec.x - sfxSliderBar.x;
                 sfxVolume = Math.max(0f, Math.min(1f, relativeX / sfxSliderBar.width));
-                AudioManager.updateSFXVolume(sfxVolume); // Propagate instantly for SFX calls
+                AudioManager.updateSFXVolume(sfxVolume);
             }
         } else {
             isDraggingMusic = false;

@@ -48,7 +48,7 @@ public class PokemonBattleScreen implements Screen {
     private int playerMaxHp = 100;
     private int playerHp = 100;
     private int enemyMaxHp = 300;
-    private int enemyHp = 300;
+    private int enemyHp = 5;
 
     private boolean damageApplied = false;
     private boolean isPotion = false;
@@ -67,7 +67,6 @@ public class PokemonBattleScreen implements Screen {
     private Animation<TextureRegion> currentPikaAnimation;
     private Animation<TextureRegion> currentCharAnimation;
 
-    // Updated Constructor to catch the save data
     public PokemonBattleScreen(Main game, String playerName, int slotIndex, float startX, float startY, int startLevel) {
         this.game = game;
         this.playerName = playerName;
@@ -302,8 +301,8 @@ public class PokemonBattleScreen implements Screen {
 
             case WON:
                 if (stateTimer > 2.0f) {
-                    // Uses the stored variables to load back into PlayScreen accurately
-                    game.setScreen(new EndCreditsScreen(game));
+                    // FIXED: Re-loads PlayScreen in post-battle mode so AvengersCutscene triggers[cite: 22]
+                    game.setScreen(new PlayScreen(game, playerName, slotIndex, startX, startY, startLevel, true));
                     dispose();
                     return false;
                 }
@@ -311,7 +310,9 @@ public class PokemonBattleScreen implements Screen {
 
             case LOST:
                 if (stateTimer > 2.0f) {
-                    Gdx.app.exit();
+                    // FIXED: Plays credits roll when losing the Pokemon fight[cite: 27]
+                    game.setScreen(new EndCreditsScreen(game));
+                    dispose();
                     return false;
                 }
                 break;

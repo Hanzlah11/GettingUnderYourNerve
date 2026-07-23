@@ -405,22 +405,21 @@ public class PlayableMap {
 
     public void createEnemiesFromMap(World world, int level) {
         for (MapLayer layer : map.getLayers()) {
-            if (layer instanceof TiledMapTileLayer) continue; //[cite: 6]
+            if (layer instanceof TiledMapTileLayer) continue;
             for (MapObject object : layer.getObjects()) {
-                if (object instanceof RectangleMapObject) { //[cite: 6]
-                    Rectangle rect = ((RectangleMapObject) object).getRectangle(); //[cite: 6]
-                    String name = object.getName(); //[cite: 6]
+                if (object instanceof RectangleMapObject) {
+                    Rectangle rect = ((RectangleMapObject) object).getRectangle();
+                    String name = object.getName();
 
-                    if ("Batman".equals(name) && level == 0) continue; //[cite: 6]
+                    if ("Batman".equals(name) && level == 0) continue;
 
-                    if ("Shell".equals(name)) { //[cite: 6]
-                        enemies.add(new Shell(world, rect.x, rect.y, assets)); //[cite: 6]
-                    } else if ("Crab".equals(name)) { //[cite: 6]
-                        enemies.add(new Crab(world, rect.x, rect.y, assets)); //[cite: 6]
-                    } else if ("Batman".equals(name)) { //[cite: 6]
-                        enemies.add(new Batman(world, rect.x, rect.y, assets)); //[cite: 6]
-                    } else if ("CR7".equals(name)) { // <-- ADD THIS BLOCK
-                        // Note: CR7 does not need the 'assets' parameter based on our constructor
+                    if ("Shell".equals(name)) {
+                        enemies.add(new Shell(world, rect.x, rect.y, assets));
+                    } else if ("Crab".equals(name)) {
+                        enemies.add(new Crab(world, rect.x, rect.y, assets));
+                    } else if ("Batman".equals(name)) {
+                        enemies.add(new Batman(world, rect.x, rect.y, assets));
+                    } else if ("CR7".equals(name)) {
                         enemies.add(new CR7(world, rect.x, rect.y));
                     }
                 }
@@ -580,7 +579,10 @@ public class PlayableMap {
                     }
 
                     if (troll.layer != null) {
-                        troll.layer.setCell(troll.col, troll.row, null);
+                        String layerName = troll.layer.getName().toLowerCase();
+                        if (!layerName.contains("bg") && !layerName.contains("background") && !layerName.contains("decoration")) {
+                            troll.layer.setCell(troll.col, troll.row, null);
+                        }
                     }
 
                     deactivatedTrollTiles.add(troll);
@@ -631,6 +633,9 @@ public class PlayableMap {
         pendingTriggers.clear();
     }
 
+    /**
+     * FIXED: Drops troll tiles and boss floor layers without erasing background artwork layers![cite: 30]
+     */
     public void dropBossFloor(World world) {
         Iterator<TrollTile> iter = trollTiles.iterator();
         while (iter.hasNext()) {
@@ -643,11 +648,38 @@ public class PlayableMap {
                     troll.body = null;
                 }
                 if (troll.layer != null) {
-                    troll.layer.setCell(troll.col, troll.row, null);
+                    String layerName = troll.layer.getName().toLowerCase();
+                    // Skip clearing cell if layer belongs to background visuals[cite: 30]
+                    if (!layerName.contains("bg") && !layerName.contains("background") && !layerName.contains("decoration")) {
+                        troll.layer.setCell(troll.col, troll.row, null);
+                    }
                 }
 
                 deactivatedTrollTiles.add(troll);
                 iter.remove();
+            }
+        }
+
+        if (map != null) {
+            for (MapLayer layer : map.getLayers()) {
+                if (layer instanceof TiledMapTileLayer) {
+                    TiledMapTileLayer tileLayer = (TiledMapTileLayer) layer;
+                    String layerName = tileLayer.getName().toLowerCase();
+
+                    // Skip background/artwork layers so visual artwork stays intact[cite: 30]
+                    if (layerName.contains("background") || layerName.contains("bg") || layerName.contains("decoration")) {
+                        continue;
+                    }
+
+                    // Only wipe cells on actual ground/boss floor layers[cite: 30]
+                    if (layerName.contains("boss") || layerName.contains("floor")) {
+                        for (int col = 0; col < tileLayer.getWidth(); col++) {
+                            for (int row = 0; row < tileLayer.getHeight(); row++) {
+                                tileLayer.setCell(col, row, null);
+                            }
+                        }
+                    }
+                }
             }
         }
         System.out.println("CONTINGENCY ACTIVATED: TROLL FLOOR DROPPED!");
@@ -709,7 +741,6 @@ public class PlayableMap {
             Enemy enemy = iter.next();
             enemy.updateEnemy(dt, player);
 
-            // Intercept active football match request before destroying body
             if (enemy instanceof CR7 && ((CR7) enemy).triggerMinigame) {
                 pendingMinigameMatch = true;
             }
@@ -726,12 +757,12 @@ public class PlayableMap {
         for (Enemy enemy : enemies) {
             if (enemy instanceof CR7 && ((CR7) enemy).triggerMinigame) {
                 CR7 ronaldo = (CR7) enemy;
-                ronaldo.triggerMinigame = false; // Clear active trigger flag
+                ronaldo.triggerMinigame = false;
 
                 if (playerWon) {
-                    ronaldo.setToDestroy = true; // Safe removal if player won the match[cite: 7]
+                    ronaldo.setToDestroy = true;
                 } else {
-                    ronaldo.resetAfterMinigameLoss(); // Reset to patrol if CR7 won the match
+                    ronaldo.resetAfterMinigameLoss();
                 }
                 break;
             }

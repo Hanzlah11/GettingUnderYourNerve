@@ -5,6 +5,7 @@ import Game.GettingUnderYourNerve.Player;
 import Game.GettingUnderYourNerve.Enemies.Batman;
 import Game.GettingUnderYourNerve.Utilities.GameCam;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -31,8 +32,10 @@ public abstract class BaseCutscene {
     protected String currentSubtitle = "";
     private BitmapFont subtitleFont;
     private GlyphLayout subtitleLayout;
-    private Texture blackBgTexture; // Used to draw the background box
-    private boolean subtitle = true;
+    private Texture blackBgTexture;
+
+    // Preferences handles
+    private Preferences prefs;
 
     public BaseCutscene(PlayScreen screen, Batman batman) {
         this.screen = screen;
@@ -40,16 +43,19 @@ public abstract class BaseCutscene {
         this.batman = batman;
         this.cam = screen.getCam();
 
-        // Load your custom TTF font with high contrast outlines
+        // READ USER PREFERENCES HANDLE
+        this.prefs = Gdx.app.getPreferences("GettingUnderYourNerve_Settings");
+
+        // Load custom TTF font
         this.subtitleFont = loadFont("ui/runescape_uf.ttf", 26);
         this.subtitleLayout = new GlyphLayout();
 
-        // Generate a 1x1 white pixel texture programmatically to use as a tinted background box
+        // Generate 1x1 white pixel texture for background box
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.WHITE);
         pixmap.fill();
         this.blackBgTexture = new Texture(pixmap);
-        pixmap.dispose(); // Always clean up native pixmaps immediately!
+        pixmap.dispose();
     }
 
     private BitmapFont loadFont(String filename, int size) {
@@ -96,25 +102,16 @@ public abstract class BaseCutscene {
         return finished;
     }
 
-    /**
-     * Renders overlays over the cutscene. Swaps projection matrices
-     * to ensure subtitles render pixel-perfect at screen-space positions.
-     */
     public void render(SpriteBatch batch) {
-        // --- 1. Save the world-camera matrix so we don't disrupt map coordinates ---
         com.badlogic.gdx.math.Matrix4 oldMatrix = batch.getProjectionMatrix().cpy();
 
-        // --- 2. Temporarily switch batch to screen-space pixel coordinates (800x480) ---
         com.badlogic.gdx.math.Matrix4 uiMatrix = new com.badlogic.gdx.math.Matrix4();
         uiMatrix.setToOrtho2D(0, 0, 800, 480);
         batch.setProjectionMatrix(uiMatrix);
 
-        // =========================================================================
-        // PERMANENT "PRESS R TO SKIP" PROMPT (TOP-RIGHT CORNER)
-        // =========================================================================
+        // PERMANENT "PRESS R TO SKIP" PROMPT
         String skipText = "Press R to skip the cutscene...";
         com.badlogic.gdx.graphics.g2d.GlyphLayout skipLayout = new com.badlogic.gdx.graphics.g2d.GlyphLayout();
-        // We reuse your custom subtitleFont so it matches the Runescape text design style
         skipLayout.setText(subtitleFont, skipText);
 
         float skipPaddingX = 15f;
@@ -122,22 +119,21 @@ public abstract class BaseCutscene {
         float skipBoxWidth = skipLayout.width + (skipPaddingX * 2);
         float skipBoxHeight = skipLayout.height + (skipPaddingY * 2);
 
-        // Position it flush against the top-right margins of our 800x480 frame container
-        float skipBoxX = 800f - skipBoxWidth - 20f; // 20px padding from right edge
-        float skipBoxY = 480f - skipBoxHeight - 20f; // 20px padding from top edge
+        float skipBoxX = 800f - skipBoxWidth - 20f;
+        float skipBoxY = 480f - skipBoxHeight - 20f;
 
-        // Save and color-tint the batch for the skip background box
         Color oldColor = batch.getColor().cpy();
-        batch.setColor(0f, 0f, 0f, 0.50f); // Slightly softer 50% opacity dark bar box
+        batch.setColor(0f, 0f, 0f, 0.50f);
         batch.draw(blackBgTexture, skipBoxX, skipBoxY, skipBoxWidth, skipBoxHeight);
-        batch.setColor(oldColor); // Instantly restore standard color mask
+        batch.setColor(oldColor);
 
-        // Draw prompt message text
         subtitleFont.draw(batch, skipText, skipBoxX + skipPaddingX, skipBoxY + skipPaddingY + skipLayout.height);
-        // =========================================================================
 
-        // --- 3. Render Dialogue Subtitles (Only if one exists and subtitles are enabled) ---
-        if (currentSubtitle != null && !currentSubtitle.isEmpty() && subtitle) {
+        // FIXED: Dynamically check the preference file live on every render frame
+        boolean subtitlesEnabled = prefs.getBoolean("subtitlesEnabled", true);
+
+        // Render Dialogue Subtitles (Only if text exists AND subtitles are enabled live)
+        if (currentSubtitle != null && !currentSubtitle.isEmpty() && subtitlesEnabled) {
             float maxTextWidth = 600f;
             subtitleLayout.setText(
                 subtitleFont,
@@ -159,22 +155,18 @@ public abstract class BaseCutscene {
             float boxX = (800 - boxWidth) / 2f;
             float boxY = 45f;
 
-            // Draw Subtitle Box
             batch.setColor(0f, 0f, 0f, 0.65f);
             batch.draw(blackBgTexture, boxX, boxY, boxWidth, boxHeight);
             batch.setColor(oldColor);
 
-            // Draw Subtitle Text
             float textX = (800 - maxTextWidth) / 2f;
             float textY = boxY + paddingY + textHeight;
             subtitleFont.draw(batch, subtitleLayout, textX, textY);
         }
 
-        // --- 6. Restore original world camera matrix back to standard rendering ---
         batch.setProjectionMatrix(oldMatrix);
     }
 
-    // --- NEW: Clean up disposable assets to prevent memory leaks ---
     public void dispose() {
         if (subtitleFont != null) {
             subtitleFont.dispose();
