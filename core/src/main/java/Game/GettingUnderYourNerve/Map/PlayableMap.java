@@ -45,7 +45,7 @@ public class PlayableMap {
     private Array<VerticalPlatform> verticalPlatforms;
     private Array<DevilPlatform> devilPlatforms;
 
-    //Decor
+    // Decor
     private Array<PalmTree> palmTrees;
 
     // Collectables
@@ -128,13 +128,13 @@ public class PlayableMap {
 
     private void createPalmTreesFromMap() {
         MapLayer layer = map.getLayers().get("PalmTree");
-        if(layer == null) return;
+        if (layer == null) return;
 
-        for(MapObject object : layer.getObjects()) {
-            if(!(object instanceof RectangleMapObject))
+        for (MapObject object : layer.getObjects()) {
+            if (!(object instanceof RectangleMapObject))
                 continue;
 
-            Rectangle rect = ((RectangleMapObject)object).getRectangle();
+            Rectangle rect = ((RectangleMapObject) object).getRectangle();
             palmTrees.add(new PalmTree(rect));
         }
     }
@@ -211,7 +211,7 @@ public class PlayableMap {
             if (!props.containsKey("Solid"))
                 continue;
 
-            Rectangle rect = ((RectangleMapObject)object).getRectangle();
+            Rectangle rect = ((RectangleMapObject) object).getRectangle();
 
             BodyDef bdef = new BodyDef();
             bdef.type = BodyDef.BodyType.StaticBody;
@@ -549,13 +549,13 @@ public class PlayableMap {
         }
     }
 
-    public void updatePalmTrees(float dt){
-        for(PalmTree tree : palmTrees)
+    public void updatePalmTrees(float dt) {
+        for (PalmTree tree : palmTrees)
             tree.update(dt);
     }
 
-    public void drawPalmTrees(SpriteBatch batch){
-        for(PalmTree tree : palmTrees)
+    public void drawPalmTrees(SpriteBatch batch) {
+        for (PalmTree tree : palmTrees)
             tree.render(batch);
     }
 
@@ -633,9 +633,6 @@ public class PlayableMap {
         pendingTriggers.clear();
     }
 
-    /**
-     * FIXED: Drops troll tiles and boss floor layers without erasing background artwork layers![cite: 30]
-     */
     public void dropBossFloor(World world) {
         Iterator<TrollTile> iter = trollTiles.iterator();
         while (iter.hasNext()) {
@@ -649,7 +646,6 @@ public class PlayableMap {
                 }
                 if (troll.layer != null) {
                     String layerName = troll.layer.getName().toLowerCase();
-                    // Skip clearing cell if layer belongs to background visuals[cite: 30]
                     if (!layerName.contains("bg") && !layerName.contains("background") && !layerName.contains("decoration")) {
                         troll.layer.setCell(troll.col, troll.row, null);
                     }
@@ -666,12 +662,10 @@ public class PlayableMap {
                     TiledMapTileLayer tileLayer = (TiledMapTileLayer) layer;
                     String layerName = tileLayer.getName().toLowerCase();
 
-                    // Skip background/artwork layers so visual artwork stays intact[cite: 30]
                     if (layerName.contains("background") || layerName.contains("bg") || layerName.contains("decoration")) {
                         continue;
                     }
 
-                    // Only wipe cells on actual ground/boss floor layers[cite: 30]
                     if (layerName.contains("boss") || layerName.contains("floor")) {
                         for (int col = 0; col < tileLayer.getWidth(); col++) {
                             for (int row = 0; row < tileLayer.getHeight(); row++) {

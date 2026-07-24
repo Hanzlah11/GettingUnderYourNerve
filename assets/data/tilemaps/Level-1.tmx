@@ -145,7 +145,6 @@
 </data>
  </layer>
  <objectgroup id="13" name="TrollZones">
-  <object id="173" name="Crab" x="-176" y="240" width="72" height="32"/>
   <object id="215" x="400" y="544" width="192" height="256">
    <properties>
     <property name="id" type="int" value="1"/>
@@ -233,12 +232,10 @@
   <object id="307" x="2832" y="480" width="32" height="80"/>
   <object id="317" x="1536" y="384" width="32" height="80"/>
  </objectgroup>
- <objectgroup id="30" name="CR7">
-  <object id="310" name="CR7" x="-128" y="512" width="64" height="64"/>
- </objectgroup>
+ <objectgroup id="30" name="CR7"/>
  <objectgroup id="23" name="CutsceneData">
   <object id="312" name="pancam" x="80" y="320" width="19.3333" height="153.333"/>
-  <object id="313" name="cam_end" x="4432" y="320" width="19.3333" height="153.333"/>
+  <object id="313" name="cam_end" x="4352" y="320" width="19.3333" height="153.333"/>
   <object id="314" name="escapebatman" x="4720" y="288" width="19.3333" height="153.333"/>
  </objectgroup>
  <objectgroup id="9" name="Crab">
