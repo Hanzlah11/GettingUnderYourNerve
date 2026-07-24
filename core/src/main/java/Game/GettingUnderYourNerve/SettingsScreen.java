@@ -1,6 +1,8 @@
 package Game.GettingUnderYourNerve;
 
 import Game.GettingUnderYourNerve.Main;
+import Game.GettingUnderYourNerve.MainGame.PauseScreen;
+import Game.GettingUnderYourNerve.MainGame.PlayScreen;
 import Game.GettingUnderYourNerve.MainGame.TitleScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
@@ -22,7 +24,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 public class SettingsScreen implements Screen {
 
     private Main game;
-    private TitleScreen titleScreen;
+    private Screen parentScreen; // Generically supports TitleScreen or PauseScreen/PlayScreen
     private Viewport viewport;
     private Vector3 touchVec;
 
@@ -48,9 +50,9 @@ public class SettingsScreen implements Screen {
 
     private Preferences prefs;
 
-    public SettingsScreen(Main game, TitleScreen titleScreen) {
+    public SettingsScreen(Main game, Screen parentScreen) {
         this.game = game;
-        this.titleScreen = titleScreen;
+        this.parentScreen = parentScreen;
         this.viewport = new ExtendViewport(800, 480);
         this.touchVec = new Vector3();
         this.layout = new GlyphLayout();
@@ -95,22 +97,26 @@ public class SettingsScreen implements Screen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // 2. Render Live Tiled Map Background
-        titleScreen.getMenuBg().updateAndRender(delta, game.batch);
+        // 2. Render Contextual Background
+        if (parentScreen instanceof TitleScreen) {
+            ((TitleScreen) parentScreen).getMenuBg().updateAndRender(delta, game.batch);
+        } else if (parentScreen instanceof PlayScreen) {
+            ((PlayScreen) parentScreen).drawWorld(delta);
+        } else if (parentScreen instanceof PauseScreen) {
+            // Draw PlayScreen world behind pause contexts
+            ((PauseScreen) parentScreen).getPlayScreen().drawWorld(delta);
+        }
 
         // 3. Render Settings Interface on top
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
 
         game.batch.begin();
-
         drawSettingsBoard();
-
         game.batch.end();
     }
 
     private void drawSettingsBoard() {
-        // Draw Large Center Wood Board backing
         float bW = 600f;
         float bH = 340f;
         float corner = 32f;
@@ -152,25 +158,20 @@ public class SettingsScreen implements Screen {
     }
 
     private void handleInput() {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            returnToParent();
+            return;
+        }
+
         touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
         viewport.unproject(touchVec);
 
-        // Detect click down to start slider dragging
         if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
             if (backBtnRect.contains(touchVec.x, touchVec.y)) {
-                // Play back button transition sound
-                AudioManager.playSFX(AudioManager.buttonSound);
-
-                // Write configurations to file when returning
-                prefs.putFloat("musicVolume", musicVolume);
-                prefs.putFloat("sfxVolume", sfxVolume);
-                prefs.flush();
-
-                game.setScreen(titleScreen);
+                returnToParent();
                 return;
             }
 
-            // Check if clicking inside slider range bounds
             if (touchVec.y >= musicSliderBar.y - 15 && touchVec.y <= musicSliderBar.y + 25
                 && touchVec.x >= musicSliderBar.x && touchVec.x <= musicSliderBar.x + musicSliderBar.width) {
                 isDraggingMusic = true;
@@ -181,22 +182,30 @@ public class SettingsScreen implements Screen {
             }
         }
 
-        // Handle active drag manipulation
         if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
             if (isDraggingMusic) {
                 float relativeX = touchVec.x - musicSliderBar.x;
                 musicVolume = Math.max(0f, Math.min(1f, relativeX / musicSliderBar.width));
-                AudioManager.updateMusicVolume(musicVolume); // Propagate instantly to playing music
+                AudioManager.updateMusicVolume(musicVolume);
             }
             if (isDraggingSFX) {
                 float relativeX = touchVec.x - sfxSliderBar.x;
                 sfxVolume = Math.max(0f, Math.min(1f, relativeX / sfxSliderBar.width));
-                AudioManager.updateSFXVolume(sfxVolume); // Propagate instantly for SFX calls
+                AudioManager.updateSFXVolume(sfxVolume);
             }
         } else {
             isDraggingMusic = false;
             isDraggingSFX = false;
         }
+    }
+
+    private void returnToParent() {
+        AudioManager.playSFX(AudioManager.buttonSound);
+        prefs.putFloat("musicVolume", musicVolume);
+        prefs.putFloat("sfxVolume", sfxVolume);
+        prefs.flush();
+
+        game.setScreen(parentScreen);
     }
 
     private void drawButton(Rectangle rect, String label) {

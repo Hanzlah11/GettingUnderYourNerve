@@ -51,7 +51,6 @@ public class PlayScreen implements Screen {
 
     Music currentTrack = null;
 
-    // Updated Constructor to receive save data
     public PlayScreen(Main game, String playerName, int slotIndex, float startX, float startY, int levelNumber) {
         this(game, playerName, slotIndex, startX, startY, levelNumber, false);
         startLevelMusic();
@@ -88,10 +87,7 @@ public class PlayScreen implements Screen {
         playableMap.createPhysicsFromMap(world);
         contactListener.setPlayableMap(playableMap);
 
-        // Spawn player normally from Tiled
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
-
-        // Immediately overwrite coordinates with Save Data (if X/Y are not 0)
         player.setPlayerData(this.playerName, this.slotIndex, this.startX, this.startY, this.levelNumber);
 
         // --- LEVEL TRIGGER LOGIC ---
@@ -182,7 +178,6 @@ public class PlayScreen implements Screen {
 
             if (currentCutscene.isFinished()) {
                 if (levelNumber == 0) {
-                    // Update next level transition with save variables
                     game.setScreen(new PlayScreen(game, playerName, slotIndex, 0, 0, 1));
                     this.dispose();
                     return false;
@@ -198,16 +193,22 @@ public class PlayScreen implements Screen {
         world.step(1 / 60f, 6, 2);
         boolean wasDead = player.isDead;
 
+        // FIXED: Stop music & transition to EndCreditsScreen when player falls post-battle[cite: 31]
         if (player.isDead && levelNumber == 3 && isPostBattle) {
-            System.out.println("GAME OVER. BATMAN WINS.");
-            Gdx.app.exit();
+            if (currentTrack != null) {
+                currentTrack.stop();
+            }
+            if (AudioManager.bossArenaMusic != null) {
+                AudioManager.bossArenaMusic.stop();
+            }
+            game.setScreen(new EndCreditsScreen(game));
+            this.dispose();
             return false;
         }
 
         player.UpdatePlayer(delta, world, inCutscene);
 
         if (!inCutscene && playableMap.isFlagReached()) {
-            // Update next level transition with save variables
             game.setScreen(new PlayScreen(game, playerName, slotIndex, 0, 0, levelNumber + 1));
             this.dispose();
             return false;
@@ -223,26 +224,28 @@ public class PlayScreen implements Screen {
         }
 
         if (player.isDead) {
-            // Updated death logic to rely on the Player's checkpoint variables
             cam.SetDeathTarget(worldWidth, worldHeight, halfVW, halfVH, player.checkpointX, player.checkpointY);
         }
 
         if (currentCutscene == null) {
-            cam.Update(worldWidth, worldHeight, halfVW, halfVH, player.GetXpos(), player.GetYpos());
+            // FIXED: Freeze Y-position during post-battle fall so camera stays on the platform level[cite: 31]
+            if (levelNumber == 3 && isPostBattle) {
+                cam.Update(worldWidth, worldHeight, halfVW, halfVH, player.GetXpos(), cam.GetCam().position.y);
+            } else {
+                cam.Update(worldWidth, worldHeight, halfVW, halfVH, player.GetXpos(), player.GetYpos());
+            }
         } else {
             cam.GetCam().update();
         }
 
         playableMap.UpdateMap(cam.GetCam(), delta, world, player);
 
-        // --- FOOTBALL ENCOUNTER CAPTURE ---
         if (playableMap.pendingMinigameMatch) {
-            playableMap.pendingMinigameMatch = false; // Reset map event flag
-            if (currentTrack != null) currentTrack.pause(); // Pause level music tracks cleanly[cite: 9]
+            playableMap.pendingMinigameMatch = false;
+            if (currentTrack != null) currentTrack.pause();
 
-            // Swap screens and save current platformer context to return later[cite: 8]
             game.setScreen(new FootballMinigameScreen(game, this));
-            return false; // Halts additional logic updates on this frame instance[cite: 9]
+            return false;
         }
 
         return true;
@@ -276,7 +279,7 @@ public class PlayScreen implements Screen {
     }
 
     public void increaseLevelAudio(float volume) {
-        if(currentTrack != null)
+        if (currentTrack != null)
             currentTrack.setVolume(volume);
     }
 
@@ -293,6 +296,9 @@ public class PlayScreen implements Screen {
 
     @Override
     public void dispose() {
+        if (currentTrack != null) {
+            currentTrack.stop();
+        }
         playableMap.dispose();
         player.dispose();
         if (debugRenderer != null) debugRenderer.dispose();

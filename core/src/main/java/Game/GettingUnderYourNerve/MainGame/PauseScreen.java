@@ -2,6 +2,8 @@ package Game.GettingUnderYourNerve.MainGame;
 
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.MainGame.PlayScreen;
+import Game.GettingUnderYourNerve.MainGame.TitleScreen;
+import Game.GettingUnderYourNerve.SettingsScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;
@@ -14,7 +16,6 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
-import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -27,16 +28,16 @@ public class PauseScreen implements Screen {
     // --- UI Layout ---
     private Viewport uiViewport;
     private static final float BOARD_WIDTH  = 320f;
-    private static final float BOARD_HEIGHT = 260f;
+    private static final float BOARD_HEIGHT = 300f; // Expanded to fit 5 buttons
     private static final float BOARD_CORNER = 32f;
     private static final float BOARD_EDGE_H = 32f;
     private static final float BOARD_EDGE_V = 32f;
     private static final float BOARD_OFFSET_Y = HudBanner.BANNER_HEIGHT / 2f;
 
     private static final float BTN_CORNER_W = 20f;
-    private static final float BTN_HEIGHT   = 40f;
+    private static final float BTN_HEIGHT   = 36f;
     private static final float BTN_WIDTH    = 200f;
-    private static final float BTN_GAP      = 18f;
+    private static final float BTN_GAP      = 12f;
 
     // --- Textures & Fonts ---
     private Texture boardTL, boardTC, boardTR, boardCL, boardCC, boardCR, boardBL, boardBC, boardBR;
@@ -47,8 +48,9 @@ public class PauseScreen implements Screen {
     // --- Interactive Elements ---
     private Rectangle resumeRect     = new Rectangle();
     private Rectangle helpRect       = new Rectangle();
-    private Rectangle cheatsRect     = new Rectangle();
-    private Rectangle checkpointRect = new Rectangle(); // Replaced menuRect for Checkpoint system
+    private Rectangle settingsRect   = new Rectangle();
+    private Rectangle menuRect       = new Rectangle();
+    private Rectangle checkpointRect = new Rectangle();
     private Vector3 touchVec         = new Vector3();
 
     // --- Prank Logic ---
@@ -71,6 +73,10 @@ public class PauseScreen implements Screen {
 
         loadAssets(game.assets);
         recalcLayout();
+    }
+
+    public PlayScreen getPlayScreen() {
+        return playScreen;
     }
 
     private void loadAssets(GameAssetManager assets) {
@@ -112,25 +118,28 @@ public class PauseScreen implements Screen {
         }
         playScreen.drawWorld(delta);
 
-        // 2. UI Setup
+        // Dynamic Viewport UI Setup
         uiViewport.apply();
         game.batch.setProjectionMatrix(uiViewport.getCamera().combined);
 
-        float bx = (uiViewport.getWorldWidth() - BOARD_WIDTH) / 2f;
-        float by = (uiViewport.getWorldHeight() - BOARD_HEIGHT) / 2f - BOARD_OFFSET_Y;
+        // Calculate dynamic origin coordinates based on real-time Viewport dimensions
+        float worldW = uiViewport.getWorldWidth();
+        float worldH = uiViewport.getWorldHeight();
+        float bx = (worldW - BOARD_WIDTH) / 2f;
+        float by = (worldH - BOARD_HEIGHT) / 2f - BOARD_OFFSET_Y;
         float innerW = BOARD_WIDTH - BOARD_CORNER * 2;
         float innerH = BOARD_HEIGHT - BOARD_CORNER * 2;
 
         game.batch.begin();
 
-        // --- STEP A: Draw the center backing first ---
+        // --- STEP A: Center backing ---
         drawTex(game.batch, boardCC, bx + BOARD_CORNER, by + BOARD_CORNER, innerW, innerH);
 
-        // --- STEP B: Draw Rickroll OR Buttons in the middle ---
+        // --- STEP B: Rickroll OR Buttons ---
         if (isRickrolling) {
             rickTimer += delta;
             TextureRegion frame = rickAnim.getKeyFrame(rickTimer);
-            game.batch.draw(frame, bx + (BOARD_WIDTH - RICK_DRAW_W)/2f, by + (BOARD_HEIGHT - RICK_DRAW_H)/2f, RICK_DRAW_W, RICK_DRAW_H);
+            game.batch.draw(frame, bx + (BOARD_WIDTH - RICK_DRAW_W) / 2f, by + (BOARD_HEIGHT - RICK_DRAW_H) / 2f, RICK_DRAW_W, RICK_DRAW_H);
 
             if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) stopRickroll();
             if (rickAnim.isAnimationFinished(rickTimer)) stopRickroll();
@@ -138,11 +147,12 @@ public class PauseScreen implements Screen {
             handleMenuInput();
             drawButton(game.batch, resumeRect, "Resume");
             drawButton(game.batch, helpRect, "Need Some Help?");
-            drawButton(game.batch, cheatsRect, "Cheat Codes");
-            drawButton(game.batch, checkpointRect, "Last Checkpoint"); // Integrated checkpoint button
+            drawButton(game.batch, settingsRect, "Settings");
+            drawButton(game.batch, menuRect, "Main Menu");
+            drawButton(game.batch, checkpointRect, "Last Checkpoint");
         }
 
-        // --- STEP C: Draw the Wooden Frame ON TOP of the video ---
+        // --- STEP C: Wooden Frame ---
         drawTex(game.batch, boardTL, bx,                              by + BOARD_HEIGHT - BOARD_CORNER, BOARD_CORNER, BOARD_CORNER);
         drawTex(game.batch, boardTC, bx + BOARD_CORNER,               by + BOARD_HEIGHT - BOARD_EDGE_H,  innerW,       BOARD_EDGE_H);
         drawTex(game.batch, boardTR, bx + BOARD_WIDTH - BOARD_CORNER, by + BOARD_HEIGHT - BOARD_CORNER, BOARD_CORNER, BOARD_CORNER);
@@ -154,8 +164,8 @@ public class PauseScreen implements Screen {
 
         game.batch.end();
 
-        // --- STEP D: Fixed HUD Visibility ---
-        hudBanner.attachToBoard(bx - 180, by + 25, BOARD_HEIGHT);
+        // --- STEP D: Fixed HUD ---
+        hudBanner.attachToBoard(bx - 180, by + 45, BOARD_HEIGHT);
         hudBanner.render(game.batch, health, score, uiViewport.getCamera().combined);
     }
 
@@ -179,12 +189,16 @@ public class PauseScreen implements Screen {
         if (resumeRect.contains(touchVec.x, touchVec.y)) {
             resumeGame();
         } else if (helpRect.contains(touchVec.x, touchVec.y)) {
-            Gdx.app.exit();
-        } else if (cheatsRect.contains(touchVec.x, touchVec.y)) {
             isRickrolling = true;
             AudioManager.rickMusic.play();
+        } else if (settingsRect.contains(touchVec.x, touchVec.y)) {
+            game.setScreen(new SettingsScreen(game, this));
+        } else if (menuRect.contains(touchVec.x, touchVec.y)) {
+            stopRickroll();
+            playScreen.dispose();
+            game.setScreen(new TitleScreen(game));
+            dispose();
         } else if (checkpointRect.contains(touchVec.x, touchVec.y)) {
-            // Force the player to respawn at their saved coordinates
             playScreen.getPlayer().Respawn();
             resumeGame();
             dispose();
@@ -196,33 +210,37 @@ public class PauseScreen implements Screen {
         drawTex(batch, btnC, rect.x + BTN_CORNER_W, rect.y, rect.width - BTN_CORNER_W * 2, rect.height);
         drawTex(batch, btnR, rect.x + rect.width - BTN_CORNER_W, rect.y, BTN_CORNER_W, rect.height);
         layout.setText(font, label);
-        font.draw(batch, label, rect.x + (rect.width - layout.width)/2f, rect.y + (rect.height + layout.height)/2f);
+        font.draw(batch, label, rect.x + (rect.width - layout.width) / 2f, rect.y + (rect.height + layout.height) / 2f);
     }
 
     private void drawTex(SpriteBatch batch, Texture tex, float x, float y, float w, float h) {
         if (tex != null) batch.draw(tex, x, y, w, h);
     }
 
+    /**
+     * Recalculates all button bounding boxes dynamically based on current Viewport dimensions.
+     */
     private void recalcLayout() {
-        float bx = (800 - BOARD_WIDTH) / 2f;
-        float by = (480 - BOARD_HEIGHT) / 2f - BOARD_OFFSET_Y;
-        float totalBtns = (BTN_HEIGHT * 4) + (BTN_GAP * 3);
+        float worldW = uiViewport.getWorldWidth();
+        float worldH = uiViewport.getWorldHeight();
+
+        float bx = (worldW - BOARD_WIDTH) / 2f;
+        float by = (worldH - BOARD_HEIGHT) / 2f - BOARD_OFFSET_Y;
+        float totalBtns = (BTN_HEIGHT * 5) + (BTN_GAP * 4);
         float startY = by + (BOARD_HEIGHT - totalBtns) / 2f;
         float btnX = bx + (BOARD_WIDTH - BTN_WIDTH) / 2f;
 
-        // Updated to use the checkpointRect for the bottom-most button position
         checkpointRect.set(btnX, startY, BTN_WIDTH, BTN_HEIGHT);
-        cheatsRect.set(btnX, startY + BTN_HEIGHT + BTN_GAP, BTN_WIDTH, BTN_HEIGHT);
-        helpRect.set(btnX, startY + (BTN_HEIGHT + BTN_GAP) * 2f, BTN_WIDTH, BTN_HEIGHT);
-        resumeRect.set(btnX, startY + (BTN_HEIGHT + BTN_GAP) * 3f, BTN_WIDTH, BTN_HEIGHT);
+        menuRect.set(btnX, startY + BTN_HEIGHT + BTN_GAP, BTN_WIDTH, BTN_HEIGHT);
+        settingsRect.set(btnX, startY + (BTN_HEIGHT + BTN_GAP) * 2f, BTN_WIDTH, BTN_HEIGHT);
+        helpRect.set(btnX, startY + (BTN_HEIGHT + BTN_GAP) * 3f, BTN_WIDTH, BTN_HEIGHT);
+        resumeRect.set(btnX, startY + (BTN_HEIGHT + BTN_GAP) * 4f, BTN_WIDTH, BTN_HEIGHT);
     }
 
     private BitmapFont loadFont(String filename, int size) {
         try {
-            FreeTypeFontGenerator gen =
-                new FreeTypeFontGenerator(Gdx.files.internal(filename));
-            FreeTypeFontGenerator.FreeTypeFontParameter p =
-                new FreeTypeFontGenerator.FreeTypeFontParameter();
+            FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal(filename));
+            FreeTypeFontGenerator.FreeTypeFontParameter p = new FreeTypeFontGenerator.FreeTypeFontParameter();
             p.size        = size;
             p.color       = Color.WHITE;
             p.borderWidth = 1.5f;
@@ -237,11 +255,14 @@ public class PauseScreen implements Screen {
     }
 
     @Override public void show() { }
+
     @Override
     public void resize(int width, int height) {
         uiViewport.update(width, height, true);
         playScreen.resize(width, height);
+        recalcLayout(); // Recalculates button positions when window expands or scales
     }
+
     @Override public void pause() { }
     @Override public void resume() { }
     @Override public void hide() { }

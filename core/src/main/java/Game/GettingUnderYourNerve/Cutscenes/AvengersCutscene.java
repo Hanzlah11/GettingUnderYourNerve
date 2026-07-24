@@ -20,8 +20,10 @@ public class AvengersCutscene extends BaseCutscene {
     public void update(float dt) {
         stateTimer += dt;
 
-        // Keep camera locked on player height
-        cam.GetCam().position.y = player.GetYpos() + 0.5f;
+        // FIXED: Only lock camera Y during speech; freeze Y when floor drops (state 3)
+        if (state < 3) {
+            cam.GetCam().position.y = player.GetYpos() + 0.5f;
+        }
 
         // Pan camera between Batman and the Player
         float targetX = (batman != null) ? (player.GetXpos() + batman.GetXpos()) / 2f : player.GetXpos();
@@ -36,35 +38,31 @@ public class AvengersCutscene extends BaseCutscene {
                 } else if (batman != null) {
                     batman.b2body.setLinearVelocity(0, 0);
                     batman.setAction(Batman.State.IDLE);
-                    batman.facingRight = false; // Turn back to face player
+                    batman.facingRight = false;
                     state = 1; stateTimer = 0;
                 }
                 break;
 
-            case 1: // PLAYER SPEAKS FIRST (player1.wav - 10s)
+            case 1: // PLAYER SPEAKS FIRST
                 if (!playedPlayerLine) {
-                    // Play using the volume slider, scaled at full relative volume (1.0f)
                     AudioManager.playSFX(AudioManager.ending_player1, 1.0f);
                     playedPlayerLine = true;
                 }
-                //It's over batman! Your charizard is down! Now stop this madness and apologize for all the trolls and spikes you put me through!
                 if(stateTimer < 4.5f)
                     currentSubtitle = "It's over batman. Your Charizard is down!";
                 else if (stateTimer >= 4.5f && stateTimer <= 8.5f)
                     currentSubtitle = "Now stop this madness and apologize\nfor all the trolls ";
                 else
                     currentSubtitle = "and spikes you put me through!";
-                // Wait for player audio to finish (10 seconds)
+
                 if (stateTimer > 10.5f) { state = 2; stateTimer = 0; currentSubtitle = "";}
                 break;
 
-            case 2: // BATMAN SPEAKS SECOND (batman1.wav - 20s)
+            case 2: // BATMAN SPEAKS SECOND
                 if (!playedBatmanLine) {
-                    // Play using the volume slider, scaled at full relative volume (1.0f)
                     AudioManager.playSFX(AudioManager.ending_batman1, 1.0f);
                     playedBatmanLine = true;
                 }
-                //Apologize? You still don't understand, do you? I don't lose! I simply adjust the parameters of the fight! I am vengeance! I am the night! I am Batman! And I have contingencies for everything!
                 if(stateTimer < 3.5f)
                     currentSubtitle = "Apologize? You still don't understand, do you?";
                 else if (stateTimer >= 3.5f && stateTimer < 9.5f)
@@ -78,7 +76,6 @@ public class AvengersCutscene extends BaseCutscene {
                 else
                     currentSubtitle = "And I have contingencies for everything!";
 
-                // Wait for Batman's long "contingency" response (20 seconds)
                 if (stateTimer > 21.0f) { state = 3; stateTimer = 0; currentSubtitle = "";}
                 break;
 
@@ -89,7 +86,7 @@ public class AvengersCutscene extends BaseCutscene {
                 player.getPlayerBody().setAwake(true);
                 player.getPlayerBody().applyLinearImpulse(new Vector2(0, -0.1f), player.getPlayerBody().getWorldCenter(), true);
 
-                finished = true; // End cutscene so PlayScreen handles the death
+                finished = true; // End cutscene
                 break;
         }
 
@@ -101,7 +98,6 @@ public class AvengersCutscene extends BaseCutscene {
 
     @Override
     public void skip() {
-        // Force the player to listen; skipping is not allowed in the finale
         System.out.println("You cannot skip the inevitable.");
     }
 }
