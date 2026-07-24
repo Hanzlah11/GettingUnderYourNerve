@@ -5,6 +5,7 @@ import Game.GettingUnderYourNerve.Player;
 import Game.GettingUnderYourNerve.Enemies.Batman;
 import Game.GettingUnderYourNerve.Utilities.GameCam;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -31,8 +32,10 @@ public abstract class BaseCutscene {
     protected String currentSubtitle = "";
     private BitmapFont subtitleFont;
     private GlyphLayout subtitleLayout;
-    private Texture blackBgTexture; // Used to draw the background box
-    private boolean subtitle = true;
+    private Texture blackBgTexture;
+
+    // Preferences handles
+    private Preferences prefs;
 
     public BaseCutscene(PlayScreen screen, Batman batman) {
         this.screen = screen;
@@ -40,16 +43,19 @@ public abstract class BaseCutscene {
         this.batman = batman;
         this.cam = screen.getCam();
 
-        // Load your custom TTF font with high contrast outlines
+        // READ USER PREFERENCES HANDLE
+        this.prefs = Gdx.app.getPreferences("GettingUnderYourNerve_Settings");
+
+        // Load custom TTF font
         this.subtitleFont = loadFont("ui/runescape_uf.ttf", 26);
         this.subtitleLayout = new GlyphLayout();
 
-        // Generate a 1x1 white pixel texture programmatically to use as a tinted background box
+        // Generate 1x1 white pixel texture for background box
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.WHITE);
         pixmap.fill();
         this.blackBgTexture = new Texture(pixmap);
-        pixmap.dispose(); // Always clean up native pixmaps immediately!
+        pixmap.dispose();
     }
 
     private BitmapFont loadFont(String filename, int size) {
@@ -96,64 +102,71 @@ public abstract class BaseCutscene {
         return finished;
     }
 
-    /**
-     * Renders overlays over the cutscene. Swaps projection matrices
-     * to ensure subtitles render pixel-perfect at screen-space positions.
-     */
     public void render(SpriteBatch batch) {
-        if (currentSubtitle == null || currentSubtitle.isEmpty() || !subtitle) return;
-
-        // 1. Save the world-camera matrix so we don't disrupt map coordinates
         com.badlogic.gdx.math.Matrix4 oldMatrix = batch.getProjectionMatrix().cpy();
 
-        // 2. Temporarily switch batch to screen-space pixel coordinates (800x480)
         com.badlogic.gdx.math.Matrix4 uiMatrix = new com.badlogic.gdx.math.Matrix4();
         uiMatrix.setToOrtho2D(0, 0, 800, 480);
         batch.setProjectionMatrix(uiMatrix);
 
-        // 3. Measure text bounds AND apply center-alignment for text inside the layout
-        float maxTextWidth = 600f; // Gives room for your text to align itself within
-        subtitleLayout.setText(
-            subtitleFont,
-            currentSubtitle,
-            Color.WHITE,
-            maxTextWidth,
-            com.badlogic.gdx.utils.Align.center, // <-- Forces internal lines to center
-            true
-        );
+        // PERMANENT "PRESS R TO SKIP" PROMPT
+        String skipText = "Press R to skip the cutscene...";
+        com.badlogic.gdx.graphics.g2d.GlyphLayout skipLayout = new com.badlogic.gdx.graphics.g2d.GlyphLayout();
+        skipLayout.setText(subtitleFont, skipText);
 
-        // GlyphLayout width reflects the longest line, height reflects total wrapped lines
-        float textWidth = subtitleLayout.width;
-        float textHeight = subtitleLayout.height;
+        float skipPaddingX = 15f;
+        float skipPaddingY = 8f;
+        float skipBoxWidth = skipLayout.width + (skipPaddingX * 2);
+        float skipBoxHeight = skipLayout.height + (skipPaddingY * 2);
 
-        float paddingX = 20f;
-        float paddingY = 12f;
+        float skipBoxX = 800f - skipBoxWidth - 20f;
+        float skipBoxY = 480f - skipBoxHeight - 20f;
 
-        // Calculate box constraints to wrap the text center-bottom perfectly
-        float boxWidth = textWidth + (paddingX * 2);
-        float boxHeight = textHeight + (paddingY * 2);
-        float boxX = (800 - boxWidth) / 2f;
-        float boxY = 45f; // Position from screen floor
-
-        // 4. Draw the semi-transparent black background box first
         Color oldColor = batch.getColor().cpy();
-        batch.setColor(0f, 0f, 0f, 0.65f); // 65% opacity black background box
-        batch.draw(blackBgTexture, boxX, boxY, boxWidth, boxHeight);
-        batch.setColor(oldColor); // Instantly restore default batch rendering tint
+        batch.setColor(0f, 0f, 0f, 0.50f);
+        batch.draw(blackBgTexture, skipBoxX, skipBoxY, skipBoxWidth, skipBoxHeight);
+        batch.setColor(oldColor);
 
-        // 5. FIXED: Draw the layout object directly instead of the raw string!
-        // Since Align.center relies on a target width context, we align it over the actual
-        // width of the layout text box bounding container.
-        float textX = (800 - maxTextWidth) / 2f;
-        float textY = boxY + paddingY + textHeight; // Font drawing works from the baseline up
+        subtitleFont.draw(batch, skipText, skipBoxX + skipPaddingX, skipBoxY + skipPaddingY + skipLayout.height);
 
-        subtitleFont.draw(batch, subtitleLayout, textX, textY);
+        // FIXED: Dynamically check the preference file live on every render frame
+        boolean subtitlesEnabled = prefs.getBoolean("subtitlesEnabled", true);
 
-        // 6. Restore original world camera matrix back to standard rendering
+        // Render Dialogue Subtitles (Only if text exists AND subtitles are enabled live)
+        if (currentSubtitle != null && !currentSubtitle.isEmpty() && subtitlesEnabled) {
+            float maxTextWidth = 600f;
+            subtitleLayout.setText(
+                subtitleFont,
+                currentSubtitle,
+                Color.WHITE,
+                maxTextWidth,
+                com.badlogic.gdx.utils.Align.center,
+                true
+            );
+
+            float textWidth = subtitleLayout.width;
+            float textHeight = subtitleLayout.height;
+
+            float paddingX = 20f;
+            float paddingY = 12f;
+
+            float boxWidth = textWidth + (paddingX * 2);
+            float boxHeight = textHeight + (paddingY * 2);
+            float boxX = (800 - boxWidth) / 2f;
+            float boxY = 45f;
+
+            batch.setColor(0f, 0f, 0f, 0.65f);
+            batch.draw(blackBgTexture, boxX, boxY, boxWidth, boxHeight);
+            batch.setColor(oldColor);
+
+            float textX = (800 - maxTextWidth) / 2f;
+            float textY = boxY + paddingY + textHeight;
+            subtitleFont.draw(batch, subtitleLayout, textX, textY);
+        }
+
         batch.setProjectionMatrix(oldMatrix);
     }
 
-    // --- NEW: Clean up disposable assets to prevent memory leaks ---
     public void dispose() {
         if (subtitleFont != null) {
             subtitleFont.dispose();
