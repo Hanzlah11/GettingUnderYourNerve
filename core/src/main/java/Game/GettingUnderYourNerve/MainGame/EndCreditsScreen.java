@@ -30,7 +30,8 @@ public class EndCreditsScreen implements Screen {
     private Music creditsMusic;
 
     // --- Scroll & Fade Timers ---
-    private float scrollY = -50f;          // Starts just below the screen field view boundary
+    // FIXED: Adjusted initial scroll position so the title appears near bottom of screen immediately
+    private float scrollY = 110f;
     private final float SCROLL_SPEED = 45f; // Pixels per second
     private float screenFadeAlpha = 1f;     // Starts completely black and fades in the scene
     private float exitFadeAlpha = 0f;       // Transitions to black when exiting
@@ -139,7 +140,6 @@ public class EndCreditsScreen implements Screen {
         headerFont = loadFont("ui/runescape_uf.ttf", 28, true, new Color(1.0f, 0.85f, 0.0f, 1f));
         bodyFont = loadFont("ui/runescape_uf.ttf", 22, false, Color.WHITE);
 
-        // Load your Stranger Things-inspired synth anthem track
         creditsMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/sounds/UI/end_credits_theme.mp3"));
         creditsMusic.setLooping(false);
 
@@ -149,7 +149,6 @@ public class EndCreditsScreen implements Screen {
     }
 
     private void calculateCreditsHeight() {
-        // Run a safe calculation pre-pass to track the total vertical footprint of the text array
         totalCreditsHeight = 0f;
         for (CreditLine line : creditsData) {
             if (line.isHeader) {
@@ -162,55 +161,52 @@ public class EndCreditsScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        // --- SAFE CRASH-PROOF CONTROL FLOW ENGINE ---
         if (updateTimersAndTransitions(delta)) {
-            return; // Break execution frame instantly if screen changes to prevent native memory pointer faults
+            return;
         }
 
-        // Deep cinematic background slate
         Gdx.gl.glClearColor(0.01f, 0.01f, 0.01f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
 
+        float worldW = viewport.getWorldWidth();
+        float worldH = viewport.getWorldHeight();
+
         game.batch.begin();
 
-        // RENDER SCROLLING CREDITS TEXT
+        // RENDER SCROLLING CREDITS TEXT (Dynamically centered relative to viewport width)
         float currentYOffset = scrollY;
         for (CreditLine line : creditsData) {
             BitmapFont activeFont = line.isHeader ? headerFont : bodyFont;
 
-            // Advance positioning baselines dynamically depending on entry classification tags
             currentYOffset -= line.isHeader ? SECTION_SPACING : LINE_SPACING;
 
-            // Culling optimization: Only render lines that fall within the visible window space boundaries
-            if (currentYOffset > -40f && currentYOffset < 520f) {
-                activeFont.draw(game.batch, line.text, 0f, currentYOffset, 800f, Align.center, true);
+            if (currentYOffset > -50f && currentYOffset < (worldH + 50f)) {
+                activeFont.draw(game.batch, line.text, 0f, currentYOffset, worldW, Align.center, true);
             }
         }
 
         game.batch.end();
 
-        // RENDER FADE OVERLAYS
+        // RENDER FADE OVERLAYS (Dynamically sized to full viewport bounds)
         Gdx.gl.glEnable(GL20.GL_BLEND);
         shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
         if (screenFadeAlpha > 0.01f) {
-            // Initial boot intro fade-in covering mask layer
             shapeRenderer.setColor(new Color(0.01f, 0.01f, 0.01f, screenFadeAlpha));
-            shapeRenderer.rect(0, 0, 800f, 480f);
+            shapeRenderer.rect(0, 0, worldW, worldH);
         } else if (isExiting) {
-            // Screen exit fade-out covering mask layer
             shapeRenderer.setColor(new Color(0.01f, 0.01f, 0.01f, exitFadeAlpha));
-            shapeRenderer.rect(0, 0, 800f, 480f);
+            shapeRenderer.rect(0, 0, worldW, worldH);
         }
 
         shapeRenderer.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
-        // Allow players to skip the crawl at any point to go back to the menu loop
+        // Allow players to skip the crawl at any point
         if (!isExiting && (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY) || Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))) {
             isExiting = true;
             exitTimer = 0f;
@@ -218,12 +214,13 @@ public class EndCreditsScreen implements Screen {
     }
 
     private boolean updateTimersAndTransitions(float dt) {
+        float worldH = viewport.getWorldHeight();
+
         if (isExiting) {
             exitTimer += dt;
             float progress = Math.min(1f, exitTimer / FADE_DURATION);
             exitFadeAlpha = progress;
 
-            // Dim music volume downward linearly during the exit sequence transition window
             if (creditsMusic != null && creditsMusic.isPlaying()) {
                 float baseVol = Gdx.app.getPreferences("GettingUnderYourNerve_Settings").getFloat("musicVolume", 0.5f);
                 creditsMusic.setVolume(baseVol * (1f - progress));
@@ -232,21 +229,18 @@ public class EndCreditsScreen implements Screen {
             if (progress >= 1f) {
                 game.setScreen(new TitleScreen(game));
                 dispose();
-                return true; // Screen transition verified successfully
+                return true;
             }
             return false;
         }
 
-        // Handle structural entry introduction fades
         if (screenFadeAlpha > 0f) {
             screenFadeAlpha = Math.max(0f, screenFadeAlpha - (dt / FADE_DURATION));
         }
 
-        // Increment the upward scroll positions continuously
         scrollY += SCROLL_SPEED * dt;
 
-        // Auto-exit script processing once the last element finishes crawling off the top viewport boundary limits
-        if (scrollY > (480f + totalCreditsHeight + 100f)) {
+        if (scrollY > (worldH + totalCreditsHeight + 100f)) {
             isExiting = true;
             exitTimer = 0f;
         }
@@ -290,7 +284,6 @@ public class EndCreditsScreen implements Screen {
         }
     }
 
-    // --- Data Model Struct Isolate ---
     private static class CreditLine {
         String text;
         boolean isHeader;

@@ -19,14 +19,18 @@ import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class PokemonBattleScreen implements Screen {
 
     private Main game;
     private Stage stage;
-    private Viewport viewport;
+
+    // --- DUAL VIEWPORT SYSTEM ---
+    private ExtendViewport bgViewport; // Expands to fill screen edges
+    private FitViewport uiViewport;    // Locks UI strictly to 800x480
+
     private ShapeRenderer shapeRenderer;
     private BitmapFont font;
 
@@ -75,11 +79,14 @@ public class PokemonBattleScreen implements Screen {
         this.startY = startY;
         this.startLevel = startLevel;
 
-        this.viewport = new ExtendViewport(800, 480);
-        this.stage = new Stage(viewport, game.batch);
+        // FIXED: Two viewports handle the background and UI separately
+        this.bgViewport = new ExtendViewport(800, 480);
+        this.uiViewport = new FitViewport(800, 480);
+        this.stage = new Stage(uiViewport, game.batch);
+
         this.shapeRenderer = new ShapeRenderer();
         this.font = new BitmapFont();
-        this.font.getData().setScale(1.5f);
+        this.font.getData().setScale(1.2f);
 
         Gdx.input.setInputProcessor(stage);
 
@@ -136,6 +143,7 @@ public class PokemonBattleScreen implements Screen {
 
         actionMenu.add(innerMenu).expand().fill().pad(4);
 
+        // Fixed sizing ensures they never stretch or uncompress
         rootTable.add(dialogTable).width(480).height(120).pad(10);
         rootTable.add(actionMenu).width(300).height(120).pad(10);
 
@@ -301,7 +309,6 @@ public class PokemonBattleScreen implements Screen {
 
             case WON:
                 if (stateTimer > 2.0f) {
-                    // FIXED: Re-loads PlayScreen in post-battle mode so AvengersCutscene triggers[cite: 22]
                     game.setScreen(new PlayScreen(game, playerName, slotIndex, startX, startY, startLevel, true));
                     dispose();
                     return false;
@@ -310,7 +317,6 @@ public class PokemonBattleScreen implements Screen {
 
             case LOST:
                 if (stateTimer > 2.0f) {
-                    // FIXED: Plays credits roll when losing the Pokemon fight[cite: 27]
                     game.setScreen(new EndCreditsScreen(game));
                     dispose();
                     return false;
@@ -326,16 +332,26 @@ public class PokemonBattleScreen implements Screen {
             return;
         }
 
+        // Apply background viewport to clear full screen edges securely
+        bgViewport.apply();
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         TextureRegion pikaFrame = currentPikaAnimation.getKeyFrame(animationTime);
         TextureRegion charFrame = currentCharAnimation.getKeyFrame(animationTime);
 
-        game.batch.setProjectionMatrix(viewport.getCamera().combined);
+        // 1. Draw Forest Background Edge-to-Edge
+        game.batch.setProjectionMatrix(bgViewport.getCamera().combined);
         game.batch.begin();
+        float bgW = bgViewport.getWorldWidth();
+        float bgH = bgViewport.getWorldHeight();
+        game.batch.draw(bgTexture, 0, 140, bgW, Math.max(340f, bgH - 140f));
+        game.batch.end();
 
-        game.batch.draw(bgTexture, 0, 140, 800, 340);
+        // 2. Lock UI, Sprites, and Text to Center 800x480 Space
+        uiViewport.apply();
+        game.batch.setProjectionMatrix(uiViewport.getCamera().combined);
+        game.batch.begin();
 
         game.batch.draw(charFrame, 510, 240, 200, 200);
         game.batch.draw(pikaFrame, 80, 150, 180, 180);
@@ -343,18 +359,20 @@ public class PokemonBattleScreen implements Screen {
         game.batch.end();
 
         drawHealthBars();
+
         stage.act(delta);
-        stage.draw();
+        stage.draw(); // UI rendering is perfectly clamped to the center
     }
 
     private void drawHealthBars() {
+        game.batch.setProjectionMatrix(uiViewport.getCamera().combined);
         game.batch.begin();
         font.setColor(Color.BLACK);
         font.draw(game.batch, "CHARIZARD  Lv50", 60, 440);
         font.draw(game.batch, "PIKACHU  Lv45", 480, 220);
         game.batch.end();
 
-        shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
+        shapeRenderer.setProjectionMatrix(uiViewport.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
         shapeRenderer.setColor(Color.DARK_GRAY);
@@ -418,7 +436,12 @@ public class PokemonBattleScreen implements Screen {
         currentCharAnimation = charIdleAnim;
     }
 
-    @Override public void resize(int width, int height) { viewport.update(width, height, true); }
+    @Override
+    public void resize(int width, int height) {
+        bgViewport.update(width, height, true);
+        uiViewport.update(width, height, true);
+    }
+
     @Override public void show() { }
     @Override public void pause() { }
     @Override public void resume() { }

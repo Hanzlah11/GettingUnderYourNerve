@@ -1,4 +1,3 @@
-//LeaderboardScreen.java
 package Game.GettingUnderYourNerve.MainGame;
 
 import Game.GettingUnderYourNerve.Main;
@@ -17,7 +16,6 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
-import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import java.util.ArrayList;
@@ -40,11 +38,13 @@ public class LeaderboardScreen implements Screen {
     private ArrayList<FileHandler.ScoreEntry> scores;
 
     TitleScreen titleScreen;
+
     public LeaderboardScreen(Main game, TitleScreen titleScreen) {
         this.game = game;
-        viewport = new ExtendViewport(800, 480);
-        touchVec = new Vector3();
-        layout = new GlyphLayout();
+        this.viewport = new ExtendViewport(800, 480);
+        this.touchVec = new Vector3();
+        this.layout = new GlyphLayout();
+        this.backRect = new Rectangle();
 
         this.titleScreen = titleScreen;
 
@@ -67,8 +67,16 @@ public class LeaderboardScreen implements Screen {
         font = loadFont("ui/runescape_uf.ttf", 20);
         titleFont = loadFont("ui/runescape_uf.ttf", 36);
 
-        backRect = new Rectangle(2, 408, 200, 40);
         scores = FileHandler.getTopScores();
+        recalcLayout();
+    }
+
+    /**
+     * Dynamically positions UI button bounding boxes relative to active viewport bounds
+     */
+    private void recalcLayout() {
+        float worldH = viewport.getWorldHeight();
+        backRect.set(20f, worldH - 60f, 180f, 40f);
     }
 
     @Override
@@ -78,7 +86,7 @@ public class LeaderboardScreen implements Screen {
             viewport.unproject(touchVec);
 
             if (backRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.buttonSound.play(); // PLAY SOUND
+                AudioManager.buttonSound.play();
                 game.setScreen(new TitleScreen(game));
                 dispose();
             }
@@ -87,20 +95,23 @@ public class LeaderboardScreen implements Screen {
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
 
+        float worldW = viewport.getWorldWidth();
+        float worldH = viewport.getWorldHeight();
+
         game.batch.begin();
 
         game.batch.draw(
             background,
             0,
             0,
-            viewport.getWorldWidth(),
-            viewport.getWorldHeight()
+            worldW,
+            worldH
         );
 
         float BOARD_WIDTH = 400f;
         float BOARD_HEIGHT = 380f;
         float BOARD_CORNER = 32f;
-        float bx = (800 - BOARD_WIDTH) / 2f;
+        float bx = (worldW - BOARD_WIDTH) / 2f;
         float by = 75f;
         float innerW = BOARD_WIDTH - BOARD_CORNER * 2;
         float innerH = BOARD_HEIGHT - BOARD_CORNER * 2;
@@ -118,14 +129,14 @@ public class LeaderboardScreen implements Screen {
         game.batch.draw(boardBR, bx + BOARD_WIDTH - BOARD_CORNER, by, BOARD_CORNER, BOARD_CORNER);
 
         layout.setText(titleFont, "TOP 10 SCORES");
-        titleFont.draw(game.batch, "TOP 10 SCORES", (800 - layout.width) / 2f, 430);
+        titleFont.draw(game.batch, "TOP 10 SCORES", (worldW - layout.width) / 2f, 430);
 
         float startY = 380;
         for (int i = 0; i < scores.size(); i++) {
             FileHandler.ScoreEntry entry = scores.get(i);
             String line = (i + 1) + ". " + (entry.score == -1 ? "--" : entry.name + " - " + entry.score);
             layout.setText(font, line);
-            font.draw(game.batch, line, (800 - layout.width) / 2f, startY - (i * 28));
+            font.draw(game.batch, line, (worldW - layout.width) / 2f, startY - (i * 28));
         }
 
         game.batch.draw(btnL, backRect.x, backRect.y, 20, backRect.height);
@@ -154,7 +165,12 @@ public class LeaderboardScreen implements Screen {
         }
     }
 
-    @Override public void resize(int width, int height) { viewport.update(width, height, true); }
+    @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height, true);
+        recalcLayout();
+    }
+
     @Override public void show() {}
     @Override public void pause() {}
     @Override public void resume() {}

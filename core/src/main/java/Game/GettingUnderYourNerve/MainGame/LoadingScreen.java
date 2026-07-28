@@ -16,7 +16,7 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Align;
-import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class LoadingScreen implements Screen {
@@ -24,7 +24,7 @@ public class LoadingScreen implements Screen {
     private Main game;
     private Viewport viewport;
     private GlyphLayout layout;
-    private ShapeRenderer shapeRenderer; // For drawing the cinematic black fade overlay
+    private ShapeRenderer shapeRenderer;
 
     // --- Fonts ---
     private BitmapFont font;
@@ -34,25 +34,18 @@ public class LoadingScreen implements Screen {
     private float stateTime = 0f;
     private float slideTimer = 0f;
 
-    // Updated Indices: -1 = JellyByte Logo Animation, 0+ = Text Acknowledgments
     private int currentSlideIndex = -1;
 
-    // Transition states: 0 = Fade In, 1 = Solid Display, 2 = Fade Out, 3 = Finished (Hold final slide + Prompt)
     private int transitionState = 0;
     private float textAlpha = 0f;
 
     // --- Retro Custom Transition States ---
     private boolean isTransitioningToTitle = false;
     private float transitionTimer = 0f;
-    private float promptScale = 1.0f;       // Grows when key is pressed
-    private float screenFadeAlpha = 0f;      // Fades screen to black
-    private final float RETRO_DURATION = 1.0f; // Total time for the pop & fade effect
+    private float promptScale = 1.0f;
+    private float screenFadeAlpha = 0f;
+    private final float RETRO_DURATION = 1.0f;
 
-    // --- FIX: guards against using disposed resources within the same frame ---
-    // Once the retro transition finishes, we set this flag instead of disposing
-    // immediately. render() checks it right after updateTransitions() and bails
-    // out before touching font/texture/shapeRenderer resources that are about
-    // to be (or have been) disposed.
     private boolean screenFinished = false;
 
     // --- JellyByte Logo Animation Assets ---
@@ -77,7 +70,8 @@ public class LoadingScreen implements Screen {
 
     public LoadingScreen(Main game) {
         this.game = game;
-        this.viewport = new ExtendViewport(800, 480);
+        // FIXED: Switched from ExtendViewport to FitViewport to preserve resolution and prevent UI stretching[cite: 23]
+        this.viewport = new FitViewport(800, 480);
         this.layout = new GlyphLayout();
         this.shapeRenderer = new ShapeRenderer();
 
@@ -117,15 +111,13 @@ public class LoadingScreen implements Screen {
 
         updateTransitions(delta);
 
-        // --- FIX: bail out immediately once the screen has handed off control.
-        // updateTransitions() may have just called dispose() on font/titleFont/
-        // shapeRenderer/logoAnimation textures. Without this guard, the code
-        // below would immediately try to use those freed GPU resources in the
-        // very same frame, which crashes (GL error / native crash / NPE
-        // depending on backend).
         if (screenFinished) {
             return;
         }
+
+        // FIXED: Retrieve active viewport width and height dynamically[cite: 23]
+        float worldW = viewport.getWorldWidth();
+        float worldH = viewport.getWorldHeight();
 
         game.batch.begin();
 
@@ -135,20 +127,30 @@ public class LoadingScreen implements Screen {
             TextureRegion currentFrame = logoAnimation.getKeyFrame(logoAnimationTime);
 
             if (currentFrame != null) {
+                float logoW = 800f;
+                float logoH = 480f;
+                float logoX = (worldW - logoW) / 2f;
+                float logoY = (worldH - logoH) / 2f;
+
                 game.batch.setColor(1f, 1f, 1f, textAlpha);
-                game.batch.draw(currentFrame, 0, 0, 800f, 480f);
+                game.batch.draw(currentFrame, logoX, logoY, logoW, logoH);
                 game.batch.setColor(1f, 1f, 1f, 1f);
             }
         } else if (transitionState != 3) {
             float maxTextWidth = 620f;
+            float textX = (worldW - maxTextWidth) / 2f;
+            float textY = worldH * 0.5625f; // Maintains vertical proportions[cite: 23]
+
             font.setColor(new Color(1f, 1f, 1f, textAlpha));
-            font.draw(game.batch, acknowledgments[currentSlideIndex], (800 - maxTextWidth) / 2f, 270f, maxTextWidth, Align.center, true);
+            font.draw(game.batch, acknowledgments[currentSlideIndex], textX, textY, maxTextWidth, Align.center, true);
         } else {
             float maxTextWidth = 620f;
-            // If retro transition running, dim out underlying text subtly
+            float textX = (worldW - maxTextWidth) / 2f;
+            float textY = worldH * 0.5625f;
+
             float currentTextAlpha = isTransitioningToTitle ? Math.max(0f, 1f - (transitionTimer * 2f)) : 1f;
             font.setColor(new Color(1f, 1f, 1f, currentTextAlpha));
-            font.draw(game.batch, acknowledgments[currentSlideIndex], (800 - maxTextWidth) / 2f, 270f, maxTextWidth, Align.center, true);
+            font.draw(game.batch, acknowledgments[currentSlideIndex], textX, textY, maxTextWidth, Align.center, true);
         }
 
         // 2. Calculate dynamic pulsing sine modifier
@@ -160,32 +162,29 @@ public class LoadingScreen implements Screen {
                 titleFont.setColor(new Color(0.7f, 0.7f, 0.7f, glowAlpha));
                 String loadingText = "LOADING... ";
                 layout.setText(titleFont, loadingText);
-                titleFont.draw(game.batch, loadingText, 800f - layout.width - 40f, 50f);
+                titleFont.draw(game.batch, loadingText, worldW - layout.width - 40f, 50f);
             }
         } else {
             // --- RETRO "PRESS ANY KEY" SCALE POP RENDERING ---
             String continueText = "PRESS ANY KEY TO CONTINUE";
 
-            // Set dynamic scale multiplier context
             titleFont.getData().setScale(promptScale);
             layout.setText(titleFont, continueText);
 
-            float targetX = (800f - layout.width) / 2f;
-            float targetY = 60f + (layout.height / 2f); // Offset base baseline center logic
+            float targetX = (worldW - layout.width) / 2f;
+            float targetY = 60f + (layout.height / 2f);
 
             if (!isTransitioningToTitle) {
                 titleFont.setColor(new Color(1.0f, 0.85f, 0.0f, glowAlpha));
             } else {
-                // Flash white rapidly like old arcades while fading out completely
                 float flashGlow = (int)(transitionTimer * 20f) % 2 == 0 ? 1f : 0.4f;
                 float promptAlpha = Math.max(0f, 1f - (transitionTimer / RETRO_DURATION));
                 titleFont.setColor(new Color(1.0f, 0.95f, 0.4f * flashGlow, promptAlpha));
             }
 
             titleFont.draw(game.batch, continueText, targetX, targetY);
-            titleFont.getData().setScale(1.0f); // Always restore font scale defaults immediately
+            titleFont.getData().setScale(1.0f);
 
-            // Capture initial keystroke entry
             if (!isTransitioningToTitle && (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY) || Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))) {
                 isTransitioningToTitle = true;
                 transitionTimer = 0f;
@@ -200,7 +199,7 @@ public class LoadingScreen implements Screen {
             shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(new Color(0.02f, 0.02f, 0.02f, screenFadeAlpha));
-            shapeRenderer.rect(0, 0, 800f, 480f);
+            shapeRenderer.rect(0, 0, worldW, worldH);
             shapeRenderer.end();
             Gdx.gl.glDisable(GL20.GL_BLEND);
         }
@@ -208,23 +207,14 @@ public class LoadingScreen implements Screen {
 
     private void updateTransitions(float dt) {
         if (transitionState == 3) {
-            // Handle Retro Exit Sequence Timers
             if (isTransitioningToTitle) {
                 transitionTimer += dt;
                 float progress = Math.min(1f, transitionTimer / RETRO_DURATION);
 
-                // Arcade scale mathematical pop curves (Starts scaling up, peaks cleanly)
                 promptScale = 1.0f + (MathUtils.sin(progress * MathUtils.PI) * 0.4f);
-
-                // Linear fade weight profile to screen space black overlay
                 screenFadeAlpha = Math.min(1f, progress * 1.2f);
 
                 if (progress >= 1f) {
-                    // --- FIX: mark finished BEFORE switching/disposing, and let
-                    // render() see the flag and skip all further resource use
-                    // this frame. Previously dispose() ran here while render()
-                    // kept executing and touching the now-freed font/texture/
-                    // shapeRenderer objects in the same call stack -> crash.
                     screenFinished = true;
                     game.setScreen(new TitleScreen(game));
                     dispose();
@@ -236,7 +226,7 @@ public class LoadingScreen implements Screen {
         slideTimer += dt;
 
         switch (transitionState) {
-            case 0: // FADING IN ACTIVE ELEMENT
+            case 0:
                 if (currentSlideIndex == -1 && !musicStarted && logoIntroMusic != null) {
                     logoIntroMusic.play();
                     musicStarted = true;
@@ -248,7 +238,7 @@ public class LoadingScreen implements Screen {
                 }
                 break;
 
-            case 1: // SOLID DISPLAY WINDOW
+            case 1:
                 textAlpha = 1f;
 
                 if (currentSlideIndex == -1) {
@@ -268,7 +258,7 @@ public class LoadingScreen implements Screen {
                 }
                 break;
 
-            case 2: // FADING OUT ACTIVE ELEMENT
+            case 2:
                 textAlpha = Math.max(0f, 1f - (slideTimer / FADE_DURATION));
                 if (slideTimer >= FADE_DURATION) {
                     currentSlideIndex++;

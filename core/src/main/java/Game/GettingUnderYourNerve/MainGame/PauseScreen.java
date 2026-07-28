@@ -1,6 +1,7 @@
 package Game.GettingUnderYourNerve.MainGame;
 
 import Game.GettingUnderYourNerve.Main;
+import Game.GettingUnderYourNerve.SettingsScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;
@@ -52,22 +53,7 @@ public class PauseScreen implements Screen {
     private Rectangle checkpointRect = new Rectangle();
     private Vector3 touchVec         = new Vector3();
 
-    // --- Settings Sub-Menu State & Rectangles ---
-    private boolean isSettingsOpen = false;
-    private Rectangle musicSliderBar       = new Rectangle();
-    private Rectangle sfxSliderBar         = new Rectangle();
-    private Rectangle subtitleBtnRect      = new Rectangle();
-    private Rectangle settingsBackBtnRect = new Rectangle();
-
-    private float musicVolume;
-    private float sfxVolume;
-    private boolean subtitlesEnabled;
-    private boolean isDraggingMusic = false;
-    private boolean isDraggingSFX   = false;
-
-    private Preferences prefs;
-
-    // --- Prank Logic ---
+    // --- Prank State (Exclusive to Cheat Codes) ---
     private boolean isRickrolling = false;
     private float rickTimer = 0;
     private Animation<TextureRegion> rickAnim;
@@ -84,12 +70,6 @@ public class PauseScreen implements Screen {
         this.score = score;
         this.layout = new GlyphLayout();
         this.uiViewport = new ExtendViewport(800, 480);
-
-        // Read preferences file
-        prefs = Gdx.app.getPreferences("GettingUnderYourNerve_Settings");
-        musicVolume      = prefs.getFloat("musicVolume", 0.5f);
-        sfxVolume        = prefs.getFloat("sfxVolume", 0.5f);
-        subtitlesEnabled = prefs.getBoolean("subtitlesEnabled", true);
 
         loadAssets(game.assets);
         recalcLayout();
@@ -134,9 +114,8 @@ public class PauseScreen implements Screen {
     @Override
     public void render(float delta) {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-            if (isSettingsOpen) {
-                saveSettings();
-                isSettingsOpen = false;
+            if (isRickrolling) {
+                stopRickroll();
             } else {
                 resumeGame();
             }
@@ -167,11 +146,9 @@ public class PauseScreen implements Screen {
             TextureRegion frame = rickAnim.getKeyFrame(rickTimer);
             game.batch.draw(frame, bx + (BOARD_WIDTH - RICK_DRAW_W)/2f, by + (BOARD_HEIGHT - RICK_DRAW_H)/2f, RICK_DRAW_W, RICK_DRAW_H);
 
-            if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) stopRickroll();
-            if (rickAnim.isAnimationFinished(rickTimer)) stopRickroll();
-        } else if (isSettingsOpen) {
-            handleSettingsInput(bx, by);
-            drawSettingsSubMenu(game.batch, bx, by);
+            if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) || rickAnim.isAnimationFinished(rickTimer)) {
+                stopRickroll();
+            }
         } else {
             handleMenuInput();
             drawButton(game.batch, resumeRect, "Resume");
@@ -198,99 +175,25 @@ public class PauseScreen implements Screen {
         hudBanner.render(game.batch, health, score, uiViewport.getCamera().combined);
     }
 
-    private void drawSettingsSubMenu(SpriteBatch batch, float bx, float by) {
-        // Title
-        layout.setText(titleFont, "SETTINGS");
-        titleFont.draw(batch, "SETTINGS", bx + (BOARD_WIDTH - layout.width) / 2f, by + 260);
-
-        // Music Volume Row
-        font.draw(batch, "MUSIC:", bx + 30, by + 218);
-        drawTex(batch, btnC, musicSliderBar.x, musicSliderBar.y, musicSliderBar.width, musicSliderBar.height);
-        float musicKnobX = musicSliderBar.x + (musicSliderBar.width * musicVolume) - 8;
-        drawTex(batch, btnC, musicKnobX, musicSliderBar.y - 8, 16, 24);
-        font.draw(batch, Math.round(musicVolume * 100) + "%", bx + 260, by + 218);
-
-        // SFX Volume Row
-        font.draw(batch, "SFX:", bx + 30, by + 172);
-        drawTex(batch, btnC, sfxSliderBar.x, sfxSliderBar.y, sfxSliderBar.width, sfxSliderBar.height);
-        float sfxKnobX = sfxSliderBar.x + (sfxSliderBar.width * sfxVolume) - 8;
-        drawTex(batch, btnC, sfxKnobX, sfxSliderBar.y - 8, 16, 24);
-        font.draw(batch, Math.round(sfxVolume * 100) + "%", bx + 260, by + 172);
-
-        // Subtitles Row
-        font.draw(batch, "SUBS:", bx + 30, by + 128);
-        drawButton(batch, subtitleBtnRect, subtitlesEnabled ? "ON" : "OFF");
-
-        // Back Button
-        drawButton(batch, settingsBackBtnRect, "BACK");
-    }
-
-    private void handleSettingsInput(float bx, float by) {
-        touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-        uiViewport.unproject(touchVec);
-
-        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-            if (subtitleBtnRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.playSFX(AudioManager.buttonSound);
-                subtitlesEnabled = !subtitlesEnabled;
-                saveSettings();
-                return;
-            }
-
-            if (settingsBackBtnRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.playSFX(AudioManager.buttonSound);
-                saveSettings();
-                isSettingsOpen = false;
-                return;
-            }
-
-            if (touchVec.y >= musicSliderBar.y - 12 && touchVec.y <= musicSliderBar.y + 20
-                && touchVec.x >= musicSliderBar.x && touchVec.x <= musicSliderBar.x + musicSliderBar.width) {
-                isDraggingMusic = true;
-            }
-            if (touchVec.y >= sfxSliderBar.y - 12 && touchVec.y <= sfxSliderBar.y + 20
-                && touchVec.x >= sfxSliderBar.x && touchVec.x <= sfxSliderBar.x + sfxSliderBar.width) {
-                isDraggingSFX = true;
-            }
-        }
-
-        if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
-            if (isDraggingMusic) {
-                float relativeX = touchVec.x - musicSliderBar.x;
-                musicVolume = Math.max(0f, Math.min(1f, relativeX / musicSliderBar.width));
-                AudioManager.updateMusicVolume(musicVolume);
-            }
-            if (isDraggingSFX) {
-                float relativeX = touchVec.x - sfxSliderBar.x;
-                sfxVolume = Math.max(0f, Math.min(1f, relativeX / sfxSliderBar.width));
-                AudioManager.updateSFXVolume(sfxVolume);
-            }
-        } else {
-            if (isDraggingMusic || isDraggingSFX) {
-                saveSettings();
-            }
-            isDraggingMusic = false;
-            isDraggingSFX   = false;
-        }
-    }
-
-    private void saveSettings() {
-        prefs.putFloat("musicVolume", musicVolume);
-        prefs.putFloat("sfxVolume", sfxVolume);
-        prefs.putBoolean("subtitlesEnabled", subtitlesEnabled);
-        prefs.flush();
-    }
-
     private void resumeGame() {
         stopRickroll();
         AudioManager.resumeAll();
+
+        // Dynamically apply current music volume to active gameplay track
+        float musicVol = Gdx.app.getPreferences("GettingUnderYourNerve_Settings").getFloat("musicVolume", 0.5f);
+        if (playScreen != null && playScreen.currentTrack != null) {
+            playScreen.currentTrack.setVolume(musicVol);
+        }
+
         game.setScreen(playScreen);
     }
 
     private void stopRickroll() {
         isRickrolling = false;
         rickTimer = 0;
-        if (AudioManager.rickMusic.isPlaying()) AudioManager.rickMusic.stop();
+        if (AudioManager.rickMusic != null && AudioManager.rickMusic.isPlaying()) {
+            AudioManager.rickMusic.stop();
+        }
     }
 
     private void handleMenuInput() {
@@ -303,7 +206,7 @@ public class PauseScreen implements Screen {
             resumeGame();
         } else if (settingsRect.contains(touchVec.x, touchVec.y)) {
             AudioManager.playSFX(AudioManager.buttonSound);
-            isSettingsOpen = true;
+            game.setScreen(new SettingsScreen(game, this));
         } else if (helpRect.contains(touchVec.x, touchVec.y)) {
             AudioManager.playSFX(AudioManager.buttonSound);
             stopRickroll();
@@ -312,6 +215,10 @@ public class PauseScreen implements Screen {
         } else if (cheatsRect.contains(touchVec.x, touchVec.y)) {
             AudioManager.playSFX(AudioManager.buttonSound);
             isRickrolling = true;
+            rickTimer = 0;
+
+            float userVolume = Gdx.app.getPreferences("GettingUnderYourNerve_Settings").getFloat("musicVolume", 0.5f);
+            AudioManager.rickMusic.setVolume(userVolume > 0f ? userVolume : 0.8f);
             AudioManager.rickMusic.play();
         } else if (checkpointRect.contains(touchVec.x, touchVec.y)) {
             AudioManager.playSFX(AudioManager.buttonSound);
@@ -340,7 +247,6 @@ public class PauseScreen implements Screen {
         float bx = (worldW - BOARD_WIDTH) / 2f;
         float by = (worldH - BOARD_HEIGHT) / 2f - BOARD_OFFSET_Y;
 
-        // Main Pause Buttons Layout
         float totalBtns = (BTN_HEIGHT * 5) + (BTN_GAP * 4);
         float startY = by + (BOARD_HEIGHT - totalBtns) / 2f;
         float btnX = bx + (BOARD_WIDTH - BTN_WIDTH) / 2f;
@@ -350,12 +256,6 @@ public class PauseScreen implements Screen {
         helpRect.set(btnX, startY + (BTN_HEIGHT + BTN_GAP) * 2f, BTN_WIDTH, BTN_HEIGHT);
         settingsRect.set(btnX, startY + (BTN_HEIGHT + BTN_GAP) * 3f, BTN_WIDTH, BTN_HEIGHT);
         resumeRect.set(btnX, startY + (BTN_HEIGHT + BTN_GAP) * 4f, BTN_WIDTH, BTN_HEIGHT);
-
-        // Settings Sub-Menu Bounds Layout
-        musicSliderBar.set(bx + 120, by + 210, 130, 8);
-        sfxSliderBar.set(bx + 120, by + 164, 130, 8);
-        subtitleBtnRect.set(bx + 120, by + 108, 110, 30);
-        settingsBackBtnRect.set(bx + (BOARD_WIDTH - 130)/2f, by + 45, 130, 34);
     }
 
     private BitmapFont loadFont(String filename, int size) {
@@ -381,7 +281,7 @@ public class PauseScreen implements Screen {
     public void resize(int width, int height) {
         uiViewport.update(width, height, true);
         playScreen.resize(width, height);
-        recalcLayout(); // Recalculates pause and sub-menu layouts on window resize
+        recalcLayout();
     }
 
     @Override public void pause() { }

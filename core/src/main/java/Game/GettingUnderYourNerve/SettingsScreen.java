@@ -24,7 +24,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 public class SettingsScreen implements Screen {
 
     private Main game;
-    private Screen parentScreen; // Generically supports TitleScreen or PauseScreen/PlayScreen
+    private Screen parentScreen; // Generically supports TitleScreen, PlayScreen, or PauseScreen
     private Viewport viewport;
     private Vector3 touchVec;
 
@@ -40,11 +40,13 @@ public class SettingsScreen implements Screen {
     // --- UI Layout Bounds ---
     private Rectangle musicSliderBar;
     private Rectangle sfxSliderBar;
+    private Rectangle subtitleBtnRect;
     private Rectangle backBtnRect;
 
-    // --- Volume State ---
+    // --- Settings State ---
     private float musicVolume;
     private float sfxVolume;
+    private boolean subtitlesEnabled;
     private boolean isDraggingMusic = false;
     private boolean isDraggingSFX = false;
 
@@ -61,13 +63,27 @@ public class SettingsScreen implements Screen {
         prefs = Gdx.app.getPreferences("GettingUnderYourNerve_Settings");
         musicVolume = prefs.getFloat("musicVolume", 0.5f);
         sfxVolume = prefs.getFloat("sfxVolume", 0.5f);
+        subtitlesEnabled = prefs.getBoolean("subtitlesEnabled", true);
 
         loadAssets();
 
-        // Define layout coordinates (Centered layout inside the viewport)
-        musicSliderBar = new Rectangle(300, 260, 250, 10);
-        sfxSliderBar   = new Rectangle(300, 190, 250, 10);
-        backBtnRect    = new Rectangle(325, 80, 150, 40);
+        // Initialize UI bounding boxes
+        musicSliderBar  = new Rectangle();
+        sfxSliderBar    = new Rectangle();
+        subtitleBtnRect = new Rectangle();
+        backBtnRect     = new Rectangle();
+
+        recalcLayout();
+    }
+
+    private void recalcLayout() {
+        float worldW = viewport.getWorldWidth();
+        float centerX = worldW / 2f;
+
+        musicSliderBar.set(centerX - 30f, 290f, 200f, 10f);
+        sfxSliderBar.set(centerX - 30f, 220f, 200f, 10f);
+        subtitleBtnRect.set(centerX - 30f, 145f, 140f, 38f);
+        backBtnRect.set(centerX - 80f, 75f, 160f, 40f);
     }
 
     private void loadAssets() {
@@ -93,21 +109,17 @@ public class SettingsScreen implements Screen {
     public void render(float delta) {
         handleInput();
 
-        // 1. Clear Screen Buffer
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // 2. Render Contextual Background
         if (parentScreen instanceof TitleScreen) {
             ((TitleScreen) parentScreen).getMenuBg().updateAndRender(delta, game.batch);
         } else if (parentScreen instanceof PlayScreen) {
             ((PlayScreen) parentScreen).drawWorld(delta);
         } else if (parentScreen instanceof PauseScreen) {
-            // Draw PlayScreen world behind pause contexts
             ((PauseScreen) parentScreen).getPlayScreen().drawWorld(delta);
         }
 
-        // 3. Render Settings Interface on top
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
 
@@ -117,11 +129,13 @@ public class SettingsScreen implements Screen {
     }
 
     private void drawSettingsBoard() {
+        float worldW = viewport.getWorldWidth();
+
         float bW = 600f;
-        float bH = 340f;
+        float bH = 380f;
         float corner = 32f;
-        float bx = (800 - bW) / 2f;
-        float by = 60f;
+        float bx = (worldW - bW) / 2f;
+        float by = 55f;
         float inW = bW - corner * 2;
         float inH = bH - corner * 2;
 
@@ -135,25 +149,32 @@ public class SettingsScreen implements Screen {
         game.batch.draw(boardBC, bx + corner, by, inW, corner);
         game.batch.draw(boardBR, bx + bW - corner, by, corner, corner);
 
-        // Header Title
         layout.setText(titleFont, "SETTINGS");
-        titleFont.draw(game.batch, "SETTINGS", (800 - layout.width) / 2f, 360);
+        titleFont.draw(game.batch, "SETTINGS", (worldW - layout.width) / 2f, by + bH - 30f);
 
-        // --- MUSIC SETTING ROW ---
-        font.draw(game.batch, "MUSIC VOLUME:", 130, 272);
+        float labelX = bx + 50f;
+        font.draw(game.batch, "MUSIC VOLUME:", labelX, 298f);
         game.batch.draw(btnC, musicSliderBar.x, musicSliderBar.y, musicSliderBar.width, musicSliderBar.height);
-        float musicKnobX = musicSliderBar.x + (musicSliderBar.width * musicVolume) - 10;
-        game.batch.draw(btnC, musicKnobX, musicSliderBar.y - 10, 20, 30);
-        font.draw(game.batch, Math.round(musicVolume * 100) + "%", 570, 272);
+        float musicKnobX = musicSliderBar.x + (musicSliderBar.width * musicVolume) - 10f;
+        game.batch.draw(btnC, musicKnobX, musicSliderBar.y - 10f, 20f, 30f);
+        font.draw(game.batch, Math.round(musicVolume * 100) + "%", musicSliderBar.x + musicSliderBar.width + 20f, 298f);
 
-        // --- SFX SETTING ROW ---
-        font.draw(game.batch, "SFX VOLUME:", 130, 202);
+        font.draw(game.batch, "SFX VOLUME:", labelX, 228f);
         game.batch.draw(btnC, sfxSliderBar.x, sfxSliderBar.y, sfxSliderBar.width, sfxSliderBar.height);
-        float sfxKnobX = sfxSliderBar.x + (sfxSliderBar.width * sfxVolume) - 10;
-        game.batch.draw(btnC, sfxKnobX, sfxSliderBar.y - 10, 20, 30);
-        font.draw(game.batch, Math.round(sfxVolume * 100) + "%", 570, 202);
+        float sfxKnobX = sfxSliderBar.x + (sfxSliderBar.width * sfxVolume) - 10f;
+        game.batch.draw(btnC, sfxKnobX, sfxSliderBar.y - 10f, 20f, 30f);
+        font.draw(game.batch, Math.round(sfxVolume * 100) + "%", sfxSliderBar.x + sfxSliderBar.width + 20f, 228f);
 
-        // --- BACK BUTTON ---
+        font.draw(game.batch, "SUBTITLES:", labelX, 170f);
+        if (subtitlesEnabled) {
+            font.setColor(Color.GREEN);
+            drawButton(subtitleBtnRect, "ON");
+        } else {
+            font.setColor(Color.RED);
+            drawButton(subtitleBtnRect, "OFF");
+        }
+        font.setColor(Color.WHITE);
+
         drawButton(backBtnRect, "BACK");
     }
 
@@ -170,6 +191,11 @@ public class SettingsScreen implements Screen {
             if (backBtnRect.contains(touchVec.x, touchVec.y)) {
                 returnToParent();
                 return;
+            }
+
+            if (subtitleBtnRect.contains(touchVec.x, touchVec.y)) {
+                AudioManager.playSFX(AudioManager.buttonSound);
+                subtitlesEnabled = !subtitlesEnabled;
             }
 
             if (touchVec.y >= musicSliderBar.y - 15 && touchVec.y <= musicSliderBar.y + 25
@@ -203,7 +229,12 @@ public class SettingsScreen implements Screen {
         AudioManager.playSFX(AudioManager.buttonSound);
         prefs.putFloat("musicVolume", musicVolume);
         prefs.putFloat("sfxVolume", sfxVolume);
+        prefs.putBoolean("subtitlesEnabled", subtitlesEnabled);
         prefs.flush();
+
+        // Ensure real-time global sync across all screens
+        AudioManager.updateMusicVolume(musicVolume);
+        AudioManager.updateSFXVolume(sfxVolume);
 
         game.setScreen(parentScreen);
     }
@@ -226,12 +257,28 @@ public class SettingsScreen implements Screen {
         } catch (Exception e) { return new BitmapFont(); }
     }
 
-    @Override public void show() {}
-    @Override public void resize(int width, int height) { viewport.update(width, height, true); }
+    @Override
+    public void show() {
+        if (parentScreen instanceof TitleScreen) {
+            ((TitleScreen) parentScreen).getMenuBg().resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        }
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height, true);
+        if (parentScreen instanceof TitleScreen) {
+            ((TitleScreen) parentScreen).getMenuBg().resize(width, height);
+        }
+        recalcLayout();
+    }
+
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
-    @Override public void dispose() {
+
+    @Override
+    public void dispose() {
         if (font != null) font.dispose();
         if (titleFont != null) titleFont.dispose();
     }

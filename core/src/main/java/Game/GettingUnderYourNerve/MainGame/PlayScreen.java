@@ -53,7 +53,6 @@ public class PlayScreen implements Screen {
 
     public PlayScreen(Main game, String playerName, int slotIndex, float startX, float startY, int levelNumber) {
         this(game, playerName, slotIndex, startX, startY, levelNumber, false);
-        startLevelMusic();
     }
 
     public PlayScreen(Main game, String playerName, int slotIndex, float startX, float startY, int levelNumber, boolean isPostBattle) {
@@ -64,8 +63,6 @@ public class PlayScreen implements Screen {
         this.startY = startY;
         this.levelNumber = levelNumber;
         this.isPostBattle = isPostBattle;
-
-        startLevelMusic();
 
         this.WORLD_WIDTH  = (levelNumber == 0) ? 400 : 800;
         this.WORLD_HEIGHT = (levelNumber == 0) ? 240 : 480;
@@ -90,7 +87,9 @@ public class PlayScreen implements Screen {
         player.SpawnPlayerFromTiled(playableMap.GetMap(), world);
         player.setPlayerData(this.playerName, this.slotIndex, this.startX, this.startY, this.levelNumber);
 
-        // --- LEVEL TRIGGER LOGIC ---
+        // --- CHECKPOINT & CUTSCENE LOGIC ---
+        boolean isLoadedCheckpoint = (this.startX > 0f || this.startY > 0f);
+
         if (this.levelNumber == 0) {
             currentCutscene = new PrologueCutscene(this);
         } else if (this.levelNumber == 3 && !this.isPostBattle) {
@@ -98,7 +97,24 @@ public class PlayScreen implements Screen {
         } else if (this.levelNumber == 3 && this.isPostBattle) {
             currentCutscene = new AvengersCutscene(this, playableMap.getBatman());
         } else {
-            currentCutscene = new IntroEncounter(this, playableMap.getBatman());
+            // Levels 1 and 2: Bypass cutscene if loading an existing save checkpoint
+            if (isLoadedCheckpoint) {
+                currentCutscene = null;
+            } else {
+                currentCutscene = new IntroEncounter(this, playableMap.getBatman());
+            }
+        }
+
+        // Start level music AFTER cutscene state is evaluated so initial volume can be ducked if needed
+        startLevelMusic();
+
+        // Snap camera immediately to player if no cutscene is active
+        if (currentCutscene == null) {
+            float worldWidth = playableMap.getMapWidthInMeters();
+            float worldHeight = playableMap.getMapHeightInMeters();
+            float halfVW = (WORLD_WIDTH / Main.PPM) / 2f;
+            float halfVH = (WORLD_HEIGHT / Main.PPM) / 2f;
+            cam.Update(worldWidth, worldHeight, halfVW, halfVH, player.GetXpos(), player.GetYpos());
         }
     }
 
@@ -156,6 +172,12 @@ public class PlayScreen implements Screen {
     private boolean updateLogic(float delta) {
         boolean inCutscene = (currentCutscene != null);
 
+        // Dynamically adjust audio volume: lower music during cutscenes, restore when finished
+        if (currentTrack != null) {
+            float userVolume = Gdx.app.getPreferences("GettingUnderYourNerve_Settings").getFloat("musicVolume", 0.5f);
+            currentTrack.setVolume(inCutscene ? userVolume * 0.3f : userVolume);
+        }
+
         float worldWidth = playableMap.getMapWidthInMeters();
         float worldHeight = playableMap.getMapHeightInMeters();
         float halfVW = (WORLD_WIDTH / Main.PPM) / 2f;
@@ -193,7 +215,6 @@ public class PlayScreen implements Screen {
         world.step(1 / 60f, 6, 2);
         boolean wasDead = player.isDead;
 
-        // FIXED: Stop music & transition to EndCreditsScreen when player falls post-battle[cite: 31]
         if (player.isDead && levelNumber == 3 && isPostBattle) {
             if (currentTrack != null) {
                 currentTrack.stop();
@@ -228,7 +249,6 @@ public class PlayScreen implements Screen {
         }
 
         if (currentCutscene == null) {
-            // FIXED: Freeze Y-position during post-battle fall so camera stays on the platform level[cite: 31]
             if (levelNumber == 3 && isPostBattle) {
                 cam.Update(worldWidth, worldHeight, halfVW, halfVH, player.GetXpos(), cam.GetCam().position.y);
             } else {
@@ -266,16 +286,25 @@ public class PlayScreen implements Screen {
             default: currentTrack = null;   break;
         }
 
-        if (currentTrack != AudioManager.elevatorMusic) AudioManager.elevatorMusic.stop();
-        if (currentTrack != AudioManager.level1Music) AudioManager.level1Music.stop();
-        if (currentTrack != AudioManager.level2Music) AudioManager.level2Music.stop();
-        if (currentTrack != AudioManager.bossArenaMusic) AudioManager.bossArenaMusic.stop();
+        // Unconditionally stop all tracks to ensure position is reset to 0 on save reload
+        if (AudioManager.elevatorMusic != null) AudioManager.elevatorMusic.stop();
+        if (AudioManager.level1Music != null) AudioManager.level1Music.stop();
+        if (AudioManager.level2Music != null) AudioManager.level2Music.stop();
+        if (AudioManager.bossArenaMusic != null) AudioManager.bossArenaMusic.stop();
 
         if (currentTrack != null) {
+            float userVolume = Gdx.app.getPreferences("GettingUnderYourNerve_Settings").getFloat("musicVolume", 0.5f);
+            boolean inCutscene = (currentCutscene != null);
+
             currentTrack.setLooping(true);
-            currentTrack.setVolume(0.15f);
+            // Lower volume initially if starting inside a cutscene
+            currentTrack.setVolume(inCutscene ? userVolume * 0.3f : userVolume);
             currentTrack.play();
         }
+    }
+
+    public int getSlotIndex() {
+        return slotIndex;
     }
 
     public void increaseLevelAudio(float volume) {

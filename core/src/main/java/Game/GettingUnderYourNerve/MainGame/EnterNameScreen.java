@@ -39,6 +39,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
     private Rectangle[] slotRects = new Rectangle[4];
     private Rectangle confirmRect;
     private Rectangle cancelRect;
+    private Rectangle backRect; // --- ADDED ---
 
     // --- Logic State ---
     private String[] slotNames = new String[4];
@@ -53,22 +54,42 @@ public class EnterNameScreen implements Screen, InputProcessor {
         this.touchVec = new Vector3();
         this.layout = new GlyphLayout();
 
+        for (int i = 0; i < 4; i++) {
+            slotRects[i] = new Rectangle();
+        }
+        confirmRect = new Rectangle();
+        cancelRect = new Rectangle();
+        backRect = new Rectangle(); // --- ADDED ---
+
         loadAssets();
         refreshSlots();
+        recalcLayout();
+    }
 
-        // Calculate Rectangles
+    /**
+     * Recalculates button positions dynamically relative to current viewport width
+     */
+    private void recalcLayout() {
+        float worldW = viewport.getWorldWidth();
+        float worldH = viewport.getWorldHeight();
+
         float btnWidth = 300f;
         float btnHeight = 45f;
-        float startX = (800 - btnWidth) / 2f;
+        float startX = (worldW - btnWidth) / 2f;
         float startY = 320f;
         float gap = 60f;
 
         for (int i = 0; i < 4; i++) {
-            slotRects[i] = new Rectangle(startX, startY - (i * gap), btnWidth, btnHeight);
+            slotRects[i].set(startX, startY - (i * gap), btnWidth, btnHeight);
         }
 
-        confirmRect = new Rectangle(420, 150, 130, 40);
-        cancelRect = new Rectangle(250, 150, 130, 40);
+        // Popup buttons centered dynamically
+        float popupCenterX = worldW / 2f;
+        cancelRect.set(popupCenterX - 140f, 150f, 130f, 40f);
+        confirmRect.set(popupCenterX + 10f, 150f, 130f, 40f);
+
+        // --- ADDED: Back button anchored at top-left ---
+        backRect.set(20f, worldH - 60f, 140f, 40f);
     }
 
     private void loadAssets() {
@@ -117,16 +138,18 @@ public class EnterNameScreen implements Screen, InputProcessor {
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
 
+        float worldW = viewport.getWorldWidth();
+
         game.batch.begin();
 
-        // Title text
+        // Title text dynamically centered
         layout.setText(titleFont, "SELECT A SAVE SLOT");
-        titleFont.draw(game.batch, "SELECT A SAVE SLOT", (800 - layout.width) / 2f, 420);
+        titleFont.draw(game.batch, "SELECT A SAVE SLOT", (worldW - layout.width) / 2f, 420);
 
-        // Instructions
+        // Instructions dynamically centered
         font.setColor(Color.LIGHT_GRAY);
         layout.setText(font, "Left Click: Play  |  Right Click: Delete");
-        font.draw(game.batch, "Left Click: Play  |  Right Click: Delete", (800 - layout.width) / 2f, 390);
+        font.draw(game.batch, "Left Click: Play  |  Right Click: Delete", (worldW - layout.width) / 2f, 390);
         font.setColor(Color.WHITE);
 
         // Active save slots
@@ -134,6 +157,9 @@ public class EnterNameScreen implements Screen, InputProcessor {
             String label = (slotNames[i] == null) ? "Slot " + (i + 1) + " - Empty" : slotNames[i];
             drawButton(slotRects[i], label);
         }
+
+        // --- ADDED: Render Back Button ---
+        drawButton(backRect, "BACK");
 
         // Popup Naming Window (if creating a save)
         if (isTyping) {
@@ -144,10 +170,11 @@ public class EnterNameScreen implements Screen, InputProcessor {
     }
 
     private void drawTypingPopup() {
+        float worldW = viewport.getWorldWidth();
         float bW = 400f;
         float bH = 200f;
         float corner = 32f;
-        float bx = (800 - bW) / 2f;
+        float bx = (worldW - bW) / 2f;
         float by = 130f;
         float inW = bW - corner * 2;
         float inH = bH - corner * 2;
@@ -164,12 +191,12 @@ public class EnterNameScreen implements Screen, InputProcessor {
         game.batch.draw(boardBR, bx + bW - corner, by, corner, corner);
 
         layout.setText(font, "ENTER CHARACTER NAME:");
-        font.draw(game.batch, "ENTER CHARACTER NAME:", (800 - layout.width) / 2f, 290);
+        font.draw(game.batch, "ENTER CHARACTER NAME:", (worldW - layout.width) / 2f, 290);
 
         // Input String Display
         layout.setText(font, typedName.toString());
         float nameWidth = layout.width;
-        float textStartX = (800 - nameWidth) / 2f;
+        float textStartX = (worldW - nameWidth) / 2f;
 
         font.setColor(Color.YELLOW);
         font.draw(game.batch, typedName.toString(), textStartX, 240);
@@ -189,10 +216,18 @@ public class EnterNameScreen implements Screen, InputProcessor {
             touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             viewport.unproject(touchVec);
 
+            // --- ADDED: Check back button click ---
+            if (backRect.contains(touchVec.x, touchVec.y) && !isTyping) {
+                AudioManager.playSFX(AudioManager.buttonSound);
+                game.setScreen(titleScreen);
+                dispose();
+                return;
+            }
+
             if (!isTyping) {
                 for (int i = 0; i < 4; i++) {
                     if (slotRects[i].contains(touchVec.x, touchVec.y)) {
-                        AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
+                        AudioManager.playSFX(AudioManager.buttonSound);
                         if (slotNames[i] == null) {
                             isTyping = true;
                             selectedSlot = i;
@@ -209,10 +244,10 @@ public class EnterNameScreen implements Screen, InputProcessor {
                 }
             } else {
                 if (confirmRect.contains(touchVec.x, touchVec.y)) {
-                    AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
+                    AudioManager.playSFX(AudioManager.buttonSound);
                     confirmName();
                 } else if (cancelRect.contains(touchVec.x, touchVec.y)) {
-                    AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
+                    AudioManager.playSFX(AudioManager.buttonSound);
                     isTyping = false;
                 }
             }
@@ -224,7 +259,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
 
             for (int i = 0; i < 4; i++) {
                 if (slotRects[i].contains(touchVec.x, touchVec.y) && slotNames[i] != null) {
-                    AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
+                    AudioManager.playSFX(AudioManager.buttonSound);
                     FileHandler.deleteSlot(i);
                     refreshSlots();
                 }
@@ -247,7 +282,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
         if (character == '\b' && typedName.length() > 0) {
             typedName.setLength(typedName.length() - 1);
         } else if (character == '\r' || character == '\n') {
-            AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
+            AudioManager.playSFX(AudioManager.buttonSound);
             confirmName();
         } else if (Character.isLetterOrDigit(character) || character == ' ') {
             if (typedName.length() < 12) {
@@ -275,7 +310,12 @@ public class EnterNameScreen implements Screen, InputProcessor {
         } catch (Exception e) { return new BitmapFont(); }
     }
 
-    @Override public void resize(int width, int height) { viewport.update(width, height, true); }
+    @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height, true);
+        recalcLayout();
+    }
+
     @Override public void pause() { }
     @Override public void resume() { }
     @Override public void hide() { Gdx.input.setInputProcessor(null); }

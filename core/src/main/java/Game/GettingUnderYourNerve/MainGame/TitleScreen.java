@@ -52,11 +52,12 @@ public class TitleScreen implements Screen {
     };
 
     Music currentTrack;
+
     public TitleScreen(Main game) {
         this.game = game;
-        viewport = new ExtendViewport(800, 480);
-        touchVec = new Vector3();
-        layout = new GlyphLayout();
+        this.viewport = new ExtendViewport(800, 480);
+        this.touchVec = new Vector3();
+        this.layout = new GlyphLayout();
 
         // Initialize the live map background
         menuBg = new MenuBackground();
@@ -70,14 +71,27 @@ public class TitleScreen implements Screen {
 
         font = loadFont("ui/runescape_uf.ttf", 24);
         titleFont = loadFont("ui/runescape_uf.ttf", 54);
-        taglineFont = loadFont("ui/runescape_uf.ttf", 18); // Smaller font for longer quotes
+        taglineFont = loadFont("ui/runescape_uf.ttf", 18);
 
-        float startX = (800 - 200) / 2f;
-        playRect = new Rectangle(startX, 160f, 200f, 50f);
-        leaderboardRect = new Rectangle(startX, 110f, 200f, 50f);
-        settingsRect = new Rectangle(startX, 60f, 200f, 50f);
+        playRect = new Rectangle();
+        leaderboardRect = new Rectangle();
+        settingsRect = new Rectangle();
 
+        recalcLayout();
         startTitleScreenMusic();
+    }
+
+    /**
+     * Dynamically positions UI button bounding boxes relative to active viewport bounds
+     */
+    private void recalcLayout() {
+        float worldW = viewport.getWorldWidth();
+        float btnWidth = 200f;
+        float startX = (worldW - btnWidth) / 2f;
+
+        playRect.set(startX, 160f, btnWidth, 50f);
+        leaderboardRect.set(startX, 110f, btnWidth, 50f);
+        settingsRect.set(startX, 60f, btnWidth, 50f);
     }
 
     public MenuBackground getMenuBg() {
@@ -86,7 +100,7 @@ public class TitleScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        pulseTime += delta; // Track time to drive the pulsing animation
+        pulseTime += delta;
 
         if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
             touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
@@ -100,7 +114,6 @@ public class TitleScreen implements Screen {
                 game.setScreen(new LeaderboardScreen(game, this));
             } else if (settingsRect.contains(touchVec.x, touchVec.y)) {
                 AudioManager.playSFX(AudioManager.buttonSound);
-                // Switches to the persistent SettingsScreen while sharing this title screen context
                 game.setScreen(new SettingsScreen(game, this));
             }
         }
@@ -109,7 +122,7 @@ public class TitleScreen implements Screen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // 1. Render the moving Tilemap Background
+        // 1. Render moving Tilemap Background (extends edge-to-edge)
         menuBg.updateAndRender(delta, game.batch);
 
         // 2. Render UI Buttons, Title, and Tagline on top
@@ -118,7 +131,7 @@ public class TitleScreen implements Screen {
 
         game.batch.begin();
 
-        // Draw Title & Pulsing Minecraft-style Tagline
+        // Draw Title & Pulsing Tagline centered dynamically
         drawCustomTitle();
 
         drawButton(playRect, "PLAY");
@@ -129,14 +142,15 @@ public class TitleScreen implements Screen {
     }
 
     /**
-     * Calculates segments to keep the dynamic white-orange-white title and its pulsing tagline centered.
+     * Calculates text layout dynamically against viewport dimensions
      */
     private void drawCustomTitle() {
+        float worldW = viewport.getWorldWidth();
+
         String seg1 = "GETTING ";
         String seg2 = "UNDER ";
         String seg3 = "YOUR NERVE";
 
-        // Calculate individual widths for accurate spacing
         layout.setText(titleFont, seg1);
         float w1 = layout.width;
 
@@ -147,7 +161,7 @@ public class TitleScreen implements Screen {
         float w3 = layout.width;
 
         float totalWidth = w1 + w2 + w3;
-        float startX = (800 - totalWidth) / 2f;
+        float startX = (worldW - totalWidth) / 2f;
         float titleY = 380f;
 
         // Segment 1: GETTING (White)
@@ -163,19 +177,14 @@ public class TitleScreen implements Screen {
         titleFont.draw(game.batch, seg3, startX + w1 + w2, titleY);
 
         // --- DRAW MINECRAFT-STYLE PULSING TAGLINE ---
-        // Calculate a scale factor using a sine wave to create a smooth pulsing bounce
         float scale = 1.0f + 0.08f * MathUtils.sin(pulseTime * 5f);
         taglineFont.getData().setScale(scale);
 
         layout.setText(taglineFont, selectedTagline);
 
-        // Dynamic yellow-gold shade to mimic splash text
         taglineFont.setColor(new Color(1.0f, 0.85f, 0.0f, 1.0f));
+        taglineFont.draw(game.batch, selectedTagline, (worldW - layout.width) / 2f, titleY - 50f);
 
-        // Center dynamically taking the scale factor into account
-        taglineFont.draw(game.batch, selectedTagline, (800 - layout.width) / 2f, titleY - 50f);
-
-        // Reset scale factor back to normal for future frames
         taglineFont.getData().setScale(1.0f);
     }
 
@@ -207,23 +216,23 @@ public class TitleScreen implements Screen {
         }
     }
 
-    void startTitleScreenMusic()
-    {
+    void startTitleScreenMusic() {
         currentTrack = AudioManager.elevatorMusic;
         currentTrack.setLooping(true);
         currentTrack.setVolume(0.5f);
         currentTrack.play();
     }
 
-    void stopTitleScreenMusic()
-    {
-        if(currentTrack.isPlaying())
+    void stopTitleScreenMusic() {
+        if (currentTrack != null && currentTrack.isPlaying())
             currentTrack.stop();
     }
 
-    @Override public void resize(int width, int height) {
+    @Override
+    public void resize(int width, int height) {
         viewport.update(width, height, true);
         menuBg.resize(width, height);
+        recalcLayout();
     }
 
     @Override public void show() {}
