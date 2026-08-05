@@ -25,24 +25,15 @@ public class EndCreditsScreen implements Screen {
     // --- Fonts ---
     private BitmapFont headerFont;
     private BitmapFont bodyFont;
-    private BitmapFont teaserFont;
-    private BitmapFont sequelFont;
 
     // --- Audio Assets ---
     private Music creditsMusic;
 
-    // --- Teaser States & Timers ---
-    private boolean isTeaserPhase = true;
-    private float teaserTimer = 0f;
-    private float teaser1Alpha = 0f; // "CAPTAIN CLOWN NOSE"
-    private float teaser2Alpha = 0f; // "WILL RETURN IN"
-    private float teaser3Alpha = 0f; // "GETTING UNDER YOUR NERVE II"
-
     // --- Scroll & Fade Timers ---
-    private float scrollY = -50f;          // Starts just below the screen viewport boundary
+    private float scrollY = -50f;          // Starts just below the screen field view boundary
     private final float SCROLL_SPEED = 45f; // Pixels per second
-    private float screenFadeAlpha = 1f;     // Intro fade-in covering layer
-    private float exitFadeAlpha = 0f;       // Transition out layer
+    private float screenFadeAlpha = 1f;     // Starts completely black and fades in the scene
+    private float exitFadeAlpha = 0f;       // Transitions to black when exiting
 
     private boolean isExiting = false;
     private float exitTimer = 0f;
@@ -51,11 +42,6 @@ public class EndCreditsScreen implements Screen {
     private float totalCreditsHeight = 0f;
     private final float LINE_SPACING = 35f;
     private final float SECTION_SPACING = 70f;
-
-    // Game's Official Brand Color Palette
-    private static final Color COLOR_BG = new Color(0.05f, 0.05f, 0.07f, 1f); // Deep dark slate
-    private static final Color COLOR_GOLD_HEADER = new Color(1.0f, 0.85f, 0.0f, 1f); // Vibrant Yellow
-    private static final Color COLOR_WHITE_TEXT = new Color(0.95f, 0.95f, 0.95f, 1f);
 
     // --- Structured Credits Data Package ---
     private final CreditLine[] creditsData = {
@@ -150,11 +136,10 @@ public class EndCreditsScreen implements Screen {
     }
 
     private void loadAssets() {
-        headerFont = loadFont("ui/runescape_uf.ttf", 28, true, COLOR_GOLD_HEADER);
-        bodyFont   = loadFont("ui/runescape_uf.ttf", 22, false, COLOR_WHITE_TEXT);
-        teaserFont = loadFont("ui/runescape_uf.ttf", 26, true, COLOR_WHITE_TEXT);
-        sequelFont = loadFont("ui/runescape_uf.ttf", 36, true, COLOR_GOLD_HEADER);
+        headerFont = loadFont("ui/runescape_uf.ttf", 28, true, new Color(1.0f, 0.85f, 0.0f, 1f));
+        bodyFont = loadFont("ui/runescape_uf.ttf", 22, false, Color.WHITE);
 
+        // Load your Stranger Things-inspired synth anthem track
         creditsMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/sounds/UI/end_credits_theme.mp3"));
         creditsMusic.setLooping(false);
 
@@ -164,20 +149,26 @@ public class EndCreditsScreen implements Screen {
     }
 
     private void calculateCreditsHeight() {
+        // Run a safe calculation pre-pass to track the total vertical footprint of the text array
         totalCreditsHeight = 0f;
         for (CreditLine line : creditsData) {
-            totalCreditsHeight += line.isHeader ? SECTION_SPACING : LINE_SPACING;
+            if (line.isHeader) {
+                totalCreditsHeight += SECTION_SPACING;
+            } else {
+                totalCreditsHeight += LINE_SPACING;
+            }
         }
     }
 
     @Override
     public void render(float delta) {
+        // --- SAFE CRASH-PROOF CONTROL FLOW ENGINE ---
         if (updateTimersAndTransitions(delta)) {
-            return;
+            return; // Break execution frame instantly if screen changes to prevent native memory pointer faults
         }
 
-        // Render Background
-        Gdx.gl.glClearColor(COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 1f);
+        // Deep cinematic background slate
+        Gdx.gl.glClearColor(0.01f, 0.01f, 0.01f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         viewport.apply();
@@ -185,63 +176,44 @@ public class EndCreditsScreen implements Screen {
 
         game.batch.begin();
 
-        if (isTeaserPhase) {
-            // --- CINEMATIC TEASER TITLE SEQUENCE ---
-            if (teaser1Alpha > 0f) {
-                teaserFont.setColor(1f, 1f, 1f, teaser1Alpha);
-                teaserFont.draw(game.batch, "CAPTAIN CLOWN NOSE", 0f, 310f, 800f, Align.center, true);
-            }
+        // RENDER SCROLLING CREDITS TEXT
+        float currentYOffset = scrollY;
+        for (CreditLine line : creditsData) {
+            BitmapFont activeFont = line.isHeader ? headerFont : bodyFont;
 
-            if (teaser2Alpha > 0f) {
-                teaserFont.setColor(0.8f, 0.8f, 0.8f, teaser2Alpha);
-                teaserFont.draw(game.batch, "WILL RETURN IN", 0f, 260f, 800f, Align.center, true);
-            }
+            // Advance positioning baselines dynamically depending on entry classification tags
+            currentYOffset -= line.isHeader ? SECTION_SPACING : LINE_SPACING;
 
-            if (teaser3Alpha > 0f) {
-                sequelFont.setColor(COLOR_GOLD_HEADER.r, COLOR_GOLD_HEADER.g, COLOR_GOLD_HEADER.b, teaser3Alpha);
-                sequelFont.draw(game.batch, "GETTING UNDER YOUR NERVE II", 0f, 200f, 800f, Align.center, true);
-            }
-        } else {
-            // --- SCROLLING CREDITS CRAWL ---
-            float currentYOffset = scrollY;
-            for (CreditLine line : creditsData) {
-                BitmapFont activeFont = line.isHeader ? headerFont : bodyFont;
-                currentYOffset -= line.isHeader ? SECTION_SPACING : LINE_SPACING;
-
-                if (currentYOffset > -40f && currentYOffset < 520f) {
-                    activeFont.draw(game.batch, line.text, 0f, currentYOffset, 800f, Align.center, true);
-                }
+            // Culling optimization: Only render lines that fall within the visible window space boundaries
+            if (currentYOffset > -40f && currentYOffset < 520f) {
+                activeFont.draw(game.batch, line.text, 0f, currentYOffset, 800f, Align.center, true);
             }
         }
 
         game.batch.end();
 
-        // --- FADE OVERLAYS ---
+        // RENDER FADE OVERLAYS
         Gdx.gl.glEnable(GL20.GL_BLEND);
         shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
         if (screenFadeAlpha > 0.01f) {
-            shapeRenderer.setColor(new Color(0f, 0f, 0f, screenFadeAlpha));
+            // Initial boot intro fade-in covering mask layer
+            shapeRenderer.setColor(new Color(0.01f, 0.01f, 0.01f, screenFadeAlpha));
             shapeRenderer.rect(0, 0, 800f, 480f);
         } else if (isExiting) {
-            shapeRenderer.setColor(new Color(0f, 0f, 0f, exitFadeAlpha));
+            // Screen exit fade-out covering mask layer
+            shapeRenderer.setColor(new Color(0.01f, 0.01f, 0.01f, exitFadeAlpha));
             shapeRenderer.rect(0, 0, 800f, 480f);
         }
 
         shapeRenderer.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
-        // Skip Handler
+        // Allow players to skip the crawl at any point to go back to the menu loop
         if (!isExiting && (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY) || Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))) {
-            if (isTeaserPhase) {
-                // Instantly skip the intro teaser sequence straight to the credits
-                isTeaserPhase = false;
-                scrollY = -50f;
-            } else {
-                isExiting = true;
-                exitTimer = 0f;
-            }
+            isExiting = true;
+            exitTimer = 0f;
         }
     }
 
@@ -251,6 +223,7 @@ public class EndCreditsScreen implements Screen {
             float progress = Math.min(1f, exitTimer / FADE_DURATION);
             exitFadeAlpha = progress;
 
+            // Dim music volume downward linearly during the exit sequence transition window
             if (creditsMusic != null && creditsMusic.isPlaying()) {
                 float baseVol = Gdx.app.getPreferences("GettingUnderYourNerve_Settings").getFloat("musicVolume", 0.5f);
                 creditsMusic.setVolume(baseVol * (1f - progress));
@@ -259,52 +232,20 @@ public class EndCreditsScreen implements Screen {
             if (progress >= 1f) {
                 game.setScreen(new TitleScreen(game));
                 dispose();
-                return true;
+                return true; // Screen transition verified successfully
             }
             return false;
         }
 
-        // Fade in from black at screen startup
+        // Handle structural entry introduction fades
         if (screenFadeAlpha > 0f) {
             screenFadeAlpha = Math.max(0f, screenFadeAlpha - (dt / FADE_DURATION));
         }
 
-        if (isTeaserPhase) {
-            teaserTimer += dt;
-
-            // Step 1 (0.0s - 1.0s): Fade in "CAPTAIN CLOWN NOSE"
-            teaser1Alpha = Math.min(1f, teaserTimer / 1.0f);
-
-            // Step 2 (1.0s - 2.0s): Fade in "WILL RETURN IN"
-            if (teaserTimer >= 2.5f) {
-                teaser2Alpha = Math.min(1f, (teaserTimer - 2.5f) / 1.0f);
-            }
-
-            // Step 3 (2.0s - 3.0s): Fade in "GETTING UNDER YOUR NERVE II"
-            if (teaserTimer >= 5.0f) {
-                teaser3Alpha = Math.min(1f, (teaserTimer - 5.0f) / 1.0f);
-            }
-
-            // Step 4 (5.5s+): Fade out teaser card and start credits crawl
-            if (teaserTimer >= 5.5f) {
-                float fadeOutProgress = (teaserTimer - 5.5f) / 1.0f;
-                float currentAlpha = Math.max(0f, 1f - fadeOutProgress);
-                teaser1Alpha = currentAlpha;
-                teaser2Alpha = currentAlpha;
-                teaser3Alpha = currentAlpha;
-
-                if (teaserTimer >= 6.5f) {
-                    isTeaserPhase = false;
-                    scrollY = -50f; // Start rolling credits text
-                }
-            }
-            return false;
-        }
-
-        // Increment credits scroll position
+        // Increment the upward scroll positions continuously
         scrollY += SCROLL_SPEED * dt;
 
-        // Auto-exit after final line moves off top viewport
+        // Auto-exit script processing once the last element finishes crawling off the top viewport boundary limits
         if (scrollY > (480f + totalCreditsHeight + 100f)) {
             isExiting = true;
             exitTimer = 0f;
@@ -341,8 +282,6 @@ public class EndCreditsScreen implements Screen {
     public void dispose() {
         if (headerFont != null) headerFont.dispose();
         if (bodyFont != null) bodyFont.dispose();
-        if (teaserFont != null) teaserFont.dispose();
-        if (sequelFont != null) sequelFont.dispose();
         if (shapeRenderer != null) shapeRenderer.dispose();
 
         if (creditsMusic != null) {
@@ -351,6 +290,7 @@ public class EndCreditsScreen implements Screen {
         }
     }
 
+    // --- Data Model Struct Isolate ---
     private static class CreditLine {
         String text;
         boolean isHeader;

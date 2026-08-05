@@ -307,7 +307,8 @@ public class PauseScreen implements Screen {
         } else if (helpRect.contains(touchVec.x, touchVec.y)) {
             AudioManager.playSFX(AudioManager.buttonSound);
             stopRickroll();
-            Gdx.net.openURI("https://www.jellybyteofficial.me/HowToPlayGettingUnderYourNerve");
+            game.setScreen(new EndCreditsScreen(game));
+            dispose();
         } else if (cheatsRect.contains(touchVec.x, touchVec.y)) {
             AudioManager.playSFX(AudioManager.buttonSound);
             isRickrolling = true;

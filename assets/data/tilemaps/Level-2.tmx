@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="325" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="30" nextobjectid="350">
+<map version="1.10" tiledversion="1.12.1" orientation="orthogonal" renderorder="right-down" width="325" height="50" tilewidth="16" tileheight="16" infinite="0" nextlayerid="30" nextobjectid="352">
  <tileset firstgid="1" source="../tilesets/outside.tsx"/>
  <tileset firstgid="769" source="../tilesets/inside.tsx"/>
  <objectgroup id="15" name="EvilCoins">
@@ -72,6 +72,7 @@
   <object id="269" x="2384" y="672" width="16" height="16"/>
   <object id="311" x="2320" y="672" width="16" height="16"/>
   <object id="253" x="1120" y="624" width="16" height="16"/>
+  <object id="350" x="1200" y="624" width="16" height="16"/>
  </objectgroup>
  <layer id="2" name="Tile Layer 1" width="325" height="50">
   <data encoding="csv">
@@ -216,6 +217,11 @@
    </properties>
   </object>
   <object id="333" x="960" y="304" width="16" height="80">
+   <properties>
+    <property name="id" type="int" value="2"/>
+   </properties>
+  </object>
+  <object id="351" x="1200" y="608" width="16" height="16">
    <properties>
     <property name="id" type="int" value="2"/>
    </properties>
