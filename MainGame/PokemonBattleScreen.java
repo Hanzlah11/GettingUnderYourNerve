@@ -48,7 +48,7 @@ public class PokemonBattleScreen implements Screen {
     private int playerMaxHp = 100;
     private int playerHp = 100;
     private int enemyMaxHp = 300;
-    private int enemyHp = 300;
+    private int enemyHp = 5;
 
     private boolean damageApplied = false;
     private boolean isPotion = false;
@@ -311,7 +311,7 @@ public class PokemonBattleScreen implements Screen {
             case LOST:
                 if (stateTimer > 2.0f) {
                     // FIXED: Plays credits roll when losing the Pokemon fight[cite: 27]
-                    game.setScreen(new PokemonBattleScreen(game, playerName, slotIndex, startX, startY, startLevel));
+                    game.setScreen(new EndCreditsScreen(game));
                     dispose();
                     return false;
                 }
