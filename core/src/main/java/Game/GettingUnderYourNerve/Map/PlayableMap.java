@@ -11,6 +11,7 @@ import Game.GettingUnderYourNerve.Collectables.Potion;
 import Game.GettingUnderYourNerve.Trap.Spike;
 import Game.GettingUnderYourNerve.Trap.SpikedBall;
 import Game.GettingUnderYourNerve.Trap.Trap;
+import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import Game.GettingUnderYourNerve.Utilities.GameCam;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -26,6 +27,7 @@ import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -72,6 +74,7 @@ public class PlayableMap {
     private Array<TrollTile> deactivatedTrollTiles;
     private Array<TriggerZone> triggerZones;
     private Array<Integer> pendingTriggers;
+    private Array<SoundTriggerZone> soundTriggerZones = new Array<>();
 
     // Progression & Checkpoints
     private VictoryFlag victoryFlag;
@@ -139,6 +142,23 @@ public class PlayableMap {
         }
     }
 
+    private void createSoundTriggersFromMap() {
+        MapLayer layer = map.getLayers().get("soundtriggers");
+        if (layer == null) return;
+
+        for (MapObject object : layer.getObjects()) {
+            if (!(object instanceof RectangleMapObject)) continue;
+
+            MapProperties props = object.getProperties();
+            if (!props.containsKey("id")) continue;
+
+            int id = props.get("id", Integer.class);
+            Rectangle rect = ((RectangleMapObject) object).getRectangle();
+
+            soundTriggerZones.add(new SoundTriggerZone(id, rect));
+        }
+    }
+
     public void applyLoadedCollectables(java.util.ArrayList<String> loadedCoins,
                                         java.util.ArrayList<String> loadedPotions) {
         if (loadedCoins != null) {
@@ -184,6 +204,7 @@ public class PlayableMap {
 
         createTrollTilesFromMap(world);
         createTriggersFromMap(world);
+        createSoundTriggersFromMap();
         createPlatformsFromMap(world);
         createCoinsFromMap(world);
         createPotionsFromMap(world);
@@ -593,6 +614,53 @@ public class PlayableMap {
         pendingTriggers.clear();
     }
 
+    public void updateSoundTriggers(Player player) {
+        if (player == null) return;
+
+        float playerPixelX = player.GetXpos() * PPM;
+        float playerPixelY = player.GetYpos() * PPM;
+
+        boolean insideAnyZone = false;
+        SoundTriggerZone activeZone = null;
+
+        for (SoundTriggerZone zone : soundTriggerZones) {
+            boolean isTriggerFired = false;
+            for (TriggerZone tz : triggerZones) {
+                if (tz.id == zone.id && tz.fired) {
+                    isTriggerFired = true;
+                    break;
+                }
+            }
+
+            if (isTriggerFired) {
+                zone.active = false;
+                continue;
+            }
+
+            if (zone.bounds.contains(playerPixelX, playerPixelY)) {
+                zone.active = true;
+                insideAnyZone = true;
+                activeZone = zone;
+                break;
+            } else {
+                zone.active = false;
+            }
+        }
+
+        if (insideAnyZone && activeZone != null) {
+            float zoneCenterX = activeZone.bounds.x + activeZone.bounds.width / 2f;
+            float zoneCenterY = activeZone.bounds.y + activeZone.bounds.height / 2f;
+
+            float dst = Vector2.dst(playerPixelX, playerPixelY, zoneCenterX, zoneCenterY);
+            float maxDst = Math.max(activeZone.bounds.width, activeZone.bounds.height) / 2f;
+
+            float proximityFactor = Math.max(0.1f, 1.0f - (dst / maxDst));
+            AudioManager.playHummingSound(proximityFactor);
+        } else {
+            AudioManager.stopHummingSound();
+        }
+    }
+
     public void resetTriggers(World world) {
         for (TriggerZone zone : triggerZones) {
             zone.fired = false;
@@ -601,6 +669,11 @@ public class PlayableMap {
         for (GhostBlock gb : ghostBlocks) {
             gb.reset();
         }
+
+        for (SoundTriggerZone stz : soundTriggerZones) {
+            stz.reset();
+        }
+        AudioManager.stopHummingSound();
 
         Iterator<TrollTile> iter = deactivatedTrollTiles.iterator();
         while (iter.hasNext()) {
@@ -798,6 +871,7 @@ public class PlayableMap {
 
     public void UpdateMap(OrthographicCamera camera, float dt, World world, Player player) {
         updateTriggers(world);
+        updateSoundTriggers(player);
         updatePlatforms(dt, player);
         updateCoins(dt, world);
         updatePotions(dt, world);
@@ -925,6 +999,7 @@ public class PlayableMap {
     }
 
     public void dispose() {
+        AudioManager.stopHummingSound();
         map.dispose();
         mapRenderer.dispose();
         backGround.dispose();
@@ -938,6 +1013,7 @@ public class PlayableMap {
         trollTiles.clear();
         deactivatedTrollTiles.clear();
         triggerZones.clear();
+        soundTriggerZones.clear();
         boxes.clear();
         evilCoins.clear();
         ghostBlocks.clear();

@@ -1,9 +1,6 @@
-package Game.GettingUnderYourNerve;
+package Game.GettingUnderYourNerve.MainGame;
 
 import Game.GettingUnderYourNerve.Main;
-import Game.GettingUnderYourNerve.MainGame.PauseScreen;
-import Game.GettingUnderYourNerve.MainGame.PlayScreen;
-import Game.GettingUnderYourNerve.MainGame.TitleScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;

@@ -5,8 +5,7 @@ import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
 
-public class AudioManager
-{
+public class AudioManager {
     public static Sound shellShoot;
     public static Sound projectileBreak;
     public static Sound crabChaseShout;
@@ -16,6 +15,10 @@ public class AudioManager
     public static Music rickMusic;
 
     public static Sound footsteps;
+
+    // --- NEW: AMBIENT SOUND TRIGGER SFX ---
+    public static Sound hummingSFX;
+    private static long hummingSoundId = -1;
 
     // DIALOGUE
     // --- Prologue ---
@@ -47,7 +50,7 @@ public class AudioManager
     public static Music level2Music;
     public static Music bossArenaMusic;
 
-    // --- NEW: FOOTBALL MINIGAME ASSETS ---
+    // --- FOOTBALL MINIGAME ASSETS ---
     public static Music footballCrowd;
     public static Music footballWhistle;
     public static Sound footballKick;
@@ -64,18 +67,18 @@ public class AudioManager
     private static boolean wasFootballWhistlePlaying = false;
 
     // --- Persistent Volume Modifiers ---
-    private static float musicVolumeModifier = 0.5f;
-    private static float sfxVolumeModifier = 0.5f;
+    public static float musicVolumeModifier = 0.5f;
+    public static float sfxVolumeModifier = 0.5f;
     private static Preferences prefs;
 
-    public static void load()
-    {
+    public static void load() {
         // Initialize persistent settings file
         prefs = Gdx.app.getPreferences("GettingUnderYourNerve_Settings");
         musicVolumeModifier = prefs.getFloat("musicVolume", 0.5f);
         sfxVolumeModifier = prefs.getFloat("sfxVolume", 0.5f);
 
         footsteps = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/General/footsteps.wav"));
+        hummingSFX = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/General/humming.mp3"));
 
         shellShoot = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Enemy/shellShoot.wav"));
         projectileBreak = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Enemy/projectileBreak.wav"));
@@ -105,13 +108,13 @@ public class AudioManager
         batman_lvl3 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Levels/batman_lvl3.wav"));
 
         // --- Boss
-        batman_boss1 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Boss/batman1.wav")); // 10s
-        batman_boss2 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Boss/batman2.wav")); // 12s
-        player_boss1 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Boss/player1.wav")); // 8s
+        batman_boss1 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Boss/batman1.wav"));
+        batman_boss2 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Boss/batman2.wav"));
+        player_boss1 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Boss/player1.wav"));
 
         // --- Ending
-        ending_player1 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Ending/player1.wav")); // 10s
-        ending_batman1 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Ending/batman1.wav")); // 20s
+        ending_player1 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Ending/player1.wav"));
+        ending_batman1 = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Cutscenes/Ending/batman1.wav"));
 
         // -- Pokemon
         pokemonFightMusic = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/Pokemon/fightMusic.mp3"));
@@ -125,7 +128,7 @@ public class AudioManager
         level2Music    = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/General/level2.mp3"));
         bossArenaMusic = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/General/bossLevel.mp3"));
 
-        // --- LOAD FOOTBALL AUDIO ASSETS ---
+        // --- FOOTBALL AUDIO ASSETS ---
         footballCrowd = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/Enemy/crowd.mp3"));
         footballWhistle = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/Enemy/whistle.wav"));
         footballKick = Gdx.audio.newSound(Gdx.files.internal("Audio/Sounds/Enemy/kicking.wav"));
@@ -152,7 +155,6 @@ public class AudioManager
         if (level2Music != null) level2Music.setVolume(musicVolumeModifier);
         if (bossArenaMusic != null) bossArenaMusic.setVolume(musicVolumeModifier);
 
-        // Dynamic Minigame Volume Sync Hooks
         if (footballCrowd != null) footballCrowd.setVolume(musicVolumeModifier * 0.4f);
         if (footballWhistle != null) footballWhistle.setVolume(musicVolumeModifier * 0.5f);
     }
@@ -171,7 +173,29 @@ public class AudioManager
         return -1;
     }
 
+    // --- HUMMING SOUND CONTROLS ---
+    public static void playHummingSound(float proximityVolume) {
+        if (hummingSFX == null) return;
+
+        float effectiveVolume = sfxVolumeModifier * proximityVolume;
+
+        if (hummingSoundId == -1) {
+            hummingSoundId = hummingSFX.loop(effectiveVolume);
+        } else {
+            hummingSFX.setVolume(hummingSoundId, effectiveVolume);
+        }
+    }
+
+    public static void stopHummingSound() {
+        if (hummingSFX != null && hummingSoundId != -1) {
+            hummingSFX.stop(hummingSoundId);
+            hummingSoundId = -1;
+        }
+    }
+
     public static void pauseAll() {
+        stopHummingSound();
+
         wasRickPlaying = (rickMusic != null && rickMusic.isPlaying());
         wasPokemonPlaying = (pokemonFightMusic != null && pokemonFightMusic.isPlaying());
         wasElevatorPlaying = (elevatorMusic != null && elevatorMusic.isPlaying());
@@ -275,8 +299,10 @@ public class AudioManager
         if (cr7Explosion != null) cr7Explosion.resume();
     }
 
-    public static void dispose()
-    {
+    public static void dispose() {
+        stopHummingSound();
+        if (hummingSFX != null) hummingSFX.dispose();
+
         shellShoot.dispose();
         projectileBreak.dispose();
         crabChaseShout.dispose();
