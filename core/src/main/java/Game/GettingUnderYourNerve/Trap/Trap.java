@@ -22,7 +22,6 @@ public abstract class Trap {
     public Trap(World world, MapObject object) {
         this.world = world;
 
-        // Extract the rectangle from the object
         this.bounds = ((RectangleMapObject) object).getRectangle();
 
         this.startX = (bounds.x + bounds.width / 2f) / 32f;

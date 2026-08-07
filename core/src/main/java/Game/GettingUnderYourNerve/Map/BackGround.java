@@ -17,7 +17,7 @@ public class BackGround {
         float worldY;
         float windSpeed;
         float scale;
-        float parallaxFactor; // Depth: 0.1 = far away, 0.9 = close
+        float parallaxFactor;
         int textureIndex;
     }
 
@@ -26,7 +26,6 @@ public class BackGround {
 
     private static final int CLOUD_COUNT = 40;
 
-    // Lock clouds high up in your WORLD coordinates
     private static final float CLOUD_WORLD_Y_MIN = 12f;
     private static final float CLOUD_WORLD_Y_MAX = 25f;
 

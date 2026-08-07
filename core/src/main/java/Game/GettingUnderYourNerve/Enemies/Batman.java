@@ -92,7 +92,6 @@ public class Batman extends Enemy {
         this.hitTimer = 0f;
         this.stateTime = 0;
 
-        // Minimal knockback for Batman, he is a boss!
         float pushDir = GetXpos() < sourceX ? -1f : 1f;
         b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
         b2body.applyLinearImpulse(new Vector2(pushDir * 2f, 2f), b2body.getWorldCenter(), true);
@@ -108,7 +107,6 @@ public class Batman extends Enemy {
         if (isDead) return;
         stateTime += dt;
 
-        // Update hit stun timer
         if (isHit) {
             hitTimer += dt;
             if (hitTimer >= 0.4f) isHit = false;

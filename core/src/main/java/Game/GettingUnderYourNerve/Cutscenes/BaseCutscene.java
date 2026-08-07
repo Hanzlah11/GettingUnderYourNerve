@@ -3,6 +3,7 @@ package Game.GettingUnderYourNerve.Cutscenes;
 import Game.GettingUnderYourNerve.MainGame.PlayScreen;
 import Game.GettingUnderYourNerve.Player;
 import Game.GettingUnderYourNerve.Enemies.Batman;
+import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameCam;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
@@ -27,6 +28,7 @@ public abstract class BaseCutscene {
     protected float stateTimer = 0;
     protected int state = 0;
     protected boolean finished = false;
+    protected boolean isSkippable = true; // Cutscenes default to skippable
 
     // --- Subtitle & Background System Utilities ---
     protected String currentSubtitle = "";
@@ -34,7 +36,6 @@ public abstract class BaseCutscene {
     private GlyphLayout subtitleLayout;
     private Texture blackBgTexture;
 
-    // Preferences handles
     private Preferences prefs;
 
     public BaseCutscene(PlayScreen screen, Batman batman) {
@@ -43,14 +44,11 @@ public abstract class BaseCutscene {
         this.batman = batman;
         this.cam = screen.getCam();
 
-        // READ USER PREFERENCES HANDLE
         this.prefs = Gdx.app.getPreferences("GettingUnderYourNerve_Settings");
 
-        // Load custom TTF font
         this.subtitleFont = loadFont("ui/runescape_uf.ttf", 26);
         this.subtitleLayout = new GlyphLayout();
 
-        // Generate 1x1 white pixel texture for background box
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.WHITE);
         pixmap.fill();
@@ -75,7 +73,13 @@ public abstract class BaseCutscene {
         }
     }
 
+    public boolean isSkippable() {
+        return isSkippable;
+    }
+
     public void skip() {
+        if (!isSkippable) return; // Prevent skipping if flagged as unskippable
+        AudioManager.stopAllSFXAndDialogue();
         this.finished = true;
         this.currentSubtitle = "";
     }
@@ -109,8 +113,8 @@ public abstract class BaseCutscene {
         uiMatrix.setToOrtho2D(0, 0, 800, 480);
         batch.setProjectionMatrix(uiMatrix);
 
-        // PERMANENT "PRESS R TO SKIP" PROMPT
-        String skipText = "Press R to skip the cutscene...";
+        // TOP-RIGHT CUTSCENE PROMPT BANNER
+        String skipText = isSkippable ? "Press R to skip the cutscene..." : "This cutscene cannot be skipped...";
         com.badlogic.gdx.graphics.g2d.GlyphLayout skipLayout = new com.badlogic.gdx.graphics.g2d.GlyphLayout();
         skipLayout.setText(subtitleFont, skipText);
 
@@ -129,10 +133,8 @@ public abstract class BaseCutscene {
 
         subtitleFont.draw(batch, skipText, skipBoxX + skipPaddingX, skipBoxY + skipPaddingY + skipLayout.height);
 
-        // FIXED: Dynamically check the preference file live on every render frame
-        boolean subtitlesEnabled = prefs.getBoolean("subtitlesEnabled", true);
+        boolean subtitlesEnabled = prefs.getBoolean("subtitles", true);
 
-        // Render Dialogue Subtitles (Only if text exists AND subtitles are enabled live)
         if (currentSubtitle != null && !currentSubtitle.isEmpty() && subtitlesEnabled) {
             float maxTextWidth = 600f;
             subtitleLayout.setText(
@@ -168,6 +170,7 @@ public abstract class BaseCutscene {
     }
 
     public void dispose() {
+        AudioManager.stopAllSFXAndDialogue();
         if (subtitleFont != null) {
             subtitleFont.dispose();
         }

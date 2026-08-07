@@ -35,13 +35,11 @@ public class Player {
 
     public boolean isDead = false;
 
-    // ---------------- SAVE SLOT DATA ----------------
     public String playerName;
     public int saveSlotIndex;
     public float checkpointX;
     public float checkpointY;
 
-    // ---------------- STATES ----------------
     public enum State {
         IDLE,
         RUNNING,
@@ -51,7 +49,6 @@ public class Player {
         SLIDING
     }
 
-    // --- KNOCKBACK & STUN VARIABLES ---
     public boolean isHit = false;
     private float hitTimer = 0f;
     private float attackTimer;
@@ -60,14 +57,12 @@ public class Player {
     private float   launchTimer = 0f;
     private static final float LAUNCH_DURATION = 0.4f;
 
-    // --- NIGHTMARE MODE VARIABLES ---
     private float invertTimer = 0f;
     public boolean controlsInverted = false;
 
     public State currentState = State.IDLE;
     public State previousState = State.IDLE;
 
-    // ---------------- ANIMATIONS ----------------
     private Animation<TextureRegion> idleAnimation;
     private Animation<TextureRegion> runAnimation;
     private Animation<TextureRegion> jumpAnimation;
@@ -79,16 +74,13 @@ public class Player {
     private float stateTime = 0f;
     public boolean facingRight = true;
 
-    // ---------------- DRAW SIZE ----------------
     public float drawWidth;
     public float drawHeight;
 
-    // ---------------- COLLISION FLAGS ----------------
     public boolean isGrounded = false;
     private boolean isTouchingWall = false;
     private boolean isSliding = false;
 
-    //----------------- ATTACK --------------------
     public int swordUses = 10;
     public float attackCooldown = 0f;
     public boolean isAttacking = false;
@@ -113,9 +105,6 @@ public class Player {
         SlideTexture = new TextureRegion(slideTex);
     }
 
-    // ---------------------------------------------------
-    // SPAWN PLAYER FROM TILED
-    // ---------------------------------------------------
     public void SpawnPlayerFromTiled(TiledMap map, World world) {
 
         MapLayer objectLayer = map.getLayers().get("Objects");
@@ -140,7 +129,6 @@ public class Player {
         spawnX = startX + (drawWidth / 2f);
         spawnY = startY + (drawHeight / 2f);
 
-        // Default checkpoint to initial spawn
         checkpointX = spawnX;
         checkpointY = spawnY;
 
@@ -178,7 +166,6 @@ public class Player {
         playerBody.setFixedRotation(true);
         shape.dispose();
 
-        // --- NEW: THE SWORD ATTACHMENT ---
         PolygonShape swordShape = new PolygonShape();
         swordShape.setAsBox(20 / Main.PPM, 20 / Main.PPM, new Vector2(25 / Main.PPM, 0), 0);
 
@@ -186,16 +173,13 @@ public class Player {
         sdef.shape = swordShape;
         sdef.isSensor = true;
         sdef.filter.categoryBits = Main.SWORD_BIT;
-        sdef.filter.maskBits = 0; // Starts disabled!
+        sdef.filter.maskBits = 0;
 
         swordFixture = playerBody.createFixture(sdef);
         swordFixture.setUserData(this);
         swordShape.dispose();
     }
 
-    // ---------------------------------------------------
-    // AUTO-SAVE MECHANICS
-    // ---------------------------------------------------
     public void setPlayerData(String name, int slotIndex, float x, float y, int level) {
         this.playerName = name;
         this.saveSlotIndex = slotIndex;
@@ -209,19 +193,19 @@ public class Player {
             this.checkpointY = y;
         }
         playerBody.setTransform(this.checkpointX, this.checkpointY, 0);
+
+        if (this.saveSlotIndex >= 0) {
+            FileHandler.saveSlot(this.saveSlotIndex, this.playerName, this.checkpointX, this.checkpointY, this.currentLevel);
+        }
     }
 
     public void setCheckpointCoords(float x, float y) {
         this.checkpointX = x;
         this.checkpointY = y;
 
-        // Now includes this.currentLevel!
         FileHandler.saveSlot(this.saveSlotIndex, this.playerName, x, y, this.currentLevel);
     }
 
-    // ---------------------------------------------------
-    // UPDATE PLAYER
-    // ---------------------------------------------------
     public void UpdatePlayer(float dt, World world, boolean isCutscene) {
 
         if (isDead) {
@@ -235,13 +219,12 @@ public class Player {
             return;
         }
 
-        // --- STUN LOGIC ---
         if (isHit) {
             hitTimer += dt;
             if (hitTimer >= 0.5f) {
                 isHit = false;
             } else {
-                return; // Return early! Player cannot move left/right while stunned.
+                return;
             }
         }
 
@@ -250,22 +233,19 @@ public class Player {
             if (launchTimer >= LAUNCH_DURATION) {
                 isLaunched = false;
             }
-            return; // skip all movement input while launched
+            return;
         }
 
-        // --- SWORD COOLDOWN ---
         if (attackCooldown > 0) {
             attackCooldown -= dt;
         }
 
-        // --- SWORD ATTACK INPUT ---
         if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && swordUses > 0 && attackCooldown <= 0 && !isAttacking) {
             isAttacking = true;
             swordUses--;
             attackCooldown = attackTimer;
             stateTime = 0;
 
-            // Turn on the sword hitbox
             Filter filter = swordFixture.getFilterData();
             filter.maskBits = Main.ENEMY_BIT;
             swordFixture.setFilterData(filter);
@@ -273,17 +253,14 @@ public class Player {
 
         }
 
-        // --- SWORD ATTACK FINISH ---
         if (isAttacking && attackAnimation.isAnimationFinished(stateTime)) {
             isAttacking = false;
 
-            // Turn off the sword hitbox
             Filter filter = swordFixture.getFilterData();
             filter.maskBits = 0;
             swordFixture.setFilterData(filter);
         }
 
-        // --- DYNAMIC SWORD HITBOX PLACEMENT ---
         PolygonShape shape = (PolygonShape) swordFixture.getShape();
         if (facingRight) {
             shape.setAsBox(20 / Main.PPM, 20 / Main.PPM, new Vector2(25 / Main.PPM, 0), 0);
@@ -312,7 +289,6 @@ public class Player {
 
         if (!isCutscene) {
 
-            // --- NIGHTMARE LOGIC (0.5% chance per frame) ---
             if (DifficultyScreen.isNightmareMode && !isDead) {
                 if (controlsInverted) {
                     invertTimer -= dt;
@@ -320,10 +296,9 @@ public class Player {
                         controlsInverted = false;
                     }
                 } else {
-                    // Roll the dice! (0.5% chance)
                     if (com.badlogic.gdx.math.MathUtils.random(0f, 100f) <= 0.10f) {
                         controlsInverted = true;
-                        invertTimer = 8f; // Invert for 5 seconds!
+                        invertTimer = 8f;
 
                     }
                 }
@@ -335,7 +310,6 @@ public class Player {
             boolean moveRight = Gdx.input.isKeyPressed(Input.Keys.RIGHT);
             boolean moveLeft = Gdx.input.isKeyPressed(Input.Keys.LEFT);
 
-            // --- INVERT THE CONTROLS IF CURSED ---
             if (controlsInverted) {
                 boolean temp = moveRight;
                 moveRight = moveLeft;
@@ -361,9 +335,6 @@ public class Player {
         }
     }
 
-    // ---------------------------------------------------
-    // STATE MACHINE
-    // ---------------------------------------------------
     private State getState() {
         if (isAttacking) return State.ATTACKING;
         if(isSliding) return State.SLIDING;
@@ -380,9 +351,6 @@ public class Player {
         return State.IDLE;
     }
 
-    // ---------------------------------------------------
-    // RENDER
-    // ---------------------------------------------------
     public void Render(SpriteBatch batch, float dt) {
 
         if (isDead) return;
@@ -438,9 +406,6 @@ public class Player {
         return region;
     }
 
-    // ---------------------------------------------------
-    // GETTERS & GAMEPLAY MECHANICS
-    // ---------------------------------------------------
     public float GetXpos() { return playerBody.getPosition().x; }
     public float GetYpos() { return playerBody.getPosition().y; }
     public Body getPlayerBody() { return playerBody; }
@@ -495,7 +460,6 @@ public class Player {
         this.controlsInverted = false;
         this.invertTimer = 0f;
 
-        // Uses the newly updated checkpoint variables instead of the original spawn variables
         playerBody.setTransform(checkpointX, checkpointY, 0);
         playerBody.setLinearVelocity(0, 0);
     }

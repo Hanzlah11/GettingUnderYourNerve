@@ -24,9 +24,8 @@ public class Spike extends Trap {
 
         spikeAnimation = assets.getAnimation(GameAssetManager.SPIKE_ANIM_PREFIX, 4, 0.15f, Animation.PlayMode.LOOP, "%d");
 
-        // --- Box2D Setup ---
         BodyDef bdef = new BodyDef();
-        bdef.type = BodyDef.BodyType.StaticBody; // Spikes don't move
+        bdef.type = BodyDef.BodyType.StaticBody;
         bdef.position.set(startX, startY);
         body = world.createBody(bdef);
 
@@ -66,7 +65,7 @@ public class Spike extends Trap {
 
     @Override
     public int getDamage() {
-        return 20; // Touching spikes deals 20 damage!
+        return 20;
     }
 
     @Override

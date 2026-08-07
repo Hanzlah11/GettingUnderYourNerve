@@ -35,7 +35,6 @@ public class Crab extends Enemy {
     private float stateTime = 0f;
     private float shoutCooldown = 0f;
 
-    // --- NEW: Cooldown to prevent hyper-fast flipping glitches ---
     private float turnCooldown = 0f;
 
     private long patrolSoundId = -1;
@@ -76,7 +75,6 @@ public class Crab extends Enemy {
             "%02d"
         );
 
-        // Start the patrol loop scaled against default configuration settings
         float sfxMasterVolume = Gdx.app.getPreferences("GettingUnderYourNerve_Settings").getFloat("sfxVolume", 0.5f);
         patrolSoundId = AudioManager.crabPatrol.loop(0f * sfxMasterVolume);
     }
@@ -151,7 +149,6 @@ public class Crab extends Enemy {
             }
         }
 
-        // 2. Directional Logic
         if (currentState == State.CHASE) {
             facingRight = dx > 0;
         } else if (currentState == State.PATROL) {
@@ -172,7 +169,6 @@ public class Crab extends Enemy {
             }
         }
 
-        // 4. Movement Execution
         switch (currentState) {
             case ATTACK:
                 b2body.setLinearVelocity(0, b2body.getLinearVelocity().y);
@@ -263,7 +259,7 @@ public class Crab extends Enemy {
             }
         }
 
-        return true; // Path is solid.
+        return true;
     }
 
     private boolean isHoleAt(float x) {
@@ -306,13 +302,11 @@ public class Crab extends Enemy {
     }
 
     private void handleAudio(float distance) {
-        // --- NEW: Scale 3D distance sound attenuation against persistent master settings ---
         Preferences prefs = Gdx.app.getPreferences("GettingUnderYourNerve_Settings");
         float sfxMasterVolume = prefs.getFloat("sfxVolume", 0.5f);
 
         float calculatedVolume = Math.max(0, 0.4f * (1f - (distance / 20f)));
 
-        // Scale the volume relative to the master settings bar
         AudioManager.crabPatrol.setVolume(
             patrolSoundId,
             calculatedVolume * sfxMasterVolume

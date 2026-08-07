@@ -159,7 +159,6 @@ public class Projectile
             destroyed = true;
         }
 
-        // 2. Clear animation references
         idleAnimation = null;
         destroyingAnimation = null;
     }

@@ -26,11 +26,9 @@ public class LoadingScreen implements Screen {
     private GlyphLayout layout;
     private ShapeRenderer shapeRenderer;
 
-    // --- Fonts ---
     private BitmapFont font;
     private BitmapFont titleFont;
 
-    // --- State Machine & Timers ---
     private float stateTime = 0f;
     private float slideTimer = 0f;
 
@@ -39,7 +37,6 @@ public class LoadingScreen implements Screen {
     private int transitionState = 0;
     private float textAlpha = 0f;
 
-    // --- Retro Custom Transition States ---
     private boolean isTransitioningToTitle = false;
     private float transitionTimer = 0f;
     private float promptScale = 1.0f;
@@ -48,20 +45,16 @@ public class LoadingScreen implements Screen {
 
     private boolean screenFinished = false;
 
-    // --- JellyByte Logo Animation Assets ---
     private Animation<TextureRegion> logoAnimation;
     private float logoAnimationTime = 0f;
     private final float LOGO_STAY_DURATION = 1.5f;
 
-    // --- Audio Assets ---
     private Music logoIntroMusic;
     private boolean musicStarted = false;
 
-    // --- Configuration Constants ---
     private final float FADE_DURATION = 0.6f;
     private final float DISPLAY_DURATION = 2.0f;
 
-    // --- Dynamic Acknowledgments Array ---
     private final String[] acknowledgments = {
         "GETTING UNDER YOUR NERVE\n\nThis game features highly reactive traps, intentional design trolls, and abrupt spatial shifts.",
         "GUIDELINES & SAVES\n\nSaves track your coordinates, difficulty parameters, and metrics strictly at active Checkpoint Flags.",
@@ -70,7 +63,6 @@ public class LoadingScreen implements Screen {
 
     public LoadingScreen(Main game) {
         this.game = game;
-        // FIXED: Switched from ExtendViewport to FitViewport to preserve resolution and prevent UI stretching[cite: 23]
         this.viewport = new FitViewport(800, 480);
         this.layout = new GlyphLayout();
         this.shapeRenderer = new ShapeRenderer();
@@ -115,13 +107,11 @@ public class LoadingScreen implements Screen {
             return;
         }
 
-        // FIXED: Retrieve active viewport width and height dynamically[cite: 23]
         float worldW = viewport.getWorldWidth();
         float worldH = viewport.getWorldHeight();
 
         game.batch.begin();
 
-        // 1. RENDER STAGE CONTENT
         if (currentSlideIndex == -1) {
             logoAnimationTime += delta;
             TextureRegion currentFrame = logoAnimation.getKeyFrame(logoAnimationTime);
@@ -139,7 +129,7 @@ public class LoadingScreen implements Screen {
         } else if (transitionState != 3) {
             float maxTextWidth = 620f;
             float textX = (worldW - maxTextWidth) / 2f;
-            float textY = worldH * 0.5625f; // Maintains vertical proportions[cite: 23]
+            float textY = worldH * 0.5625f;
 
             font.setColor(new Color(1f, 1f, 1f, textAlpha));
             font.draw(game.batch, acknowledgments[currentSlideIndex], textX, textY, maxTextWidth, Align.center, true);
@@ -153,10 +143,8 @@ public class LoadingScreen implements Screen {
             font.draw(game.batch, acknowledgments[currentSlideIndex], textX, textY, maxTextWidth, Align.center, true);
         }
 
-        // 2. Calculate dynamic pulsing sine modifier
         float glowAlpha = 0.5f + 0.5f * MathUtils.sin(stateTime * 4.0f);
 
-        // 3. RENDER RUNNING PROGRESS BARS OR INTERACTION PROMPTS
         if (transitionState != 3) {
             if (currentSlideIndex > -1) {
                 titleFont.setColor(new Color(0.7f, 0.7f, 0.7f, glowAlpha));
@@ -165,7 +153,6 @@ public class LoadingScreen implements Screen {
                 titleFont.draw(game.batch, loadingText, worldW - layout.width - 40f, 50f);
             }
         } else {
-            // --- RETRO "PRESS ANY KEY" SCALE POP RENDERING ---
             String continueText = "PRESS ANY KEY TO CONTINUE";
 
             titleFont.getData().setScale(promptScale);
@@ -193,7 +180,6 @@ public class LoadingScreen implements Screen {
 
         game.batch.end();
 
-        // 4. DRAW CINEMATIC FADE OVERLAY
         if (isTransitioningToTitle) {
             Gdx.gl.glEnable(GL20.GL_BLEND);
             shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);

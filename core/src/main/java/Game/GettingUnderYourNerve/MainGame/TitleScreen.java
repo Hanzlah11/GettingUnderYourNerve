@@ -1,11 +1,13 @@
 package Game.GettingUnderYourNerve.MainGame;
 
 import Game.GettingUnderYourNerve.Main;
+import Game.GettingUnderYourNerve.SettingsScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import Game.GettingUnderYourNerve.Utilities.MenuBackground;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Color;
@@ -35,10 +37,8 @@ public class TitleScreen implements Screen {
     private Rectangle settingsRect;
     private Vector3 touchVec;
 
-    // --- LIVE BACKGROUND HELPER ---
     private MenuBackground menuBg;
 
-    // --- RANDOMIZED TAGLINE SYSTEM ---
     private String selectedTagline;
     private float pulseTime = 0;
 
@@ -47,7 +47,7 @@ public class TitleScreen implements Screen {
         "TRY NOT TO CRY",
         "YOU COULD NOT LIVE WITH YOUR OWN FAILURE, WHERE DID THAT BRING YOU, BACK TO ME",
         "TOTALLY FAMILY FRIENDLY",
-        "STUDENT ID: 24I-0537 APPROVED!" // A secret easter egg!
+        "STUDENT ID: 24I-0537 APPROVED!"
     };
 
     Music currentTrack;
@@ -58,10 +58,7 @@ public class TitleScreen implements Screen {
         this.touchVec = new Vector3();
         this.layout = new GlyphLayout();
 
-        // Initialize the live map background
         menuBg = new MenuBackground();
-
-        // Choose a random tagline once when the title screen is created
         selectedTagline = taglines[MathUtils.random(0, taglines.length - 1)];
 
         btnL = game.assets.manager.get(GameAssetManager.BUTTON_L, Texture.class);
@@ -80,9 +77,6 @@ public class TitleScreen implements Screen {
         startTitleScreenMusic();
     }
 
-    /**
-     * Dynamically positions UI button bounding boxes relative to active viewport bounds
-     */
     private void recalcLayout() {
         float worldW = viewport.getWorldWidth();
         float btnWidth = 200f;
@@ -117,20 +111,16 @@ public class TitleScreen implements Screen {
             }
         }
 
-        // Clear Screen Buffer
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // 1. Render moving Tilemap Background (extends edge-to-edge)
         menuBg.updateAndRender(delta, game.batch);
 
-        // 2. Render UI Buttons, Title, and Tagline on top
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
 
         game.batch.begin();
 
-        // Draw Title & Pulsing Tagline centered dynamically
         drawCustomTitle();
 
         drawButton(playRect, "PLAY");
@@ -140,9 +130,6 @@ public class TitleScreen implements Screen {
         game.batch.end();
     }
 
-    /**
-     * Calculates text layout dynamically against viewport dimensions
-     */
     private void drawCustomTitle() {
         float worldW = viewport.getWorldWidth();
 
@@ -163,19 +150,15 @@ public class TitleScreen implements Screen {
         float startX = (worldW - totalWidth) / 2f;
         float titleY = 380f;
 
-        // Segment 1: GETTING (White)
         titleFont.setColor(Color.WHITE);
         titleFont.draw(game.batch, seg1, startX, titleY);
 
-        // Segment 2: UNDER (Orange)
         titleFont.setColor(new Color(1.0f, 0.5f, 0.0f, 1.0f));
         titleFont.draw(game.batch, seg2, startX + w1, titleY);
 
-        // Segment 3: YOUR NERVE (White)
         titleFont.setColor(Color.WHITE);
         titleFont.draw(game.batch, seg3, startX + w1 + w2, titleY);
 
-        // --- DRAW MINECRAFT-STYLE PULSING TAGLINE ---
         float scale = 1.0f + 0.08f * MathUtils.sin(pulseTime * 5f);
         taglineFont.getData().setScale(scale);
 
@@ -217,9 +200,22 @@ public class TitleScreen implements Screen {
 
     void startTitleScreenMusic() {
         currentTrack = AudioManager.elevatorMusic;
-        currentTrack.setLooping(true);
-        currentTrack.setVolume(0.5f);
-        currentTrack.play();
+        if (currentTrack != null) {
+            currentTrack.setLooping(true);
+
+            Preferences prefs = Gdx.app.getPreferences("GettingUnderYourNerve_Settings");
+            float userVolume = prefs.getFloat("musicVolume", 0.5f);
+
+            currentTrack.setVolume(userVolume);
+
+            if (userVolume > 0f) {
+                if (!currentTrack.isPlaying()) {
+                    currentTrack.play();
+                }
+            } else {
+                currentTrack.pause();
+            }
+        }
     }
 
     void stopTitleScreenMusic() {
@@ -234,10 +230,13 @@ public class TitleScreen implements Screen {
         recalcLayout();
     }
 
-    @Override public void show() {}
+    @Override public void show() {
+        startTitleScreenMusic();
+    }
     @Override public void pause() {}
     @Override public void resume() {}
-    @Override public void hide() {}
+    @Override public void hide() {
+    }
 
     @Override
     public void dispose() {

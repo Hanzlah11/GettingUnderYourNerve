@@ -26,22 +26,18 @@ public class EnterNameScreen implements Screen, InputProcessor {
     private Viewport viewport;
     private Vector3 touchVec;
 
-    // --- Textures ---
     private Texture boardTL, boardTC, boardTR, boardCL, boardCC, boardCR, boardBL, boardBC, boardBR;
     private Texture btnL, btnC, btnR;
 
-    // --- Fonts ---
     private BitmapFont font;
     private BitmapFont titleFont;
     private GlyphLayout layout;
 
-    // --- UI Bounds ---
     private Rectangle[] slotRects = new Rectangle[4];
     private Rectangle confirmRect;
     private Rectangle cancelRect;
-    private Rectangle backRect; // --- ADDED ---
+    private Rectangle backRect;
 
-    // --- Logic State ---
     private String[] slotNames = new String[4];
     private boolean isTyping = false;
     private int selectedSlot = -1;
@@ -59,16 +55,13 @@ public class EnterNameScreen implements Screen, InputProcessor {
         }
         confirmRect = new Rectangle();
         cancelRect = new Rectangle();
-        backRect = new Rectangle(); // --- ADDED ---
+        backRect = new Rectangle();
 
         loadAssets();
         refreshSlots();
         recalcLayout();
     }
 
-    /**
-     * Recalculates button positions dynamically relative to current viewport width
-     */
     private void recalcLayout() {
         float worldW = viewport.getWorldWidth();
         float worldH = viewport.getWorldHeight();
@@ -83,12 +76,10 @@ public class EnterNameScreen implements Screen, InputProcessor {
             slotRects[i].set(startX, startY - (i * gap), btnWidth, btnHeight);
         }
 
-        // Popup buttons centered dynamically
         float popupCenterX = worldW / 2f;
         cancelRect.set(popupCenterX - 140f, 150f, 130f, 40f);
         confirmRect.set(popupCenterX + 10f, 150f, 130f, 40f);
 
-        // --- ADDED: Back button anchored at top-left ---
         backRect.set(20f, worldH - 60f, 140f, 40f);
     }
 
@@ -127,14 +118,11 @@ public class EnterNameScreen implements Screen, InputProcessor {
     public void render(float delta) {
         handleMouseInput();
 
-        // 1. Clear Screen
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // 2. Render Live Tiled Map Background
         titleScreen.getMenuBg().updateAndRender(delta, game.batch);
 
-        // 3. Render UI Overlays on Top
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
 
@@ -142,26 +130,21 @@ public class EnterNameScreen implements Screen, InputProcessor {
 
         game.batch.begin();
 
-        // Title text dynamically centered
         layout.setText(titleFont, "SELECT A SAVE SLOT");
         titleFont.draw(game.batch, "SELECT A SAVE SLOT", (worldW - layout.width) / 2f, 420);
 
-        // Instructions dynamically centered
         font.setColor(Color.LIGHT_GRAY);
         layout.setText(font, "Left Click: Play  |  Right Click: Delete");
         font.draw(game.batch, "Left Click: Play  |  Right Click: Delete", (worldW - layout.width) / 2f, 390);
         font.setColor(Color.WHITE);
 
-        // Active save slots
         for (int i = 0; i < 4; i++) {
             String label = (slotNames[i] == null) ? "Slot " + (i + 1) + " - Empty" : slotNames[i];
             drawButton(slotRects[i], label);
         }
 
-        // --- ADDED: Render Back Button ---
         drawButton(backRect, "BACK");
 
-        // Popup Naming Window (if creating a save)
         if (isTyping) {
             drawTypingPopup();
         }
@@ -179,7 +162,6 @@ public class EnterNameScreen implements Screen, InputProcessor {
         float inW = bW - corner * 2;
         float inH = bH - corner * 2;
 
-        // Draw Wooden Board Backing and Frame
         game.batch.draw(boardTL, bx, by + bH - corner, corner, corner);
         game.batch.draw(boardTC, bx + corner, by + bH - corner, inW, corner);
         game.batch.draw(boardTR, bx + bW - corner, by + bH - corner, corner, corner);
@@ -193,7 +175,6 @@ public class EnterNameScreen implements Screen, InputProcessor {
         layout.setText(font, "ENTER CHARACTER NAME:");
         font.draw(game.batch, "ENTER CHARACTER NAME:", (worldW - layout.width) / 2f, 290);
 
-        // Input String Display
         layout.setText(font, typedName.toString());
         float nameWidth = layout.width;
         float textStartX = (worldW - nameWidth) / 2f;
@@ -201,7 +182,6 @@ public class EnterNameScreen implements Screen, InputProcessor {
         font.setColor(Color.YELLOW);
         font.draw(game.batch, typedName.toString(), textStartX, 240);
 
-        // Blinking cursor
         if (System.currentTimeMillis() / 500 % 2 == 0) {
             font.draw(game.batch, "_", textStartX + nameWidth, 240);
         }
@@ -216,7 +196,6 @@ public class EnterNameScreen implements Screen, InputProcessor {
             touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             viewport.unproject(touchVec);
 
-            // --- ADDED: Check back button click ---
             if (backRect.contains(touchVec.x, touchVec.y) && !isTyping) {
                 AudioManager.playSFX(AudioManager.buttonSound);
                 game.setScreen(titleScreen);

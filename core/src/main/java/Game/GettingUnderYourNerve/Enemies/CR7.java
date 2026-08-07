@@ -92,10 +92,8 @@ public class CR7 extends Enemy {
         shape.dispose();
     }
 
-    // FIXED: Overriding takeDamage to do nothing makes CR7 completely immune to player attacks[cite: 21]
     @Override
     public void takeDamage(int damage, float pushDirection) {
-        // Intentionally left empty so sword hits or knockback forces are ignored
     }
 
     @Override

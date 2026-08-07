@@ -2,7 +2,6 @@ package Game.GettingUnderYourNerve;
 
 import Game.GettingUnderYourNerve.MainGame.LoadingScreen;
 import Game.GettingUnderYourNerve.MainGame.TitleScreen;
-//import Game.GettingUnderYourNerve.MainGame.PlayScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Game;
@@ -10,7 +9,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public class Main extends Game {
 
-    // --- Global Shared Utilities ---
+
     public SpriteBatch batch;
     public GameAssetManager assets;
 
@@ -47,7 +46,6 @@ public class Main extends Game {
 
     @Override
     public void dispose() {
-        // Only dispose of global things here
         batch.dispose();
         assets.dispose();
         AudioManager.dispose();

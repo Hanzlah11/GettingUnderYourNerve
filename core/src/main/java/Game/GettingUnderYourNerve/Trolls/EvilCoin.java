@@ -101,7 +101,6 @@ public class EvilCoin {
             return;
         }
 
-        // --- Chasing ---
         timer += dt;
         if (timer >= lifetime) {
             setToDestroy = true;

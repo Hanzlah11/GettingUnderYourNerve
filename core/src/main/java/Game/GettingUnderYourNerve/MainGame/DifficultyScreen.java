@@ -177,8 +177,9 @@ public class DifficultyScreen implements Screen {
 
     private void startGame() {
         titleScreen.stopTitleScreenMusic();
-        // FIXED: Passes startLevel dynamically instead of forcing level 3
-        int levelToLoad = (startLevel <= 0) ? 1 : startLevel;
+
+        int levelToLoad = (startLevel < 0) ? 0 : startLevel;
+
         game.setScreen(new PlayScreen(game, playerName, slotIndex, startX, startY, levelToLoad));
         dispose();
     }

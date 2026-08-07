@@ -71,9 +71,6 @@ public class LeaderboardScreen implements Screen {
         recalcLayout();
     }
 
-    /**
-     * Dynamically positions UI button bounding boxes relative to active viewport bounds
-     */
     private void recalcLayout() {
         float worldH = viewport.getWorldHeight();
         backRect.set(20f, worldH - 60f, 180f, 40f);

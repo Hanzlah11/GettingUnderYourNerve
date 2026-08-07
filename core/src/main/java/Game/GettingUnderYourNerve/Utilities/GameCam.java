@@ -12,9 +12,8 @@ public class GameCam {
     private OrthographicCamera camera;
     private Vector2 position;
 
-    // Lerp target — camera slides toward this
     private Vector2 target;
-    private static final float LERP_SPEED = 3f; // tweak for faster/slower slide
+    private static final float LERP_SPEED = 3f;
 
     private float shakeDuration  = 0f;
     private float shakeIntensity = 0f;
@@ -40,7 +39,6 @@ public class GameCam {
 
         camera.position.set(position.x, position.y, 0);
 
-        // Apply shake on top of the base position
         if (shakeTimer < shakeDuration) {
             shakeTimer += Gdx.graphics.getDeltaTime();
             camera.position.x += (random.nextFloat() * 2 - 1) * shakeIntensity;

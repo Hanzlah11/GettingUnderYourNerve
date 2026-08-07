@@ -112,7 +112,6 @@ public class Shell extends Enemy
                 AudioManager.playSFX(AudioManager.shellShoot);
                 hasPlayedSound = true;
 
-                // Pass the assets vault into the new Projectile!
                 if(facingRight)
                     activeProjectiles.add(new Projectile(world, GetXpos() + drawWidth / 2f, GetYpos() - (6f / PPM), facingRight, assets));
                 else
@@ -206,7 +205,6 @@ public class Shell extends Enemy
         }
     }
 
-    // Helper to check if the player should phase through
     public boolean isBiting() {
         return currentState == State.BITING;
     }
@@ -224,7 +222,6 @@ public class Shell extends Enemy
         }
         activeProjectiles.clear();
 
-        // 2. Clear animation references
         idleAnimation = null;
         shootingAnimation = null;
         bitingAnimation = null;

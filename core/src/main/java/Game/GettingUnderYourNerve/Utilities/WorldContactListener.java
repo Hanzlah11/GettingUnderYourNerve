@@ -1,7 +1,7 @@
 package Game.GettingUnderYourNerve.Utilities;
 
 import Game.GettingUnderYourNerve.Map.VictoryFlag;
-import Game.GettingUnderYourNerve.Map.CheckpointFlag; // --- NEW CHECKPOINT IMPORT ---
+import Game.GettingUnderYourNerve.Map.CheckpointFlag;
 import Game.GettingUnderYourNerve.Trolls.EvilCoin;
 import Game.GettingUnderYourNerve.Trolls.LauncherBox;
 import Game.GettingUnderYourNerve.Trolls.RotatingBox;
@@ -36,7 +36,6 @@ public class WorldContactListener implements ContactListener {
         Object objA = fixA.getUserData();
         Object objB = fixB.getUserData();
 
-        // ---- 1. Trigger zones ----
         if (objA instanceof Player && objB instanceof TriggerZone) {
             TriggerZone zone = (TriggerZone) objB;
             if (!zone.fired && playableMap != null)
@@ -50,7 +49,6 @@ public class WorldContactListener implements ContactListener {
             return;
         }
 
-        // ---- Victory Flag ----
         if (objA instanceof Player && objB instanceof VictoryFlag) {
             ((VictoryFlag) objB).onPlayerReach();
             return;
@@ -60,7 +58,6 @@ public class WorldContactListener implements ContactListener {
             return;
         }
 
-        // ---- 2. Collectables ----
         if (objA instanceof Player && objB instanceof Coin) {
             ((Coin) objB).onCollect((Player) objA);
             return;
@@ -77,7 +74,6 @@ public class WorldContactListener implements ContactListener {
             return;
         }
 
-        // ---- 3. Evil Coin ----
         if (objA instanceof Player && objB instanceof EvilCoin) {
             ((EvilCoin) objB).onHitPlayer((Player) objA);
             return;
@@ -87,7 +83,6 @@ public class WorldContactListener implements ContactListener {
             return;
         }
 
-        // ---- 4. Deadly water ----
         if (objA instanceof Player && "water_sensor".equals(objB)) {
             ((Player) objA).addHp(-100);
             return;
@@ -96,7 +91,18 @@ public class WorldContactListener implements ContactListener {
             return;
         }
 
-        // ---- 5. Bitmask collisions ----
+        if (objA instanceof Enemy && "water_sensor".equals(objB)) {
+            Enemy enemy = (Enemy) objA;
+            enemy.setToDestroy = true;
+            enemy.isDead = true;
+            return;
+        } else if (objB instanceof Enemy && "water_sensor".equals(objA)) {
+            Enemy enemy = (Enemy) objB;
+            enemy.setToDestroy = true;
+            enemy.isDead = true;
+            return;
+        }
+
         int cDef = fixA.getFilterData().categoryBits | fixB.getFilterData().categoryBits;
 
         switch (cDef) {
@@ -110,7 +116,6 @@ public class WorldContactListener implements ContactListener {
                 handleProjectileGroundCollision(fixA, fixB);
                 break;
 
-            // ---- Checkpoint Flag Collision Case ----
             case Main.PLAYER_BIT | Main.CHECKPOINT_BIT:
                 if (fixA.getFilterData().categoryBits == Main.PLAYER_BIT) {
                     ((CheckpointFlag) fixB.getUserData()).onCheckpointHit((Player) fixA.getUserData());
@@ -119,7 +124,6 @@ public class WorldContactListener implements ContactListener {
                 }
                 break;
 
-            // ---- Box interactions ----
             case Main.PLAYER_BIT | Main.GROUND_BIT: {
                 Fixture groundFix = fixA.getFilterData().categoryBits == Main.GROUND_BIT ? fixA : fixB;
                 Fixture playerFix = fixA.getFilterData().categoryBits == Main.PLAYER_BIT ? fixA : fixB;
@@ -180,7 +184,7 @@ public class WorldContactListener implements ContactListener {
         Projectile projectile;
         Player     player;
         if (userDataA instanceof Projectile) {
-            projectile = (userDataA instanceof Projectile) ? (Projectile) userDataA : null; // Safe casting checks
+            projectile = (userDataA instanceof Projectile) ? (Projectile) userDataA : null;
             player     = (Player)     userDataB;
         } else {
             projectile = (Projectile) userDataB;

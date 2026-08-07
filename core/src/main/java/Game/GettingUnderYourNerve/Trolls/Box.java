@@ -10,34 +10,19 @@ import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.MapProperties;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
 
 import static Game.GettingUnderYourNerve.Main.PPM;
 
-/**
- * Box — abstract superclass for all box types.
- *
- * Subclasses:
- *   NormalBox    — solid platform, no behaviour
- *   RotatingBox  — rotates toward the side the player lands from
- *
- * Tiled setup (Object Layer named "Boxes"):
- *   Rectangle object
- *   Name        : "NormalBox" or "RotatingBox"
- *   Properties  : any extra props read by subclass (e.g. Speed)
- */
 public abstract class Box {
 
     public Body      body;
-    public float     width;   // Box2D meters
-    public float     height;  // Box2D meters
+    public float     width;
+    public float     height;
 
     protected TextureRegion texture;
 
-    // ---------------------------------------------------------------
-    // Constructor — builds the Box2D body from a Tiled rectangle.
-    // Subclasses call super() first, then add their own setup.
-    // ---------------------------------------------------------------
     public Box(World world, MapObject object, GameAssetManager assets,
                BodyDef.BodyType bodyType) {
 
@@ -48,19 +33,19 @@ public abstract class Box {
         height = rect.height / PPM;
 
         float cx = (rect.x + rect.width  / 2f) / PPM;
-        float cy = (rect.y + rect.height / 2f) / PPM;
+        float cy = (rect.y + rect.height  / 2f) / PPM;
 
-        // Body
         BodyDef bdef = new BodyDef();
         bdef.type = bodyType;
         bdef.position.set(cx, cy);
         body = world.createBody(bdef);
 
-        // Shape
         PolygonShape shape = new PolygonShape();
-        shape.setAsBox(width / 2f, height / 2f);
+        float fixtureWidth  = width / 2f;
+        float fixtureHeight = (height / 2f) * 0.80f;
+        float fixtureOffsetY = -4f / PPM;
+        shape.setAsBox(fixtureWidth, fixtureHeight, new Vector2(0, fixtureOffsetY), 0f);
 
-        // Fixture
         FixtureDef fdef = new FixtureDef();
         fdef.shape = shape;
         fdef.friction = 0.3f;
@@ -84,11 +69,11 @@ public abstract class Box {
 
         batch.draw(
             texture,
-            x, y - 7.0f / PPM,                       // position
-            width  / 2f, height / 2f,   // origin (center for rotation)
-            width, height,              // size
-            1f, 1f,                     // scale
-            angleDeg                    // rotation in degrees
+            x, y - 5.0f / PPM,
+            width  / 2f, height / 2f,
+            width, height,
+            1f, 1f,
+            angleDeg
         );
     }
 }
