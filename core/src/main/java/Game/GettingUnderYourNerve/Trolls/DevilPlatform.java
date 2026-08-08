@@ -26,8 +26,8 @@ public class DevilPlatform {
     private boolean movingRight = true;
 
 
-    private float detectionRadiusX = 3.0f; // Max 3 tiles away horizontally
-    private float detectionRadiusY = 3.0f; // Max 3 tiles away vertically
+    private float detectionRadiusX = 3.0f;
+    private float detectionRadiusY = 3.0f;
     private boolean isEvading = false;
 
     public DevilPlatform(World world, Rectangle rect, float startX, float endX, float speed, GameAssetManager assets) {
@@ -37,7 +37,7 @@ public class DevilPlatform {
 
         this.normalSpeed = (speed == 0) ? 2f : speed;
         if (Math.abs(this.startX - this.endX) < 0.1f) {
-            this.endX = this.startX + (3f * 32f / Main.PPM); // Force 3-tile movement range if missing
+            this.endX = this.startX + (3f * 32f / Main.PPM);
         }
 
         this.evadeSpeed = this.normalSpeed * 6.5f;
@@ -70,7 +70,7 @@ public class DevilPlatform {
     }
 
     public void update(float dt, Player player) {
-        stateTime += dt; // Progress the animation frame
+        stateTime += dt;
 
         float platX = body.getPosition().x;
         float platY = body.getPosition().y;
@@ -84,7 +84,6 @@ public class DevilPlatform {
 
         if (playerIsNear) {
             isEvading = true;
-            // Dart away from the player!
             float evadeDirection = (platX >= playerX) ? 1f : -1f;
             body.setLinearVelocity(evadeDirection * evadeSpeed, 0);
         } else {

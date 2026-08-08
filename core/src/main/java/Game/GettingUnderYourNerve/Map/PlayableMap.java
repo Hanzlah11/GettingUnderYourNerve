@@ -42,46 +42,36 @@ public class PlayableMap {
     private OrthogonalTiledMapRenderer mapRenderer;
     private GameAssetManager assets;
 
-    // Platforms
     private Array<HorizontalPlatform> horizontalPlatforms;
     private Array<VerticalPlatform> verticalPlatforms;
     private Array<DevilPlatform> devilPlatforms;
 
-    // Decor
     private Array<PalmTree> palmTrees;
 
-    // Collectables
     private Array<Coin> coins;
     private Array<Potion> potions;
 
-    // Background
     private BackGround backGround;
 
-    // Water & Enemies
     private Array<Water> waterPools;
     private Array<Enemy> enemies;
 
-    // Traps
     public Array<Trap> mapTraps;
 
-    // Boxes & Trolls
     private Array<Box> boxes;
     private Array<EvilCoin> evilCoins;
     private Array<GhostBlock> ghostBlocks;
 
-    // Trigger system
     private Array<TrollTile> trollTiles;
     private Array<TrollTile> deactivatedTrollTiles;
     private Array<TriggerZone> triggerZones;
     private Array<Integer> pendingTriggers;
     private Array<SoundTriggerZone> soundTriggerZones = new Array<>();
 
-    // Progression & Checkpoints
     private VictoryFlag victoryFlag;
     private Array<CheckpointFlag> checkpointFlags;
     private int currentLevel;
 
-    // Save/Load IDs
     public java.util.HashMap<Coin, String> coinIds = new java.util.HashMap<>();
     public java.util.ArrayList<String> collectedCoinIds = new java.util.ArrayList<>();
     public java.util.ArrayList<String> pendingDestroyCoinIds = new java.util.ArrayList<>();
@@ -484,7 +474,7 @@ public class PlayableMap {
             fdef.shape = shape;
             fdef.isSensor = true;
             fdef.filter.categoryBits = Main.WATER_BIT;
-            fdef.filter.maskBits = Main.PLAYER_BIT;
+            fdef.filter.maskBits = Main.PLAYER_BIT | Main.ENEMY_BIT;
 
             body.createFixture(fdef).setUserData("water_sensor");
             shape.dispose();
@@ -810,6 +800,11 @@ public class PlayableMap {
 
             if (enemy instanceof CR7 && ((CR7) enemy).triggerMinigame) {
                 pendingMinigameMatch = true;
+            }
+
+            if (enemy.b2body != null && enemy.b2body.getPosition().y < -1f) {
+                enemy.setToDestroy = true;
+                enemy.isDead = true;
             }
 
             if (enemy.setToDestroy && !enemy.destroyed) {

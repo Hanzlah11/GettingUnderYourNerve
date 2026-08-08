@@ -14,7 +14,6 @@ public class CheckpointFlag {
     private Body body;
     private Fixture fixture;
 
-    // --- Animation Variables ---
     private Animation<TextureRegion> flagAnimation;
     private float stateTime;
     private float drawX;
@@ -25,11 +24,9 @@ public class CheckpointFlag {
     public CheckpointFlag(World world, Rectangle bounds, GameAssetManager assets) {
         this.isActivated = false;
 
-        // Inherit the Victory Flag animation passed from PlayableMap
         this.flagAnimation = assets.getAnimation(GameAssetManager.FLAG_PREFIX, 9, 0.15f, Animation.PlayMode.LOOP, "%d");
         this.stateTime = 0f;
 
-        // Set dimensions based exactly on how you drew and scaled it in Tiled
         this.drawWidth = bounds.getWidth() / Main.PPM;
         this.drawHeight = bounds.getHeight() / Main.PPM;
         this.drawX = bounds.getX() / Main.PPM;
@@ -62,10 +59,8 @@ public class CheckpointFlag {
 
     public void draw(SpriteBatch batch) {
         if (flagAnimation != null) {
-            // Get the current frame of the animation (looping enabled)
             TextureRegion currentFrame = flagAnimation.getKeyFrame(stateTime, true);
 
-            // Draw it using the precise coordinates and scaled size from the Tiled map
             batch.draw(currentFrame, drawX, drawY, drawWidth, drawHeight);
         }
     }
@@ -74,7 +69,6 @@ public class CheckpointFlag {
         if (!isActivated) {
             isActivated = true;
 
-            // Trigger the auto-save using the player's updated coordinates
             player.setCheckpointCoords(player.GetXpos(), player.GetYpos());
             System.out.println("Checkpoint reached! Game auto-saved for: " + player.playerName);
         }

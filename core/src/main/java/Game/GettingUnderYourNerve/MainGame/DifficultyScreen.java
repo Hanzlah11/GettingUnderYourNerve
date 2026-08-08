@@ -14,7 +14,6 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
-import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -41,6 +40,7 @@ public class DifficultyScreen implements Screen {
 
     private Rectangle classicRect;
     private Rectangle nightmareRect;
+    private Rectangle backRect;
     private Vector3 touchVec;
 
     public static boolean isNightmareMode = false;
@@ -75,8 +75,22 @@ public class DifficultyScreen implements Screen {
         font = loadFont("ui/runescape_uf.ttf", 24);
         titleFont = loadFont("ui/runescape_uf.ttf", 36);
 
-        classicRect = new Rectangle(200, 150, 180, 40);
-        nightmareRect = new Rectangle(420, 150, 180, 40);
+        classicRect = new Rectangle();
+        nightmareRect = new Rectangle();
+        backRect = new Rectangle();
+
+        recalcLayout();
+    }
+
+    private void recalcLayout() {
+        float worldW = viewport.getWorldWidth();
+        float worldH = viewport.getWorldHeight();
+        float centerX = worldW / 2f;
+
+        classicRect.set(centerX - 190f, 150f, 180f, 40f);
+        nightmareRect.set(centerX + 10f, 150f, 180f, 40f);
+
+        backRect.set(20f, worldH - 60f, 140f, 40f);
     }
 
     @Override
@@ -88,35 +102,40 @@ public class DifficultyScreen implements Screen {
             touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             viewport.unproject(touchVec);
 
+            if (backRect.contains(touchVec.x, touchVec.y)) {
+                AudioManager.playSFX(AudioManager.buttonSound);
+                game.setScreen(new EnterNameScreen(game, titleScreen));
+                dispose();
+                return;
+            }
+
             if (classicRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
+                AudioManager.playSFX(AudioManager.buttonSound);
                 isNightmareMode = false;
                 startGame();
             } else if (nightmareRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.playSFX(AudioManager.buttonSound); // --- UPDATED ---
+                AudioManager.playSFX(AudioManager.buttonSound);
                 isNightmareMode = true;
                 startGame();
             }
         }
 
-        // 1. Clear Screen
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // 2. Render Live Tiled Map Background from TitleScreen
         titleScreen.getMenuBg().updateAndRender(delta, game.batch);
 
-        // 3. Render UI Components on Top
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
 
+        float worldW = viewport.getWorldWidth();
+
         game.batch.begin();
 
-        // Draw Wooden Board Backing
         float BOARD_WIDTH = 500f;
         float BOARD_HEIGHT = 200f;
         float BOARD_CORNER = 32f;
-        float bx = (800 - BOARD_WIDTH) / 2f;
+        float bx = (worldW - BOARD_WIDTH) / 2f;
         float by = 120f;
         float innerW = BOARD_WIDTH - BOARD_CORNER * 2;
         float innerH = BOARD_HEIGHT - BOARD_CORNER * 2;
@@ -132,13 +151,15 @@ public class DifficultyScreen implements Screen {
         game.batch.draw(boardBR, bx + BOARD_WIDTH - BOARD_CORNER, by, BOARD_CORNER, BOARD_CORNER);
 
         layout.setText(titleFont, "CHOOSE DIFFICULTY");
-        titleFont.draw(game.batch, "CHOOSE DIFFICULTY", (800 - layout.width) / 2f, 280);
+        titleFont.draw(game.batch, "CHOOSE DIFFICULTY", (worldW - layout.width) / 2f, 280);
 
         drawButton(classicRect, "CLASSIC");
 
         font.setColor(Color.RED);
         drawButton(nightmareRect, "NIGHTMARE");
         font.setColor(Color.WHITE);
+
+        drawButton(backRect, "BACK");
 
         game.batch.end();
     }
@@ -156,7 +177,10 @@ public class DifficultyScreen implements Screen {
 
     private void startGame() {
         titleScreen.stopTitleScreenMusic();
-        game.setScreen(new PlayScreen(game, playerName, slotIndex, startX, startY, startLevel));
+
+        int levelToLoad = (startLevel < 0) ? 0 : startLevel;
+
+        game.setScreen(new PlayScreen(game, playerName, slotIndex, startX, startY, levelToLoad));
         dispose();
     }
 
@@ -169,7 +193,12 @@ public class DifficultyScreen implements Screen {
         } catch (Exception e) { return new BitmapFont(); }
     }
 
-    @Override public void resize(int width, int height) { viewport.update(width, height, true); }
+    @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height, true);
+        recalcLayout();
+    }
+
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}

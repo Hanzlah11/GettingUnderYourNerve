@@ -18,7 +18,7 @@ public class PalmTree {
 
         animation = GameAssetManager.getAnimation(
             GameAssetManager.PALM_PLAIN_PREFIX,
-            4,                      // number of frames
+            4,
             0.20f,
             Animation.PlayMode.LOOP,
             "%02d"

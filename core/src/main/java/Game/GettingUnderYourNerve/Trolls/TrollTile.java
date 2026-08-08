@@ -6,16 +6,16 @@ import com.badlogic.gdx.physics.box2d.Body;
 
 public class TrollTile {
 
-    public final int                    triggerId;    // matches TriggerZone.id
-    public       Body                   body;         // Box2D static body — NOT final, recreated on respawn
-    public final TiledMapTileLayer      layer;        // tile layer the cell lives in
-    public final int                    col;          // column in tile layer
-    public final int                    row;          // row in tile layer
+    public final int                    triggerId;
+    public       Body                   body;
+    public final TiledMapTileLayer      layer;
+    public final int                    col;
+    public final int                    row;
     public boolean                      activated = false;
 
-    public final TiledMapTileLayer.Cell originalCell; // saved cell so we can restore the tile visually
-    public final float                  bodyX;        // Box2D body center X (meters) — to recreate body
-    public final float                  bodyY;        // Box2D body center Y (meters) — to recreate body
+    public final TiledMapTileLayer.Cell originalCell;
+    public final float                  bodyX;
+    public final float                  bodyY;
 
     public TrollTile(int triggerId, Body body,
                      TiledMapTileLayer layer, int col, int row) {

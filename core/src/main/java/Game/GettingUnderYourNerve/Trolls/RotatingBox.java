@@ -11,16 +11,15 @@ import com.badlogic.gdx.physics.box2d.World;
 
 public class RotatingBox extends Box {
 
-    private static final float TILT_ANGLE_DEG = 90f;   // how far it tilts
-    private static final float RESET_DELAY    = 0.5f;    // seconds before rotating back
+    private static final float TILT_ANGLE_DEG = 90f;
+    private static final float RESET_DELAY    = 0.5f;
 
-    // --- State machine ---
     public enum State { FLAT, ROTATING_DOWN, TILTED, ROTATING_BACK }
     private State state = State.FLAT;
 
-    private float rotateSpeed  = 120f;  // degrees per second
-    private float currentAngle = 0f;    // degrees (positive = CCW, negative = CW)
-    private float targetAngle  = 0f;    // degrees — set when player lands
+    private float rotateSpeed  = 120f;
+    private float currentAngle = 0f;
+    private float targetAngle  = 0f;
     private float resetTimer   = 0f;
 
     public RotatingBox(World world, MapObject object, GameAssetManager assets) {
@@ -40,7 +39,6 @@ public class RotatingBox extends Box {
 
         if (playerX < boxCenterX) {
             targetAngle = TILT_ANGLE_DEG;
-            // Nudge player LEFT (same direction as tilt)
             player.getPlayerBody().applyLinearImpulse(
                 new Vector2(-60f, 0f),
                 player.getPlayerBody().getWorldCenter(),
@@ -48,7 +46,6 @@ public class RotatingBox extends Box {
             );
         } else {
             targetAngle = -TILT_ANGLE_DEG;
-            // Nudge player RIGHT (same direction as tilt)
             player.getPlayerBody().applyLinearImpulse(
                 new Vector2(60f, 0f),
                 player.getPlayerBody().getWorldCenter(),
@@ -64,7 +61,6 @@ public class RotatingBox extends Box {
         switch (state) {
 
             case FLAT:
-                // Nothing to do — waiting for player to land
                 break;
 
             case ROTATING_DOWN:
@@ -87,7 +83,6 @@ public class RotatingBox extends Box {
                 break;
 
             case TILTED:
-                // Wait before resetting
                 resetTimer += dt;
                 if (resetTimer >= RESET_DELAY) {
                     state = State.ROTATING_BACK;
@@ -95,7 +90,6 @@ public class RotatingBox extends Box {
                 break;
 
             case ROTATING_BACK:
-                // Rotate back toward 0 degrees
                 if (currentAngle > 0) {
                     currentAngle -= rotateSpeed * dt;
                     if (currentAngle <= 0f) {

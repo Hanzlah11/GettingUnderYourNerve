@@ -13,12 +13,13 @@ import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.Align;
-import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -29,8 +30,8 @@ public class PokemonBattleScreen implements Screen {
     private Viewport viewport;
     private ShapeRenderer shapeRenderer;
     private BitmapFont font;
+    private Matrix4 screenMatrix = new Matrix4();
 
-    // --- SAVE DATA VARIABLES ---
     private String playerName;
     private int slotIndex;
     private float startX;
@@ -46,7 +47,7 @@ public class PokemonBattleScreen implements Screen {
     private float animationTime = 0;
 
     private int playerMaxHp = 100;
-    private int playerHp = 100;
+    private int playerHp = 1;
     private int enemyMaxHp = 300;
     private int enemyHp = 300;
 
@@ -75,7 +76,7 @@ public class PokemonBattleScreen implements Screen {
         this.startY = startY;
         this.startLevel = startLevel;
 
-        this.viewport = new ExtendViewport(800, 480);
+        this.viewport = new FitViewport(800, 480);
         this.stage = new Stage(viewport, game.batch);
         this.shapeRenderer = new ShapeRenderer();
         this.font = new BitmapFont();
@@ -136,8 +137,8 @@ public class PokemonBattleScreen implements Screen {
 
         actionMenu.add(innerMenu).expand().fill().pad(4);
 
-        rootTable.add(dialogTable).width(480).height(120).pad(10);
-        rootTable.add(actionMenu).width(300).height(120).pad(10);
+        rootTable.add(dialogTable).width(460).height(120).pad(10);
+        rootTable.add(actionMenu).width(280).height(120).pad(10);
 
         stage.addActor(rootTable);
     }
@@ -301,7 +302,6 @@ public class PokemonBattleScreen implements Screen {
 
             case WON:
                 if (stateTimer > 2.0f) {
-                    // FIXED: Re-loads PlayScreen in post-battle mode so AvengersCutscene triggers[cite: 22]
                     game.setScreen(new PlayScreen(game, playerName, slotIndex, startX, startY, startLevel, true));
                     dispose();
                     return false;
@@ -309,9 +309,16 @@ public class PokemonBattleScreen implements Screen {
                 break;
 
             case LOST:
+                float fadeProgress = Math.min(1.0f, stateTimer / 2.0f);
+                if (AudioManager.pokemonFightMusic != null) {
+                    AudioManager.pokemonFightMusic.setVolume(0.3f * (1.0f - fadeProgress));
+                }
+
                 if (stateTimer > 2.0f) {
-                    // FIXED: Plays credits roll when losing the Pokemon fight[cite: 27]
-                    game.setScreen(new PokemonBattleScreen(game, playerName, slotIndex, startX, startY, startLevel));
+                    if (AudioManager.pokemonFightMusic != null) {
+                        AudioManager.pokemonFightMusic.stop();
+                    }
+                    game.setScreen(new EndCreditsScreen(game));
                     dispose();
                     return false;
                 }
@@ -329,6 +336,8 @@ public class PokemonBattleScreen implements Screen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        viewport.apply();
+
         TextureRegion pikaFrame = currentPikaAnimation.getKeyFrame(animationTime);
         TextureRegion charFrame = currentCharAnimation.getKeyFrame(animationTime);
 
@@ -345,9 +354,27 @@ public class PokemonBattleScreen implements Screen {
         drawHealthBars();
         stage.act(delta);
         stage.draw();
+
+        if (currentState == BattleState.LOST) {
+            float fadeAlpha = Math.min(1.0f, stateTimer / 2.0f);
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+            Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            screenMatrix.setToOrtho2D(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+
+            shapeRenderer.setProjectionMatrix(screenMatrix);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(0f, 0f, 0f, fadeAlpha);
+            shapeRenderer.rect(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            shapeRenderer.end();
+
+            Gdx.gl.glDisable(GL20.GL_BLEND);
+        }
     }
 
     private void drawHealthBars() {
+        game.batch.setProjectionMatrix(viewport.getCamera().combined);
         game.batch.begin();
         font.setColor(Color.BLACK);
         font.draw(game.batch, "CHARIZARD  Lv50", 60, 440);
@@ -418,7 +445,11 @@ public class PokemonBattleScreen implements Screen {
         currentCharAnimation = charIdleAnim;
     }
 
-    @Override public void resize(int width, int height) { viewport.update(width, height, true); }
+    @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height, true);
+    }
+
     @Override public void show() { }
     @Override public void pause() { }
     @Override public void resume() { }

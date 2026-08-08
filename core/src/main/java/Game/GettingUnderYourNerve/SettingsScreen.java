@@ -1,6 +1,9 @@
-package Game.GettingUnderYourNerve.MainGame;
+package Game.GettingUnderYourNerve;
 
 import Game.GettingUnderYourNerve.Main;
+import Game.GettingUnderYourNerve.MainGame.PauseScreen;
+import Game.GettingUnderYourNerve.MainGame.PlayScreen;
+import Game.GettingUnderYourNerve.MainGame.TitleScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;
@@ -21,27 +24,25 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 public class SettingsScreen implements Screen {
 
     private Main game;
-    private Screen parentScreen; // Generically supports TitleScreen or PauseScreen/PlayScreen
+    private Screen parentScreen;
     private Viewport viewport;
     private Vector3 touchVec;
 
-    // --- Textures ---
     private Texture boardTL, boardTC, boardTR, boardCL, boardCC, boardCR, boardBL, boardBC, boardBR;
     private Texture btnL, btnC, btnR;
 
-    // --- Fonts & Layout ---
     private BitmapFont font;
     private BitmapFont titleFont;
     private GlyphLayout layout;
 
-    // --- UI Layout Bounds ---
-    private Rectangle musicSliderBar;
-    private Rectangle sfxSliderBar;
-    private Rectangle backBtnRect;
+    private Rectangle musicSliderBar = new Rectangle();
+    private Rectangle sfxSliderBar   = new Rectangle();
+    private Rectangle subtitleBtnRect= new Rectangle();
+    private Rectangle backBtnRect    = new Rectangle();
 
-    // --- Volume State ---
     private float musicVolume;
     private float sfxVolume;
+    private boolean subtitlesEnabled;
     private boolean isDraggingMusic = false;
     private boolean isDraggingSFX = false;
 
@@ -54,17 +55,13 @@ public class SettingsScreen implements Screen {
         this.touchVec = new Vector3();
         this.layout = new GlyphLayout();
 
-        // Pull settings from persistent Preferences config file
         prefs = Gdx.app.getPreferences("GettingUnderYourNerve_Settings");
         musicVolume = prefs.getFloat("musicVolume", 0.5f);
         sfxVolume = prefs.getFloat("sfxVolume", 0.5f);
+        subtitlesEnabled = prefs.getBoolean("subtitles", true);
 
         loadAssets();
-
-        // Define layout coordinates (Centered layout inside the viewport)
-        musicSliderBar = new Rectangle(300, 260, 250, 10);
-        sfxSliderBar   = new Rectangle(300, 190, 250, 10);
-        backBtnRect    = new Rectangle(325, 80, 150, 40);
+        recalcLayout();
     }
 
     private void loadAssets() {
@@ -86,25 +83,36 @@ public class SettingsScreen implements Screen {
         titleFont = loadFont("ui/runescape_uf.ttf", 36);
     }
 
+    private void recalcLayout() {
+        float worldW = viewport.getWorldWidth();
+        float worldH = viewport.getWorldHeight();
+
+        float bW = 600f;
+        float bH = 360f;
+        float bx = (worldW - bW) / 2f;
+        float by = (worldH - bH) / 2f;
+
+        musicSliderBar.set(bx + 230, by + 220, 220, 10);
+        sfxSliderBar.set(bx + 230, by + 160, 220, 10);
+        subtitleBtnRect.set(bx + 230, by + 95, 120, 32);
+        backBtnRect.set(bx + (bW - 150f) / 2f, by + 25, 150, 36);
+    }
+
     @Override
     public void render(float delta) {
         handleInput();
 
-        // 1. Clear Screen Buffer
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // 2. Render Contextual Background
         if (parentScreen instanceof TitleScreen) {
             ((TitleScreen) parentScreen).getMenuBg().updateAndRender(delta, game.batch);
         } else if (parentScreen instanceof PlayScreen) {
             ((PlayScreen) parentScreen).drawWorld(delta);
         } else if (parentScreen instanceof PauseScreen) {
-            // Draw PlayScreen world behind pause contexts
             ((PauseScreen) parentScreen).getPlayScreen().drawWorld(delta);
         }
 
-        // 3. Render Settings Interface on top
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
 
@@ -114,11 +122,14 @@ public class SettingsScreen implements Screen {
     }
 
     private void drawSettingsBoard() {
+        float worldW = viewport.getWorldWidth();
+        float worldH = viewport.getWorldHeight();
+
         float bW = 600f;
-        float bH = 340f;
+        float bH = 360f;
         float corner = 32f;
-        float bx = (800 - bW) / 2f;
-        float by = 60f;
+        float bx = (worldW - bW) / 2f;
+        float by = (worldH - bH) / 2f;
         float inW = bW - corner * 2;
         float inH = bH - corner * 2;
 
@@ -132,25 +143,24 @@ public class SettingsScreen implements Screen {
         game.batch.draw(boardBC, bx + corner, by, inW, corner);
         game.batch.draw(boardBR, bx + bW - corner, by, corner, corner);
 
-        // Header Title
         layout.setText(titleFont, "SETTINGS");
-        titleFont.draw(game.batch, "SETTINGS", (800 - layout.width) / 2f, 360);
+        titleFont.draw(game.batch, "SETTINGS", bx + (bW - layout.width) / 2f, by + bH - 25);
 
-        // --- MUSIC SETTING ROW ---
-        font.draw(game.batch, "MUSIC VOLUME:", 130, 272);
+        font.draw(game.batch, "MUSIC VOLUME:", bx + 40, by + 232);
         game.batch.draw(btnC, musicSliderBar.x, musicSliderBar.y, musicSliderBar.width, musicSliderBar.height);
         float musicKnobX = musicSliderBar.x + (musicSliderBar.width * musicVolume) - 10;
         game.batch.draw(btnC, musicKnobX, musicSliderBar.y - 10, 20, 30);
-        font.draw(game.batch, Math.round(musicVolume * 100) + "%", 570, 272);
+        font.draw(game.batch, Math.round(musicVolume * 100) + "%", musicSliderBar.x + musicSliderBar.width + 15, by + 232);
 
-        // --- SFX SETTING ROW ---
-        font.draw(game.batch, "SFX VOLUME:", 130, 202);
+        font.draw(game.batch, "SFX VOLUME:", bx + 40, by + 172);
         game.batch.draw(btnC, sfxSliderBar.x, sfxSliderBar.y, sfxSliderBar.width, sfxSliderBar.height);
         float sfxKnobX = sfxSliderBar.x + (sfxSliderBar.width * sfxVolume) - 10;
         game.batch.draw(btnC, sfxKnobX, sfxSliderBar.y - 10, 20, 30);
-        font.draw(game.batch, Math.round(sfxVolume * 100) + "%", 570, 202);
+        font.draw(game.batch, Math.round(sfxVolume * 100) + "%", sfxSliderBar.x + sfxSliderBar.width + 15, by + 172);
 
-        // --- BACK BUTTON ---
+        font.draw(game.batch, "SUBTITLES:", bx + 40, by + 118);
+        drawButton(subtitleBtnRect, subtitlesEnabled ? "ON" : "OFF");
+
         drawButton(backBtnRect, "BACK");
     }
 
@@ -169,6 +179,13 @@ public class SettingsScreen implements Screen {
                 return;
             }
 
+            if (subtitleBtnRect.contains(touchVec.x, touchVec.y)) {
+                AudioManager.playSFX(AudioManager.buttonSound);
+                subtitlesEnabled = !subtitlesEnabled;
+                prefs.putBoolean("subtitles", subtitlesEnabled);
+                prefs.flush();
+            }
+
             if (touchVec.y >= musicSliderBar.y - 15 && touchVec.y <= musicSliderBar.y + 25
                 && touchVec.x >= musicSliderBar.x && touchVec.x <= musicSliderBar.x + musicSliderBar.width) {
                 isDraggingMusic = true;
@@ -183,11 +200,35 @@ public class SettingsScreen implements Screen {
             if (isDraggingMusic) {
                 float relativeX = touchVec.x - musicSliderBar.x;
                 musicVolume = Math.max(0f, Math.min(1f, relativeX / musicSliderBar.width));
+
+                prefs.putFloat("musicVolume", musicVolume);
+                prefs.flush();
                 AudioManager.updateMusicVolume(musicVolume);
+
+                if (parentScreen instanceof PauseScreen) {
+                    PlayScreen ps = ((PauseScreen) parentScreen).getPlayScreen();
+                    if (ps != null) {
+                        ps.updateCurrentTrackVolume(musicVolume);
+                    }
+                } else if (parentScreen instanceof TitleScreen) {
+                    if (AudioManager.elevatorMusic != null) {
+                        if (musicVolume > 0f) {
+                            if (!AudioManager.elevatorMusic.isPlaying()) {
+                                AudioManager.elevatorMusic.play();
+                            }
+                            AudioManager.elevatorMusic.setVolume(musicVolume);
+                        } else {
+                            AudioManager.elevatorMusic.pause();
+                        }
+                    }
+                }
             }
             if (isDraggingSFX) {
                 float relativeX = touchVec.x - sfxSliderBar.x;
                 sfxVolume = Math.max(0f, Math.min(1f, relativeX / sfxSliderBar.width));
+
+                prefs.putFloat("sfxVolume", sfxVolume);
+                prefs.flush();
                 AudioManager.updateSFXVolume(sfxVolume);
             }
         } else {
@@ -200,6 +241,7 @@ public class SettingsScreen implements Screen {
         AudioManager.playSFX(AudioManager.buttonSound);
         prefs.putFloat("musicVolume", musicVolume);
         prefs.putFloat("sfxVolume", sfxVolume);
+        prefs.putBoolean("subtitles", subtitlesEnabled);
         prefs.flush();
 
         game.setScreen(parentScreen);
@@ -223,8 +265,22 @@ public class SettingsScreen implements Screen {
         } catch (Exception e) { return new BitmapFont(); }
     }
 
-    @Override public void show() {}
-    @Override public void resize(int width, int height) { viewport.update(width, height, true); }
+    @Override
+    public void show() {
+        musicVolume = prefs.getFloat("musicVolume", 0.5f);
+        sfxVolume = prefs.getFloat("sfxVolume", 0.5f);
+        subtitlesEnabled = prefs.getBoolean("subtitles", true);
+        AudioManager.updateMusicVolume(musicVolume);
+        AudioManager.updateSFXVolume(sfxVolume);
+        recalcLayout();
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        viewport.update(width, height, true);
+        recalcLayout();
+    }
+
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}

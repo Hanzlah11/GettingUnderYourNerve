@@ -19,7 +19,7 @@ public class SpikedBall extends Trap {
     private Array<Body> chainLinks;
 
     private float ballRadius;
-    private float linkHeight = 16f / Main.PPM;// Adjust based on your chain image height
+    private float linkHeight = 16f / Main.PPM;
     private float linkWidth = 16f / Main.PPM;
 
     public SpikedBall(World world, MapObject object, GameAssetManager assets) {
@@ -29,12 +29,10 @@ public class SpikedBall extends Trap {
         chainTex = assets.manager.get(GameAssetManager.CHAIN_LINK, Texture.class);
         chainLinks = new Array<>();
 
-        // 1. READ TILED PROPERTIES (Defaults to 5 chains and 16px radius if you forget to set them)
         int chainLength = object.getProperties().get("chainLength", 5, Integer.class);
         float radiusPixels = object.getProperties().get("radius", 16f, Float.class);
         this.ballRadius = radiusPixels / Main.PPM;
 
-        // 2. THE ANCHOR (Static block in the ceiling)
         BodyDef anchorDef = new BodyDef();
         anchorDef.type = BodyDef.BodyType.StaticBody;
         anchorDef.position.set(startX, startY);
@@ -98,7 +96,6 @@ public class SpikedBall extends Trap {
 
     @Override
     public void update(float dt) {
-        // Physics engine handles the swinging automatically!
     }
 
     @Override
@@ -136,10 +133,8 @@ public class SpikedBall extends Trap {
 
     @Override
     public void onHit(Player p) {
-        // Figure out which side the player hit us from
         float pushDir = p.GetXpos() < this.body.getPosition().x ? 5f : -5f;
 
-        // Shove OURSELVES backward!
         this.body.applyLinearImpulse(new Vector2(pushDir, 0), this.body.getWorldCenter(), true);
     }
 }

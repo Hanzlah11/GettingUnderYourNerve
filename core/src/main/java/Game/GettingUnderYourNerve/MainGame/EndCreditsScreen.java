@@ -12,7 +12,7 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.Align;
-import com.badlogic.gdx.utils.viewport.ExtendViewport;
+import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public class EndCreditsScreen implements Screen {
@@ -22,27 +22,23 @@ public class EndCreditsScreen implements Screen {
     private GlyphLayout layout;
     private ShapeRenderer shapeRenderer;
 
-    // --- Fonts ---
     private BitmapFont headerFont;
     private BitmapFont bodyFont;
     private BitmapFont teaserFont;
     private BitmapFont sequelFont;
 
-    // --- Audio Assets ---
     private Music creditsMusic;
 
-    // --- Teaser States & Timers ---
     private boolean isTeaserPhase = true;
     private float teaserTimer = 0f;
-    private float teaser1Alpha = 0f; // "CAPTAIN CLOWN NOSE"
-    private float teaser2Alpha = 0f; // "WILL RETURN IN"
-    private float teaser3Alpha = 0f; // "GETTING UNDER YOUR NERVE II"
+    private float teaser1Alpha = 0f;
+    private float teaser2Alpha = 0f;
+    private float teaser3Alpha = 0f;
 
-    // --- Scroll & Fade Timers ---
-    private float scrollY = -50f;          // Starts just below the screen viewport boundary
-    private final float SCROLL_SPEED = 45f; // Pixels per second
-    private float screenFadeAlpha = 1f;     // Intro fade-in covering layer
-    private float exitFadeAlpha = 0f;       // Transition out layer
+    private float scrollY = -50f;
+    private final float SCROLL_SPEED = 45f;
+    private float screenFadeAlpha = 1f;
+    private float exitFadeAlpha = 0f;
 
     private boolean isExiting = false;
     private float exitTimer = 0f;
@@ -52,12 +48,10 @@ public class EndCreditsScreen implements Screen {
     private final float LINE_SPACING = 35f;
     private final float SECTION_SPACING = 70f;
 
-    // Game's Official Brand Color Palette
-    private static final Color COLOR_BG = new Color(0.05f, 0.05f, 0.07f, 1f); // Deep dark slate
-    private static final Color COLOR_GOLD_HEADER = new Color(1.0f, 0.85f, 0.0f, 1f); // Vibrant Yellow
+    private static final Color COLOR_BG = new Color(0.05f, 0.05f, 0.07f, 1f);
+    private static final Color COLOR_GOLD_HEADER = new Color(1.0f, 0.85f, 0.0f, 1f);
     private static final Color COLOR_WHITE_TEXT = new Color(0.95f, 0.95f, 0.95f, 1f);
 
-    // --- Structured Credits Data Package ---
     private final CreditLine[] creditsData = {
         new CreditLine("GETTING UNDER YOUR NERVE", true),
         new CreditLine("A JellyByte Studios Production", false),
@@ -141,7 +135,7 @@ public class EndCreditsScreen implements Screen {
 
     public EndCreditsScreen(Main game) {
         this.game = game;
-        this.viewport = new ExtendViewport(800, 480);
+        this.viewport = new FitViewport(800, 480);
         this.layout = new GlyphLayout();
         this.shapeRenderer = new ShapeRenderer();
 
@@ -176,7 +170,6 @@ public class EndCreditsScreen implements Screen {
             return;
         }
 
-        // Render Background
         Gdx.gl.glClearColor(COLOR_BG.r, COLOR_BG.g, COLOR_BG.b, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
@@ -186,7 +179,6 @@ public class EndCreditsScreen implements Screen {
         game.batch.begin();
 
         if (isTeaserPhase) {
-            // --- CINEMATIC TEASER TITLE SEQUENCE ---
             if (teaser1Alpha > 0f) {
                 teaserFont.setColor(1f, 1f, 1f, teaser1Alpha);
                 teaserFont.draw(game.batch, "CAPTAIN CLOWN NOSE", 0f, 310f, 800f, Align.center, true);
@@ -202,7 +194,6 @@ public class EndCreditsScreen implements Screen {
                 sequelFont.draw(game.batch, "GETTING UNDER YOUR NERVE II", 0f, 200f, 800f, Align.center, true);
             }
         } else {
-            // --- SCROLLING CREDITS CRAWL ---
             float currentYOffset = scrollY;
             for (CreditLine line : creditsData) {
                 BitmapFont activeFont = line.isHeader ? headerFont : bodyFont;
@@ -216,7 +207,6 @@ public class EndCreditsScreen implements Screen {
 
         game.batch.end();
 
-        // --- FADE OVERLAYS ---
         Gdx.gl.glEnable(GL20.GL_BLEND);
         shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
@@ -232,10 +222,8 @@ public class EndCreditsScreen implements Screen {
         shapeRenderer.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
-        // Skip Handler
         if (!isExiting && (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY) || Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))) {
             if (isTeaserPhase) {
-                // Instantly skip the intro teaser sequence straight to the credits
                 isTeaserPhase = false;
                 scrollY = -50f;
             } else {
@@ -264,7 +252,6 @@ public class EndCreditsScreen implements Screen {
             return false;
         }
 
-        // Fade in from black at screen startup
         if (screenFadeAlpha > 0f) {
             screenFadeAlpha = Math.max(0f, screenFadeAlpha - (dt / FADE_DURATION));
         }
@@ -272,20 +259,16 @@ public class EndCreditsScreen implements Screen {
         if (isTeaserPhase) {
             teaserTimer += dt;
 
-            // Step 1 (0.0s - 1.0s): Fade in "CAPTAIN CLOWN NOSE"
             teaser1Alpha = Math.min(1f, teaserTimer / 1.0f);
 
-            // Step 2 (1.0s - 2.0s): Fade in "WILL RETURN IN"
             if (teaserTimer >= 2.5f) {
                 teaser2Alpha = Math.min(1f, (teaserTimer - 2.5f) / 1.0f);
             }
 
-            // Step 3 (2.0s - 3.0s): Fade in "GETTING UNDER YOUR NERVE II"
             if (teaserTimer >= 5.0f) {
                 teaser3Alpha = Math.min(1f, (teaserTimer - 5.0f) / 1.0f);
             }
 
-            // Step 4 (5.5s+): Fade out teaser card and start credits crawl
             if (teaserTimer >= 5.5f) {
                 float fadeOutProgress = (teaserTimer - 5.5f) / 1.0f;
                 float currentAlpha = Math.max(0f, 1f - fadeOutProgress);
@@ -295,16 +278,14 @@ public class EndCreditsScreen implements Screen {
 
                 if (teaserTimer >= 6.5f) {
                     isTeaserPhase = false;
-                    scrollY = -50f; // Start rolling credits text
+                    scrollY = -50f;
                 }
             }
             return false;
         }
 
-        // Increment credits scroll position
         scrollY += SCROLL_SPEED * dt;
 
-        // Auto-exit after final line moves off top viewport
         if (scrollY > (480f + totalCreditsHeight + 100f)) {
             isExiting = true;
             exitTimer = 0f;

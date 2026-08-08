@@ -11,15 +11,14 @@ import com.badlogic.gdx.physics.box2d.World;
 public class LauncherBox extends Box {
 
     private static final float DEFAULT_FORCE     = 25f;
-    private static final float VERTICAL_FORCE    = 20f; // upward component always applied
-    private static final float COOLDOWN_DURATION = 0.5f; // seconds before it can launch again
+    private static final float VERTICAL_FORCE    = 20f;
+    private static final float COOLDOWN_DURATION = 0.5f;
 
     private float launchForce;
     private float cooldownTimer = 0f;
     private boolean onCooldown  = false;
 
     public LauncherBox(World world, MapObject object, GameAssetManager assets) {
-        // Static body — the box itself doesn't move
         super(world, object, assets, BodyDef.BodyType.StaticBody);
 
         MapProperties props = object.getProperties();
@@ -30,7 +29,7 @@ public class LauncherBox extends Box {
 
     @Override
     public void onPlayerLand(float playerX, Player player) {
-        onPlayerLand(player); // delegate to existing method
+        onPlayerLand(player);
     }
 
     public void onPlayerLand(Player player) {

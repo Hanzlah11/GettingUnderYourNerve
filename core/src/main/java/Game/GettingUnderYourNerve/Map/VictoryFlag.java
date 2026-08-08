@@ -34,7 +34,7 @@ public class VictoryFlag {
 
         FixtureDef fdef = new FixtureDef();
         fdef.shape = shape;
-        fdef.isSensor = true; // CRITICAL: This makes it non-blocking!
+        fdef.isSensor = true;
         fdef.filter.categoryBits = Main.TRIGGER_BIT;
         fdef.filter.maskBits = Main.PLAYER_BIT;
 

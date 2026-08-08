@@ -204,12 +204,12 @@ public class GameAssetManager {
         loadFrames(PIKA_IDLE_PREFIX, 6, "%d");
         loadFrames(PIKA_TACKLE_PREFIX, 7, "%d");
         loadFrames(PIKA_THUNDER_PREFIX, 8, "%d");
-        loadFrames(PIKA_FAINT_PREFIX, 5, "%d"); // Loading all 5 frames into memory
+        loadFrames(PIKA_FAINT_PREFIX, 5, "%d");
 
         loadFrames(CHAR_IDLE_PREFIX, 6, "%d");
         loadFrames(CHAR_CLAW_PREFIX, 5, "%d");
         loadFrames(CHAR_FIRE_PREFIX, 8, "%d");
-        loadFrames(CHAR_FAINT_PREFIX, 5, "%d"); // Loading all 5 frames into memory
+        loadFrames(CHAR_FAINT_PREFIX, 5, "%d");
 
         //--FLAG--
         loadFrames(FLAG_PREFIX, 9, "%d");

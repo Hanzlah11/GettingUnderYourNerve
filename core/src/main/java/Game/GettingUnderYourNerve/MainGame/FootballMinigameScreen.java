@@ -6,12 +6,16 @@ import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
@@ -63,7 +67,11 @@ public class FootballMinigameScreen implements Screen {
     private boolean isEnding = false;
     private boolean winOutcome = false;
 
-    // Animations from the Asset Manager
+    private int playerScore = 0;
+    private int cr7Score = 0;
+    private BitmapFont scoreFont;
+    private GlyphLayout scoreLayout;
+
     private final Animation<TextureRegion> playerIdleAnim;
     private final Animation<TextureRegion> playerRunAnim;
     private final Animation<TextureRegion> cr7RunAnim;
@@ -90,6 +98,9 @@ public class FootballMinigameScreen implements Screen {
 
         camera = new OrthographicCamera();
         viewport = new FitViewport(896, 560, camera);
+
+        scoreLayout = new GlyphLayout();
+        scoreFont = loadScoreFont();
 
         if (AudioManager.elevatorMusic != null) AudioManager.elevatorMusic.stop();
         if (AudioManager.level1Music != null) AudioManager.level1Music.stop();
@@ -122,6 +133,22 @@ public class FootballMinigameScreen implements Screen {
 
         parseMapObjects();
         resetPositions();
+    }
+
+    private BitmapFont loadScoreFont() {
+        try {
+            FreeTypeFontGenerator gen = new FreeTypeFontGenerator(Gdx.files.internal("ui/runescape_uf.ttf"));
+            FreeTypeFontGenerator.FreeTypeFontParameter p = new FreeTypeFontGenerator.FreeTypeFontParameter();
+            p.size = 28;
+            p.color = Color.WHITE;
+            p.borderWidth = 2.0f;
+            p.borderColor = new Color(0f, 0f, 0f, 0.9f);
+            BitmapFont font = gen.generateFont(p);
+            gen.dispose();
+            return font;
+        } catch (Exception e) {
+            return new BitmapFont();
+        }
     }
 
     private void parseMapObjects() {
@@ -217,6 +244,14 @@ public class FootballMinigameScreen implements Screen {
 
         ball.draw(batch);
 
+        if (scoreFont != null) {
+            String scoreText = "PLAYER " + playerScore + "  -  " + cr7Score + " CR7";
+            scoreLayout.setText(scoreFont, scoreText);
+            float scoreX = (896f - scoreLayout.width) / 2f;
+            float scoreY = 540f;
+            scoreFont.draw(batch, scoreText, scoreX, scoreY);
+        }
+
         batch.end();
     }
 
@@ -231,7 +266,6 @@ public class FootballMinigameScreen implements Screen {
             ball.update(dt);
             handleBallCollisions();
             if (AudioManager.footballWhistle != null && !AudioManager.footballWhistle.isPlaying()) {
-                // FIXED: Crowd tracks are now stopped right here after the whistle simulation completely finishes[cite: 16]
                 if (AudioManager.footballCrowd != null) {
                     AudioManager.footballCrowd.stop();
                 }
@@ -486,7 +520,8 @@ public class FootballMinigameScreen implements Screen {
 
             isEnding = true;
             winOutcome = true;
-            // FIXED: Removed early stop call to keep track playing during whistle loop[cite: 16]
+            playerScore = 1;
+
             if (AudioManager.footballWhistle != null) AudioManager.footballWhistle.play();
             return;
         }
@@ -496,7 +531,8 @@ public class FootballMinigameScreen implements Screen {
 
             isEnding = true;
             winOutcome = false;
-            // FIXED: Removed early stop call to keep track playing during whistle loop[cite: 16]
+            cr7Score = 1;
+
             if (AudioManager.footballWhistle != null) AudioManager.footballWhistle.play();
             return;
         }
@@ -517,7 +553,10 @@ public class FootballMinigameScreen implements Screen {
     public void dispose() {
         map.dispose();
         mapRenderer.dispose();
-        // FIXED SAFETY: Ensures clean stops on fast manual exits[cite: 16]
+        if (scoreFont != null) {
+            scoreFont.dispose();
+            scoreFont = null;
+        }
         if (AudioManager.footballCrowd != null) AudioManager.footballCrowd.stop();
     }
 }

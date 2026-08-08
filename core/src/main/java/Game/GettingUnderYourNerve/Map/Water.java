@@ -17,7 +17,6 @@ public class Water {
     public Water(Rectangle rect, GameAssetManager assets) {
         this.bounds = rect;
 
-        // Fetch Deep Water
         deepWaterTexture = assets.manager.get(GameAssetManager.WATER_DEEP, Texture.class);
         deepWaterTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
 

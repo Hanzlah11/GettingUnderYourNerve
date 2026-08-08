@@ -33,7 +33,7 @@ public class GhostBlock {
 
         FixtureDef fdef = new FixtureDef();
         fdef.shape = shape;
-        fdef.filter.categoryBits = Main.GROUND_BIT; // Behaves exactly like normal ground
+        fdef.filter.categoryBits = Main.GROUND_BIT;
         fdef.filter.maskBits = Main.PLAYER_BIT | Main.ENEMY_BIT | Main.PROJECTILE_BIT;
 
         body.createFixture(fdef).setUserData(this);
