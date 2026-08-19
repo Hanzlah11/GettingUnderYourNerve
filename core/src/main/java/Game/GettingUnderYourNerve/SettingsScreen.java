@@ -52,6 +52,7 @@ public class SettingsScreen implements Screen {
         this.game = game;
         this.parentScreen = parentScreen;
         this.viewport = new ExtendViewport(800, 480);
+        this.viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
         this.touchVec = new Vector3();
         this.layout = new GlyphLayout();
 
@@ -272,12 +273,19 @@ public class SettingsScreen implements Screen {
         subtitlesEnabled = prefs.getBoolean("subtitles", true);
         AudioManager.updateMusicVolume(musicVolume);
         AudioManager.updateSFXVolume(sfxVolume);
+        viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+        if (parentScreen != null) {
+            parentScreen.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        }
         recalcLayout();
     }
 
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
+        if (parentScreen != null) {
+            parentScreen.resize(width, height);
+        }
         recalcLayout();
     }
 

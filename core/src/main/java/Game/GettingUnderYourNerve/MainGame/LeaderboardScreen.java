@@ -34,17 +34,20 @@ public class LeaderboardScreen implements Screen {
     private BitmapFont titleFont;
     private GlyphLayout layout;
     private Rectangle backRect;
+    private Rectangle resetRect;
     private Vector3 touchVec;
     private ArrayList<FileHandler.ScoreEntry> scores;
 
-    TitleScreen titleScreen;
+    private TitleScreen titleScreen;
 
     public LeaderboardScreen(Main game, TitleScreen titleScreen) {
         this.game = game;
         this.viewport = new ExtendViewport(800, 480);
+        this.viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
         this.touchVec = new Vector3();
         this.layout = new GlyphLayout();
         this.backRect = new Rectangle();
+        this.resetRect = new Rectangle();
 
         this.titleScreen = titleScreen;
 
@@ -72,8 +75,10 @@ public class LeaderboardScreen implements Screen {
     }
 
     private void recalcLayout() {
+        float worldW = viewport.getWorldWidth();
         float worldH = viewport.getWorldHeight();
-        backRect.set(20f, worldH - 60f, 180f, 40f);
+        backRect.set(20f, worldH - 60f, 140f, 40f);
+        resetRect.set(worldW - 160f, worldH - 60f, 140f, 40f);
     }
 
     @Override
@@ -83,11 +88,19 @@ public class LeaderboardScreen implements Screen {
             viewport.unproject(touchVec);
 
             if (backRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.buttonSound.play();
-                game.setScreen(new TitleScreen(game));
+                AudioManager.playSFX(AudioManager.buttonSound);
+                game.setScreen(titleScreen != null ? titleScreen : new TitleScreen(game));
                 dispose();
+                return;
+            }
+
+            if (resetRect.contains(touchVec.x, touchVec.y)) {
+                AudioManager.playSFX(AudioManager.buttonSound);
+                FileHandler.resetTopScores();
+                scores = FileHandler.getTopScores();
             }
         }
+
         ScreenUtils.clear(0, 0, 0, 1);
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
@@ -97,19 +110,13 @@ public class LeaderboardScreen implements Screen {
 
         game.batch.begin();
 
-        game.batch.draw(
-            background,
-            0,
-            0,
-            worldW,
-            worldH
-        );
+        game.batch.draw(background, 0, 0, worldW, worldH);
 
         float BOARD_WIDTH = 400f;
         float BOARD_HEIGHT = 380f;
         float BOARD_CORNER = 32f;
         float bx = (worldW - BOARD_WIDTH) / 2f;
-        float by = 75f;
+        float by = 30f;
         float innerW = BOARD_WIDTH - BOARD_CORNER * 2;
         float innerH = BOARD_HEIGHT - BOARD_CORNER * 2;
 
@@ -126,24 +133,31 @@ public class LeaderboardScreen implements Screen {
         game.batch.draw(boardBR, bx + BOARD_WIDTH - BOARD_CORNER, by, BOARD_CORNER, BOARD_CORNER);
 
         layout.setText(titleFont, "TOP 10 SCORES");
-        titleFont.draw(game.batch, "TOP 10 SCORES", (worldW - layout.width) / 2f, 430);
+        titleFont.draw(game.batch, "TOP 10 SCORES", (worldW - layout.width) / 2f, by + BOARD_HEIGHT - 15);
 
-        float startY = 380;
-        for (int i = 0; i < scores.size(); i++) {
-            FileHandler.ScoreEntry entry = scores.get(i);
-            String line = (i + 1) + ". " + (entry.score == -1 ? "--" : entry.name + " - " + entry.score);
-            layout.setText(font, line);
-            font.draw(game.batch, line, (worldW - layout.width) / 2f, startY - (i * 28));
+        float startY = by + BOARD_HEIGHT - 60f;
+        if (scores != null) {
+            for (int i = 0; i < scores.size() && i < 10; i++) {
+                FileHandler.ScoreEntry entry = scores.get(i);
+                String line = (i + 1) + ". " + (entry.score == -1 ? "--" : entry.name + " - " + entry.score);
+                layout.setText(font, line);
+                font.draw(game.batch, line, (worldW - layout.width) / 2f, startY - (i * 26));
+            }
         }
 
-        game.batch.draw(btnL, backRect.x, backRect.y, 20, backRect.height);
-        game.batch.draw(btnC, backRect.x + 20, backRect.y, backRect.width - 40, backRect.height);
-        game.batch.draw(btnR, backRect.x + backRect.width - 20, backRect.y, 20, backRect.height);
-
-        layout.setText(font, "BACK");
-        font.draw(game.batch, "BACK", backRect.x + (backRect.width - layout.width) / 2f, backRect.y + (backRect.height + layout.height) / 2f);
+        drawButton(backRect, "BACK");
+        drawButton(resetRect, "RESET");
 
         game.batch.end();
+    }
+
+    private void drawButton(Rectangle rect, String label) {
+        game.batch.draw(btnL, rect.x, rect.y, 20, rect.height);
+        game.batch.draw(btnC, rect.x + 20, rect.y, rect.width - 40, rect.height);
+        game.batch.draw(btnR, rect.x + rect.width - 20, rect.y, 20, rect.height);
+
+        layout.setText(font, label);
+        font.draw(game.batch, label, rect.x + (rect.width - layout.width) / 2f, rect.y + (rect.height + layout.height) / 2f);
     }
 
     private BitmapFont loadFont(String filename, int size) {
@@ -165,10 +179,22 @@ public class LeaderboardScreen implements Screen {
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
+        if (titleScreen != null) {
+            titleScreen.resize(width, height);
+        }
         recalcLayout();
     }
 
-    @Override public void show() {}
+    @Override
+    public void show() {
+        viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+        if (titleScreen != null) {
+            titleScreen.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        }
+        scores = FileHandler.getTopScores();
+        recalcLayout();
+    }
+
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}

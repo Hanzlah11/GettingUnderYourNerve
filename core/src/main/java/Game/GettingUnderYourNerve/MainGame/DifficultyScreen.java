@@ -55,6 +55,7 @@ public class DifficultyScreen implements Screen {
         this.startLevel = startLevel;
 
         viewport = new ExtendViewport(800, 480);
+        viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
         touchVec = new Vector3();
         layout = new GlyphLayout();
 
@@ -94,7 +95,13 @@ public class DifficultyScreen implements Screen {
     }
 
     @Override
-    public void show() { }
+    public void show() {
+        viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+        if (titleScreen != null) {
+            titleScreen.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        }
+        recalcLayout();
+    }
 
     @Override
     public void render(float delta) {
@@ -123,7 +130,9 @@ public class DifficultyScreen implements Screen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        titleScreen.getMenuBg().updateAndRender(delta, game.batch);
+        if (titleScreen != null && titleScreen.getMenuBg() != null) {
+            titleScreen.getMenuBg().updateAndRender(delta, game.batch);
+        }
 
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
@@ -196,6 +205,9 @@ public class DifficultyScreen implements Screen {
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
+        if (titleScreen != null) {
+            titleScreen.resize(width, height);
+        }
         recalcLayout();
     }
 
