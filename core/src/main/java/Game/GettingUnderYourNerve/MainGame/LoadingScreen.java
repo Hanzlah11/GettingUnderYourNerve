@@ -74,7 +74,7 @@ public class LoadingScreen implements Screen {
         font = loadFont("ui/runescape_uf.ttf", 22, false);
         titleFont = loadFont("ui/runescape_uf.ttf", 28, true);
 
-        logoIntroMusic = Gdx.audio.newMusic(Gdx.files.internal("audio/sounds/UI/logo_intro.mp3"));
+        logoIntroMusic = Gdx.audio.newMusic(Gdx.files.internal("Audio/Sounds/UI/logo_intro.mp3"));
         logoIntroMusic.setLooping(false);
 
         float musicVolume = Gdx.app.getPreferences("GettingUnderYourNerve_Settings").getFloat("musicVolume", 0.5f);

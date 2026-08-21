@@ -47,7 +47,7 @@ public class PokemonBattleScreen implements Screen {
     private float animationTime = 0;
 
     private int playerMaxHp = 100;
-    private int playerHp = 1;
+    private int playerHp = 100;
     private int enemyMaxHp = 300;
     private int enemyHp = 300;
 

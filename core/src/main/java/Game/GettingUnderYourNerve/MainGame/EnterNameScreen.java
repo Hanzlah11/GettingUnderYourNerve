@@ -47,6 +47,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
         this.game = game;
         this.titleScreen = titleScreen;
         this.viewport = new ExtendViewport(800, 480);
+        this.viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
         this.touchVec = new Vector3();
         this.layout = new GlyphLayout();
 
@@ -112,6 +113,11 @@ public class EnterNameScreen implements Screen, InputProcessor {
     @Override
     public void show() {
         Gdx.input.setInputProcessor(this);
+        viewport.update(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), true);
+        if (titleScreen != null) {
+            titleScreen.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        }
+        recalcLayout();
     }
 
     @Override
@@ -121,7 +127,9 @@ public class EnterNameScreen implements Screen, InputProcessor {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        titleScreen.getMenuBg().updateAndRender(delta, game.batch);
+        if (titleScreen != null && titleScreen.getMenuBg() != null) {
+            titleScreen.getMenuBg().updateAndRender(delta, game.batch);
+        }
 
         viewport.apply();
         game.batch.setProjectionMatrix(viewport.getCamera().combined);
@@ -292,6 +300,9 @@ public class EnterNameScreen implements Screen, InputProcessor {
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
+        if (titleScreen != null) {
+            titleScreen.resize(width, height);
+        }
         recalcLayout();
     }
 

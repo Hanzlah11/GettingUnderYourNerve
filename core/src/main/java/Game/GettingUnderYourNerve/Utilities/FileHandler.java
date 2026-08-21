@@ -93,4 +93,11 @@ public class FileHandler {
             e.printStackTrace();
         }
     }
+
+    public static void resetTopScores() {
+        File file = new File("leaderboard.txt");
+        if (file.exists()) {
+            file.delete();
+        }
+    }
 }
