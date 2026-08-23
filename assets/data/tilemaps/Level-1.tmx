@@ -121,12 +121,12 @@
     <property name="lifetime" type="float" value="3"/>
    </properties>
   </object>
-  <object id="257" x="2656" y="288" width="16" height="16">
+  <object id="257" x="2864" y="432" width="16" height="16">
    <properties>
     <property name="lifetime" type="float" value="3"/>
    </properties>
   </object>
-  <object id="258" x="2782" y="181" width="16" height="16">
+  <object id="258" x="2640" y="304" width="16" height="16">
    <properties>
     <property name="lifetime" type="float" value="3"/>
    </properties>
@@ -304,7 +304,7 @@
   </object>
  </objectgroup>
  <objectgroup id="3" name="Objects">
-  <object id="324" name="Player" type="PlayerStart" x="6" y="448" width="32" height="32"/>
+  <object id="324" name="Player" type="PlayerStart" x="16" y="432" width="32" height="32"/>
  </objectgroup>
  <objectgroup id="5" name="Platforms">
   <object id="220" name="HorizontalPlatform" x="912" y="272" width="64" height="16">
@@ -531,7 +531,7 @@
   <object id="285" name="Shell" type="Enemy" x="4112" y="400" width="48" height="38"/>
   <object id="304" name="Shell" type="Enemy" x="4576" y="192" width="48" height="38"/>
   <object id="330" name="Shell" type="Enemy" x="2495" y="523" width="48" height="38"/>
-  <object id="340" name="Shell" type="Enemy" x="2761" y="205" width="48" height="38"/>
+  <object id="340" name="Shell" type="Enemy" x="2752" y="192" width="48" height="38"/>
   <object id="341" name="Shell" type="Enemy" x="2252" y="538" width="48" height="38"/>
  </objectgroup>
  <objectgroup id="22" name="Batman">
