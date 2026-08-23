@@ -196,17 +196,17 @@
     <property name="id" type="int" value="2"/>
    </properties>
   </object>
-  <object id="354" x="704" y="492" width="75" height="178">
+  <object id="354" x="672" y="448" width="96" height="112">
    <properties>
     <property name="id" type="int" value="4"/>
    </properties>
   </object>
-  <object id="355" x="1088" y="480" width="240" height="288">
+  <object id="355" x="1088" y="496" width="240" height="288">
    <properties>
     <property name="id" type="int" value="10"/>
    </properties>
   </object>
-  <object id="359" x="2192" y="512" width="288" height="320">
+  <object id="359" x="2176" y="528" width="288" height="320">
    <properties>
     <property name="id" type="int" value="9"/>
    </properties>
@@ -280,7 +280,6 @@
   <object id="312" name="CR7" x="3136" y="352" width="64" height="64"/>
  </objectgroup>
  <objectgroup id="29" name="Checkpoints">
-  <object id="314" x="1696" y="448" width="32" height="80"/>
   <object id="315" x="3024" y="336" width="32" height="80"/>
  </objectgroup>
  <objectgroup id="14" name="Boxes">
