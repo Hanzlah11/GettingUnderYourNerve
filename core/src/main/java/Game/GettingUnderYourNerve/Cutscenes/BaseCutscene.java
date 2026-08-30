@@ -18,6 +18,7 @@ import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.math.Vector3;
 
 public abstract class BaseCutscene {
     protected PlayScreen screen;
@@ -37,6 +38,8 @@ public abstract class BaseCutscene {
     private Texture blackBgTexture;
 
     private Preferences prefs;
+    private Rectangle skipBoxRect = new Rectangle();
+    private Vector3 touchPoint = new Vector3();
 
     public BaseCutscene(PlayScreen screen, Batman batman) {
         this.screen = screen;
@@ -113,8 +116,8 @@ public abstract class BaseCutscene {
         uiMatrix.setToOrtho2D(0, 0, 800, 480);
         batch.setProjectionMatrix(uiMatrix);
 
-        // TOP-RIGHT CUTSCENE PROMPT BANNER
-        String skipText = isSkippable ? "Press R to skip the cutscene..." : "This cutscene cannot be skipped...";
+        // TOP-RIGHT CUTSCENE PROMPT BANNER (Cross-platform prompt)
+        String skipText = isSkippable ? "Tap / Press R to skip..." : "This cutscene cannot be skipped...";
         com.badlogic.gdx.graphics.g2d.GlyphLayout skipLayout = new com.badlogic.gdx.graphics.g2d.GlyphLayout();
         skipLayout.setText(subtitleFont, skipText);
 
@@ -125,6 +128,19 @@ public abstract class BaseCutscene {
 
         float skipBoxX = 800f - skipBoxWidth - 20f;
         float skipBoxY = 480f - skipBoxHeight - 20f;
+        skipBoxRect.set(skipBoxX, skipBoxY, skipBoxWidth, skipBoxHeight);
+
+        // Check mobile tap / mouse click on the skip banner
+        if (isSkippable && Gdx.input.justTouched()) {
+            touchPoint.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+            // Translate touch to UI 800x480 coordinate space
+            float touchX = (Gdx.input.getX() / (float) Gdx.graphics.getWidth()) * 800f;
+            float touchY = (1f - (Gdx.input.getY() / (float) Gdx.graphics.getHeight())) * 480f;
+
+            if (skipBoxRect.contains(touchX, touchY)) {
+                skip();
+            }
+        }
 
         Color oldColor = batch.getColor().cpy();
         batch.setColor(0f, 0f, 0f, 0.50f);

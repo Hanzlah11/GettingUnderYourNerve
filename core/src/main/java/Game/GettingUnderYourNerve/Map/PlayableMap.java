@@ -145,7 +145,15 @@ public class PlayableMap {
             int id = props.get("id", Integer.class);
             Rectangle rect = ((RectangleMapObject) object).getRectangle();
 
-            soundTriggerZones.add(new SoundTriggerZone(id, rect));
+            // Convert bounds directly to world meters (PPM)
+            Rectangle meterRect = new Rectangle(
+                rect.x / PPM,
+                rect.y / PPM,
+                rect.width / PPM,
+                rect.height / PPM
+            );
+
+            soundTriggerZones.add(new SoundTriggerZone(id, meterRect));
         }
     }
 
@@ -607,8 +615,9 @@ public class PlayableMap {
     public void updateSoundTriggers(Player player) {
         if (player == null) return;
 
-        float playerPixelX = player.GetXpos() * PPM;
-        float playerPixelY = player.GetYpos() * PPM;
+        // Use player world position in meters directly
+        float playerMetersX = player.GetXpos();
+        float playerMetersY = player.GetYpos();
 
         boolean insideAnyZone = false;
         SoundTriggerZone activeZone = null;
@@ -627,7 +636,7 @@ public class PlayableMap {
                 continue;
             }
 
-            if (zone.bounds.contains(playerPixelX, playerPixelY)) {
+            if (zone.bounds.contains(playerMetersX, playerMetersY)) {
                 zone.active = true;
                 insideAnyZone = true;
                 activeZone = zone;
@@ -641,11 +650,14 @@ public class PlayableMap {
             float zoneCenterX = activeZone.bounds.x + activeZone.bounds.width / 2f;
             float zoneCenterY = activeZone.bounds.y + activeZone.bounds.height / 2f;
 
-            float dst = Vector2.dst(playerPixelX, playerPixelY, zoneCenterX, zoneCenterY);
+            float dst = Vector2.dst(playerMetersX, playerMetersY, zoneCenterX, zoneCenterY);
             float maxDst = Math.max(activeZone.bounds.width, activeZone.bounds.height) / 2f;
 
-            float proximityFactor = Math.max(0.1f, 1.0f - (dst / maxDst));
-            AudioManager.playHummingSound(proximityFactor);
+            // Proximity calculation with 5x volume boost (clamped to 1.0 max)
+            float baseProximity = Math.max(0.1f, 1.0f - (dst / maxDst));
+            float boostedVolume = Math.min(1.0f, baseProximity * 5.0f);
+
+            AudioManager.playHummingSound(boostedVolume);
         } else {
             AudioManager.stopHummingSound();
         }

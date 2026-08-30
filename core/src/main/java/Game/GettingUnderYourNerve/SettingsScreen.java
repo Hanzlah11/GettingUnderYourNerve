@@ -174,7 +174,10 @@ public class SettingsScreen implements Screen {
         touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
         viewport.unproject(touchVec);
 
-        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+        boolean justTouched = Gdx.input.justTouched() || Gdx.input.isButtonJustPressed(Input.Buttons.LEFT);
+        boolean isTouched = Gdx.input.isTouched() || Gdx.input.isButtonPressed(Input.Buttons.LEFT);
+
+        if (justTouched) {
             if (backBtnRect.contains(touchVec.x, touchVec.y)) {
                 returnToParent();
                 return;
@@ -197,7 +200,7 @@ public class SettingsScreen implements Screen {
             }
         }
 
-        if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+        if (isTouched) {
             if (isDraggingMusic) {
                 float relativeX = touchVec.x - musicSliderBar.x;
                 musicVolume = Math.max(0f, Math.min(1f, relativeX / musicSliderBar.width));
@@ -269,7 +272,7 @@ public class SettingsScreen implements Screen {
     @Override
     public void show() {
         musicVolume = prefs.getFloat("musicVolume", 0.5f);
-        sfxVolume = prefs.getFloat("sfxVolume", 0.5f);
+        sfxVolume = prefs.getFloat("sfxVolume", 1f);
         subtitlesEnabled = prefs.getBoolean("subtitles", true);
         AudioManager.updateMusicVolume(musicVolume);
         AudioManager.updateSFXVolume(sfxVolume);

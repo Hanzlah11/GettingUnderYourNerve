@@ -1,5 +1,6 @@
 package Game.GettingUnderYourNerve.MainGame;
 
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputProcessor;
@@ -34,6 +35,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
     private GlyphLayout layout;
 
     private Rectangle[] slotRects = new Rectangle[4];
+    private Rectangle[] deleteRects = new Rectangle[4];
     private Rectangle confirmRect;
     private Rectangle cancelRect;
     private Rectangle backRect;
@@ -53,6 +55,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
 
         for (int i = 0; i < 4; i++) {
             slotRects[i] = new Rectangle();
+            deleteRects[i] = new Rectangle();
         }
         confirmRect = new Rectangle();
         cancelRect = new Rectangle();
@@ -67,14 +70,16 @@ public class EnterNameScreen implements Screen, InputProcessor {
         float worldW = viewport.getWorldWidth();
         float worldH = viewport.getWorldHeight();
 
-        float btnWidth = 300f;
+        float btnWidth = 240f;
+        float deleteWidth = 50f;
         float btnHeight = 45f;
-        float startX = (worldW - btnWidth) / 2f;
+        float startX = (worldW - (btnWidth + deleteWidth + 10f)) / 2f;
         float startY = 320f;
         float gap = 60f;
 
         for (int i = 0; i < 4; i++) {
             slotRects[i].set(startX, startY - (i * gap), btnWidth, btnHeight);
+            deleteRects[i].set(startX + btnWidth + 10f, startY - (i * gap), deleteWidth, btnHeight);
         }
 
         float popupCenterX = worldW / 2f;
@@ -122,7 +127,7 @@ public class EnterNameScreen implements Screen, InputProcessor {
 
     @Override
     public void render(float delta) {
-        handleMouseInput();
+        handleTouchInput();
 
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -142,13 +147,19 @@ public class EnterNameScreen implements Screen, InputProcessor {
         titleFont.draw(game.batch, "SELECT A SAVE SLOT", (worldW - layout.width) / 2f, 420);
 
         font.setColor(Color.LIGHT_GRAY);
-        layout.setText(font, "Left Click: Play  |  Right Click: Delete");
-        font.draw(game.batch, "Left Click: Play  |  Right Click: Delete", (worldW - layout.width) / 2f, 390);
+        layout.setText(font, "Tap Slot to Play | Tap X to Delete");
+        font.draw(game.batch, "Tap Slot to Play | Tap X to Delete", (worldW - layout.width) / 2f, 390);
         font.setColor(Color.WHITE);
 
         for (int i = 0; i < 4; i++) {
             String label = (slotNames[i] == null) ? "Slot " + (i + 1) + " - Empty" : slotNames[i];
             drawButton(slotRects[i], label);
+
+            if (slotNames[i] != null) {
+                font.setColor(Color.RED);
+                drawButton(deleteRects[i], "X");
+                font.setColor(Color.WHITE);
+            }
         }
 
         drawButton(backRect, "BACK");
@@ -199,8 +210,9 @@ public class EnterNameScreen implements Screen, InputProcessor {
         drawButton(confirmRect, "START");
     }
 
-    private void handleMouseInput() {
-        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+    private void handleTouchInput() {
+        // Direct Touch / Mouse Tap (Android & PC)
+        if (Gdx.input.justTouched()) {
             touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             viewport.unproject(touchVec);
 
@@ -213,12 +225,23 @@ public class EnterNameScreen implements Screen, InputProcessor {
 
             if (!isTyping) {
                 for (int i = 0; i < 4; i++) {
+                    if (deleteRects[i].contains(touchVec.x, touchVec.y) && slotNames[i] != null) {
+                        AudioManager.playSFX(AudioManager.buttonSound);
+                        FileHandler.deleteSlot(i);
+                        refreshSlots();
+                        return;
+                    }
+
                     if (slotRects[i].contains(touchVec.x, touchVec.y)) {
                         AudioManager.playSFX(AudioManager.buttonSound);
                         if (slotNames[i] == null) {
                             isTyping = true;
                             selectedSlot = i;
                             typedName.setLength(0);
+
+                            if (Gdx.app.getType() == Application.ApplicationType.Android) {
+                                Gdx.input.setOnscreenKeyboardVisible(true);
+                            }
                         } else {
                             String[] currentData = FileHandler.getSlotInfo(i);
                             float savedX = Float.parseFloat(currentData[1]);
@@ -236,10 +259,14 @@ public class EnterNameScreen implements Screen, InputProcessor {
                 } else if (cancelRect.contains(touchVec.x, touchVec.y)) {
                     AudioManager.playSFX(AudioManager.buttonSound);
                     isTyping = false;
+                    if (Gdx.app.getType() == Application.ApplicationType.Android) {
+                        Gdx.input.setOnscreenKeyboardVisible(false);
+                    }
                 }
             }
         }
 
+        // Secondary Delete Trigger (PC Right Click)
         if (Gdx.input.isButtonJustPressed(Input.Buttons.RIGHT) && !isTyping) {
             touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
             viewport.unproject(touchVec);
@@ -258,6 +285,9 @@ public class EnterNameScreen implements Screen, InputProcessor {
         if (typedName.length() > 0) {
             String name = typedName.toString().trim();
             FileHandler.saveSlot(selectedSlot, name, 0f, 0f, 0);
+            if (Gdx.app.getType() == Application.ApplicationType.Android) {
+                Gdx.input.setOnscreenKeyboardVisible(false);
+            }
             game.setScreen(new DifficultyScreen(game, titleScreen, name, selectedSlot, 0f, 0f, 0));
         }
     }

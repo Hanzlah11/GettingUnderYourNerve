@@ -6,7 +6,6 @@ import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
@@ -155,7 +154,7 @@ public class PauseScreen implements Screen {
             TextureRegion frame = rickAnim.getKeyFrame(rickTimer);
             game.batch.draw(frame, bx + BOARD_CORNER, by + BOARD_CORNER, innerW, innerH);
 
-            if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) || rickAnim.isAnimationFinished(rickTimer)) {
+            if (Gdx.input.justTouched() || rickAnim.isAnimationFinished(rickTimer)) {
                 stopRickroll();
             }
         } else {
@@ -207,7 +206,7 @@ public class PauseScreen implements Screen {
     }
 
     private void handleMenuInput() {
-        if (!Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) return;
+        if (!Gdx.input.justTouched()) return;
         touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
         uiViewport.unproject(touchVec);
 
