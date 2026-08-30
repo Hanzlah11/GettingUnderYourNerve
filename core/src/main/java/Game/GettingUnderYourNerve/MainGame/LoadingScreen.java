@@ -172,7 +172,10 @@ public class LoadingScreen implements Screen {
             titleFont.draw(game.batch, continueText, targetX, targetY);
             titleFont.getData().setScale(1.0f);
 
-            if (!isTransitioningToTitle && (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY) || Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))) {
+            // Hybrid input: Check physical keys, mouse click, OR touch screen tap
+            if (!isTransitioningToTitle && (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY)
+                || Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)
+                || Gdx.input.justTouched())) {
                 isTransitioningToTitle = true;
                 transitionTimer = 0f;
             }

@@ -4,6 +4,7 @@ import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
@@ -199,9 +200,12 @@ public class PokemonBattleScreen implements Screen {
         stateTimer += delta;
         animationTime += delta;
 
+        // Skip/Advance intro message using either key press or screen tap
+        boolean advancePressed = Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY) || Gdx.input.justTouched();
+
         switch (currentState) {
             case START_WAIT:
-                if (stateTimer > 3.0f) {
+                if (stateTimer > 3.0f || advancePressed) {
                     dialogLabel.setText("What will PIKACHU do?");
                     actionMenu.setVisible(true);
                     currentState = BattleState.PLAYER_TURN;
@@ -301,7 +305,7 @@ public class PokemonBattleScreen implements Screen {
                 break;
 
             case WON:
-                if (stateTimer > 2.0f) {
+                if (stateTimer > 2.0f || advancePressed) {
                     game.setScreen(new PlayScreen(game, playerName, slotIndex, startX, startY, startLevel, true));
                     dispose();
                     return false;
@@ -314,7 +318,7 @@ public class PokemonBattleScreen implements Screen {
                     AudioManager.pokemonFightMusic.setVolume(0.3f * (1.0f - fadeProgress));
                 }
 
-                if (stateTimer > 2.0f) {
+                if (stateTimer > 2.0f || advancePressed) {
                     if (AudioManager.pokemonFightMusic != null) {
                         AudioManager.pokemonFightMusic.stop();
                     }

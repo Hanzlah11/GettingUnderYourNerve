@@ -8,6 +8,8 @@ import Game.GettingUnderYourNerve.Map.PlayableMap;
 import Game.GettingUnderYourNerve.Player;
 import Game.GettingUnderYourNerve.Utilities.WorldContactListener;
 import Game.GettingUnderYourNerve.Utilities.FileHandler;
+import Game.GettingUnderYourNerve.Utilities.TouchController;
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
@@ -71,6 +73,8 @@ public class PlayScreen implements Screen {
 
     private BitmapFont completeFont;
     private GlyphLayout completeLayout;
+
+    private TouchController touchController;
 
     Music currentTrack = null;
 
@@ -152,6 +156,8 @@ public class PlayScreen implements Screen {
             float halfVH = (viewport.getWorldHeight()) / 2f;
             cam.Update(worldWidth, worldHeight, halfVW, halfVH, player.GetXpos(), player.GetYpos());
         }
+
+        touchController = new TouchController(game.batch);
     }
 
     private BitmapFont loadFont(String filename, int size) {
@@ -258,11 +264,25 @@ public class PlayScreen implements Screen {
         if (DebugOption) {
             debugRenderer.render(world, cam.GetCam().combined);
         }
+
+        if (Gdx.app.getType() == Application.ApplicationType.Android && currentCutscene == null) {
+            touchController.draw(player);
+        }
     }
 
     @Override
     public void render(float delta) {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+        // Support ESCAPE (PC) and BACK button/swipe (Android)
+        boolean pausePressed = Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) || Gdx.input.isKeyJustPressed(Input.Keys.BACK);
+
+        if (Gdx.app.getType() == Application.ApplicationType.Android && touchController != null) {
+            if (touchController.pausePressed) {
+                pausePressed = true;
+                touchController.pausePressed = false;
+            }
+        }
+
+        if (pausePressed) {
             game.setScreen(new PauseScreen(game, this, player.getHealth(), player.getScore()));
             return;
         }
@@ -336,7 +356,7 @@ public class PlayScreen implements Screen {
             return false;
         }
 
-        player.UpdatePlayer(delta, world, inCutscene || isLevelCompleting || isMinigameTransitioning);
+        player.UpdatePlayer(delta, world, inCutscene || isLevelCompleting || isMinigameTransitioning, touchController);
 
         float currX = player.GetXpos();
         float currY = player.GetYpos();
@@ -480,6 +500,9 @@ public class PlayScreen implements Screen {
     public void resize(int width, int height) {
         viewport.update(width, height, false);
         uiViewport.update(width, height, true);
+        if (touchController != null) {
+            touchController.resize(width, height);
+        }
     }
 
     @Override public void pause()  { }
@@ -499,6 +522,9 @@ public class PlayScreen implements Screen {
         if (completeFont != null) {
             completeFont.dispose();
             completeFont = null;
+        }
+        if (touchController != null) {
+            touchController.dispose();
         }
         playableMap.dispose();
         player.dispose();

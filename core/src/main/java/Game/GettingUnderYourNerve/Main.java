@@ -1,14 +1,12 @@
 package Game.GettingUnderYourNerve;
 
 import Game.GettingUnderYourNerve.MainGame.LoadingScreen;
-import Game.GettingUnderYourNerve.MainGame.TitleScreen;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public class Main extends Game {
-
 
     public SpriteBatch batch;
     public GameAssetManager assets;
@@ -46,8 +44,8 @@ public class Main extends Game {
 
     @Override
     public void dispose() {
-        batch.dispose();
-        assets.dispose();
+        if (batch != null) batch.dispose();
+        GameAssetManager.dispose();
         AudioManager.dispose();
     }
 

@@ -48,7 +48,7 @@ public class PokeBall {
 
     public void render(SpriteBatch batch) {
         float size = 30f / Main.PPM;
-        batch.draw(texture, x - size/2f, y - size/2f, size, size);
+        batch.draw(texture, x - size / 2f, y - size / 2f, size, size);
     }
 
     public boolean isFinished() { return finished; }

@@ -3,6 +3,8 @@ package Game.GettingUnderYourNerve.MainGame;
 import Game.GettingUnderYourNerve.Main;
 import Game.GettingUnderYourNerve.Utilities.AudioManager;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
+import Game.GettingUnderYourNerve.Utilities.TouchController;
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
@@ -80,6 +82,8 @@ public class FootballMinigameScreen implements Screen {
     private boolean playerFacingRight = true;
     private boolean cr7FacingRight = false;
 
+    private TouchController touchController;
+
     public FootballMinigameScreen(Main game, Screen savedPlayScreen) {
         this.game = game;
         this.savedPlayScreen = savedPlayScreen;
@@ -133,6 +137,8 @@ public class FootballMinigameScreen implements Screen {
 
         parseMapObjects();
         resetPositions();
+
+        touchController = new TouchController(batch);
     }
 
     private BitmapFont loadScoreFont() {
@@ -253,6 +259,10 @@ public class FootballMinigameScreen implements Screen {
         }
 
         batch.end();
+
+        if (Gdx.app.getType() == Application.ApplicationType.Android) {
+            touchController.draw();
+        }
     }
 
     private void update(float delta) {
@@ -277,10 +287,10 @@ public class FootballMinigameScreen implements Screen {
                     platformer.getPlayer().hit(100, ball.getPosition().x);
                 }
 
-                if (platformer.currentTrack != null) {
-                    platformer.currentTrack.setLooping(true);
-                    platformer.currentTrack.setVolume(0.15f);
-                    platformer.currentTrack.play();
+                if (platformer.getCurrentTrack() != null) {
+                    platformer.getCurrentTrack().setLooping(true);
+                    platformer.getCurrentTrack().setVolume(0.15f);
+                    platformer.getCurrentTrack().play();
                 }
 
                 game.setScreen(savedPlayScreen);
@@ -319,6 +329,12 @@ public class FootballMinigameScreen implements Screen {
         if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) moveInput.y -= 1;
         if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) moveInput.x += 1;
         if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) moveInput.x -= 1;
+
+        if (Gdx.app.getType() == Application.ApplicationType.Android && touchController != null) {
+            if (touchController.isRightPressed()) moveInput.x += 1;
+            if (touchController.isLeftPressed()) moveInput.x -= 1;
+            if (touchController.jumpPressed) moveInput.y += 1; // Direct jump button mapping to UP
+        }
 
         if (moveInput.len() > 0) {
             playerMoving = true;
@@ -458,9 +474,6 @@ public class FootballMinigameScreen implements Screen {
         ballVec.y = MathUtils.clamp(ballVec.y, 16f, mapPixelHeight - 16f - ballBounds.height);
         ball.setPosition(ballVec.x, ballVec.y);
 
-        float ballCenterX = ballBounds.x + (ballBounds.width / 2f);
-        float ballCenterY = ballBounds.y + (ballBounds.height / 2f);
-
         if (wallOverlapOccurred && (Intersector.overlaps(playerBounds, ballBounds) || Intersector.overlaps(cr7Bounds, ballBounds))) {
             Vector2 fieldCenter = new Vector2(mapPixelWidth / 2f, mapPixelHeight / 2f);
             Vector2 blastDir = fieldCenter.sub(ballVec).nor();
@@ -543,6 +556,9 @@ public class FootballMinigameScreen implements Screen {
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, false);
+        if (touchController != null) {
+            touchController.resize(width, height);
+        }
     }
 
     @Override public void pause() {}
@@ -556,6 +572,9 @@ public class FootballMinigameScreen implements Screen {
         if (scoreFont != null) {
             scoreFont.dispose();
             scoreFont = null;
+        }
+        if (touchController != null) {
+            touchController.dispose();
         }
         if (AudioManager.footballCrowd != null) AudioManager.footballCrowd.stop();
     }

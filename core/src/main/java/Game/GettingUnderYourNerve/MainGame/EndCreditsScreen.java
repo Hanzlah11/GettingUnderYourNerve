@@ -222,7 +222,10 @@ public class EndCreditsScreen implements Screen {
         shapeRenderer.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
-        if (!isExiting && (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY) || Gdx.input.isButtonJustPressed(Input.Buttons.LEFT))) {
+        // Hybrid trigger: keyboard key press, mouse click, OR mobile screen tap
+        if (!isExiting && (Gdx.input.isKeyJustPressed(Input.Keys.ANY_KEY)
+            || Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)
+            || Gdx.input.justTouched())) {
             if (isTeaserPhase) {
                 isTeaserPhase = false;
                 scrollY = -50f;

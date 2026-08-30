@@ -43,6 +43,8 @@ public class DifficultyScreen implements Screen {
     private Rectangle backRect;
     private Vector3 touchVec;
 
+    private int selectedOptionIndex = 0; // 0: Classic, 1: Nightmare
+
     public static boolean isNightmareMode = false;
 
     public DifficultyScreen(Main game, TitleScreen titleScreen, String playerName, int slotIndex, float startX, float startY, int startLevel) {
@@ -105,27 +107,7 @@ public class DifficultyScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-            touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
-            viewport.unproject(touchVec);
-
-            if (backRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.playSFX(AudioManager.buttonSound);
-                game.setScreen(new EnterNameScreen(game, titleScreen));
-                dispose();
-                return;
-            }
-
-            if (classicRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.playSFX(AudioManager.buttonSound);
-                isNightmareMode = false;
-                startGame();
-            } else if (nightmareRect.contains(touchVec.x, touchVec.y)) {
-                AudioManager.playSFX(AudioManager.buttonSound);
-                isNightmareMode = true;
-                startGame();
-            }
-        }
+        handleInput();
 
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
@@ -162,23 +144,74 @@ public class DifficultyScreen implements Screen {
         layout.setText(titleFont, "CHOOSE DIFFICULTY");
         titleFont.draw(game.batch, "CHOOSE DIFFICULTY", (worldW - layout.width) / 2f, 280);
 
-        drawButton(classicRect, "CLASSIC");
-
-        font.setColor(Color.RED);
-        drawButton(nightmareRect, "NIGHTMARE");
-        font.setColor(Color.WHITE);
-
-        drawButton(backRect, "BACK");
+        drawButton(classicRect, "CLASSIC", selectedOptionIndex == 0, Color.WHITE);
+        drawButton(nightmareRect, "NIGHTMARE", selectedOptionIndex == 1, Color.RED);
+        drawButton(backRect, "BACK", false, Color.WHITE);
 
         game.batch.end();
     }
 
-    private void drawButton(Rectangle rect, String label) {
+    private void handleInput() {
+        // Keyboard Navigation (PC)
+        if (Gdx.input.isKeyJustPressed(Input.Keys.LEFT) || Gdx.input.isKeyJustPressed(Input.Keys.A)) {
+            selectedOptionIndex = 0;
+            AudioManager.playSFX(AudioManager.buttonSound);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.RIGHT) || Gdx.input.isKeyJustPressed(Input.Keys.D)) {
+            selectedOptionIndex = 1;
+            AudioManager.playSFX(AudioManager.buttonSound);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+            AudioManager.playSFX(AudioManager.buttonSound);
+            isNightmareMode = (selectedOptionIndex == 1);
+            startGame();
+            return;
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            AudioManager.playSFX(AudioManager.buttonSound);
+            game.setScreen(new EnterNameScreen(game, titleScreen));
+            dispose();
+            return;
+        }
+
+        // Direct Touch / Mouse Click Selection (Android & PC)
+        if (Gdx.input.justTouched()) {
+            touchVec.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+            viewport.unproject(touchVec);
+
+            if (backRect.contains(touchVec.x, touchVec.y)) {
+                AudioManager.playSFX(AudioManager.buttonSound);
+                game.setScreen(new EnterNameScreen(game, titleScreen));
+                dispose();
+                return;
+            }
+
+            if (classicRect.contains(touchVec.x, touchVec.y)) {
+                AudioManager.playSFX(AudioManager.buttonSound);
+                selectedOptionIndex = 0;
+                isNightmareMode = false;
+                startGame();
+            } else if (nightmareRect.contains(touchVec.x, touchVec.y)) {
+                AudioManager.playSFX(AudioManager.buttonSound);
+                selectedOptionIndex = 1;
+                isNightmareMode = true;
+                startGame();
+            }
+        }
+    }
+
+    private void drawButton(Rectangle rect, String label, boolean isSelected, Color textColor) {
+        Color btnTint = isSelected ? new Color(1f, 0.9f, 0.4f, 1f) : Color.WHITE;
+        game.batch.setColor(btnTint);
+
         game.batch.draw(btnL, rect.x, rect.y, 20, rect.height);
         game.batch.draw(btnC, rect.x + 20, rect.y, rect.width - 40, rect.height);
         game.batch.draw(btnR, rect.x + rect.width - 20, rect.y, 20, rect.height);
 
+        game.batch.setColor(Color.WHITE);
+
         layout.setText(font, label);
+        font.setColor(isSelected ? Color.YELLOW : textColor);
         font.draw(game.batch, label,
             rect.x + (rect.width - layout.width) / 2f,
             rect.y + (rect.height + layout.height) / 2f);

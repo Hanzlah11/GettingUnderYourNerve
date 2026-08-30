@@ -3,6 +3,8 @@ package Game.GettingUnderYourNerve;
 import Game.GettingUnderYourNerve.MainGame.DifficultyScreen;
 import Game.GettingUnderYourNerve.Utilities.GameAssetManager;
 import Game.GettingUnderYourNerve.Utilities.FileHandler;
+import Game.GettingUnderYourNerve.Utilities.TouchController;
+import com.badlogic.gdx.Application;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
@@ -206,7 +208,7 @@ public class Player {
         FileHandler.saveSlot(this.saveSlotIndex, this.playerName, x, y, this.currentLevel);
     }
 
-    public void UpdatePlayer(float dt, World world, boolean isCutscene) {
+    public void UpdatePlayer(float dt, World world, boolean isCutscene, TouchController touchController) {
 
         if (isDead) {
             Respawn();
@@ -240,7 +242,15 @@ public class Player {
             attackCooldown -= dt;
         }
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE) && swordUses > 0 && attackCooldown <= 0 && !isAttacking) {
+        boolean attackRequested = Gdx.input.isKeyJustPressed(Input.Keys.SPACE);
+        if (Gdx.app.getType() == Application.ApplicationType.Android && touchController != null) {
+            if (touchController.attackPressed) {
+                attackRequested = true;
+                touchController.attackPressed = false; // Reset tap state
+            }
+        }
+
+        if (attackRequested && swordUses > 0 && attackCooldown <= 0 && !isAttacking) {
             isAttacking = true;
             swordUses--;
             attackCooldown = attackTimer;
@@ -249,8 +259,6 @@ public class Player {
             Filter filter = swordFixture.getFilterData();
             filter.maskBits = Main.ENEMY_BIT;
             swordFixture.setFilterData(filter);
-
-
         }
 
         if (isAttacking && attackAnimation.isAnimationFinished(stateTime)) {
@@ -299,7 +307,6 @@ public class Player {
                     if (com.badlogic.gdx.math.MathUtils.random(0f, 100f) <= 0.10f) {
                         controlsInverted = true;
                         invertTimer = 8f;
-
                     }
                 }
             }
@@ -307,8 +314,18 @@ public class Player {
             Vector2 vel = playerBody.getLinearVelocity();
             float desiredVel = 0;
 
-            boolean moveRight = Gdx.input.isKeyPressed(Input.Keys.RIGHT);
-            boolean moveLeft = Gdx.input.isKeyPressed(Input.Keys.LEFT);
+            boolean moveRight = Gdx.input.isKeyPressed(Input.Keys.RIGHT) || Gdx.input.isKeyPressed(Input.Keys.D);
+            boolean moveLeft = Gdx.input.isKeyPressed(Input.Keys.LEFT) || Gdx.input.isKeyPressed(Input.Keys.A);
+            boolean jumpRequested = Gdx.input.isKeyJustPressed(Input.Keys.UP) || Gdx.input.isKeyJustPressed(Input.Keys.W);
+
+            if (Gdx.app.getType() == Application.ApplicationType.Android && touchController != null) {
+                if (touchController.isRightPressed()) moveRight = true;
+                if (touchController.isLeftPressed()) moveLeft = true;
+                if (touchController.jumpPressed) {
+                    jumpRequested = true;
+                    touchController.jumpPressed = false; // Reset tap state to avoid infinite boost!
+                }
+            }
 
             if (controlsInverted) {
                 boolean temp = moveRight;
@@ -329,7 +346,7 @@ public class Player {
                 playerBody.setLinearVelocity(vel.x, Math.max(vel.y, -2f));
             }
 
-            if (Gdx.input.isKeyJustPressed(Input.Keys.UP) && isGrounded && !isAttacking) {
+            if (jumpRequested && isGrounded && !isAttacking) {
                 ApplyJump();
             }
         }
@@ -435,9 +452,6 @@ public class Player {
 
         playerBody.setLinearVelocity(0, 0);
         playerBody.applyLinearImpulse(new Vector2(pushDirection * 10f, 10f), playerBody.getWorldCenter(), true);
-
-
-
     }
 
     public int getScore(){ return score; }

@@ -89,6 +89,14 @@ public class GameAssetManager {
     public static final String BANNER_BR = "Treasure Hunters/Wood and Paper UI/Sprites/Big Banner/6.png";
     public static final String RICK_SHEET = "ui/rickRoll.png";
 
+    // --- MOBILE TOUCH BUTTONS ---
+    public static final String BTN_LEFT   = "Treasure Hunters/Wood and Paper UI/Sprites/Mobile Buttons/Mobile Buttons/3.png";
+    public static final String BTN_RIGHT  = "Treasure Hunters/Wood and Paper UI/Sprites/Mobile Buttons/Mobile Buttons/4.png";
+    public static final String BTN_JUMP   = "Treasure Hunters/Wood and Paper UI/Sprites/Mobile Buttons/Mobile Buttons/5.png";
+    public static final String BTN_ATTACK = "Treasure Hunters/Wood and Paper UI/Sprites/Mobile Buttons/Mobile Buttons/7.png";
+    public static final String BTN_PAUSE  = "Treasure Hunters/Wood and Paper UI/Sprites/Mobile Buttons/Mobile Buttons/1.png";
+    public static final String BTN_ATTACK_COOLDOWN_PREFIX = "Treasure Hunters/Wood and Paper UI/Sprites/Mobile Buttons/Mobile Buttons Cooldown/";
+
     //---TRAPS---
     public static final String BOX_TEXTURE = "Treasure Hunters/Merchant Ship/Sprites/Box/Idle/1.png";
 
@@ -194,6 +202,16 @@ public class GameAssetManager {
         manager.load(BANNER_CR,  Texture.class);
         manager.load(BANNER_BL,  Texture.class);
         manager.load(BANNER_BR,  Texture.class);
+
+        // MOBILE CONTROLS
+        manager.load(BTN_LEFT, Texture.class);
+        manager.load(BTN_RIGHT, Texture.class);
+        manager.load(BTN_JUMP, Texture.class);
+        manager.load(BTN_ATTACK, Texture.class);
+        manager.load(BTN_PAUSE, Texture.class);
+
+        // Load 12 Cooldown Frames using loadFrames
+        loadFrames(BTN_ATTACK_COOLDOWN_PREFIX, 12, "%d");
 
         //--TRAPS---
         manager.load(BOX_TEXTURE, Texture.class);

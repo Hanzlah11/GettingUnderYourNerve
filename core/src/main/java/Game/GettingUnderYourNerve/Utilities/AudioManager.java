@@ -255,7 +255,7 @@ public class AudioManager {
     public static void playHummingSound(float proximityVolume) {
         if (hummingSFX == null) return;
 
-        float effectiveVolume = sfxVolumeModifier * proximityVolume;
+        float effectiveVolume = Math.min(1.0f, sfxVolumeModifier * proximityVolume);
 
         if (hummingSoundId == -1) {
             hummingSoundId = hummingSFX.loop(effectiveVolume);
